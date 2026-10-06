@@ -9,16 +9,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import id.riko.hub.R
 import id.riko.hub.navigation.Destination
 import id.riko.hub.ui.compass.CompassChip
-import id.riko.hub.ui.home.HomeScreen
+import id.riko.hub.ui.home.HomePreview
 import id.riko.hub.ui.theme.*
 
 @Preview(name = "Home / light", widthDp = 393, heightDp = 852)
 @Composable
-private fun HomeLightPreview() { RikoHubTheme(false) { Surface { HomeScreen {} } } }
+private fun HomeLightPreview() { RikoHubTheme(false) { Surface { HomePreview() } } }
 
 @Preview(name = "Home / dark", widthDp = 393, heightDp = 852, uiMode = 0x20)
 @Composable
-private fun HomeDarkPreview() { RikoHubTheme(true) { Surface { HomeScreen {} } } }
+private fun HomeDarkPreview() { RikoHubTheme(true) { Surface { HomePreview() } } }
 
 @Preview(name = "Components / light", widthDp = 393)
 @Preview(name = "Components / dark", widthDp = 393, uiMode = 0x20)

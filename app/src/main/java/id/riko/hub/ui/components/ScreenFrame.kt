@@ -21,25 +21,7 @@ fun ScreenFrame(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(Modifier.fillMaxSize().testTag("screen-${destination.name}")) {
-        // Return swipes are confined to this handle; scrolling content never navigates.
-        SpatialNavLayer(destination, onNavigate, Modifier.fillMaxWidth().testTag("return-handle")) {
-            TextButton(onClick = { onNavigate(Destination.Home) }, modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.returnHandle)) {
-                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.back_home), color = MaterialTheme.colorScheme.onSurface)
-                    val hint = when (destination) {
-                        Destination.Tasks -> R.string.return_down
-                        Destination.Timeline -> R.string.return_up
-                        Destination.Vault -> R.string.return_right
-                        Destination.Sync -> R.string.return_left
-                        else -> null
-                    }
-                    hint?.let {
-                        Text(stringResource(it), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
+        ReturnHomeHandle(destination, onNavigate)
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.space5),
             verticalArrangement = Arrangement.spacedBy(Spacing.space6),
@@ -54,4 +36,27 @@ fun ScreenFrame(
 @Composable
 fun FoundationNote() {
     Text(stringResource(R.string.foundation_note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@Composable
+fun ReturnHomeHandle(destination: Destination, onNavigate: (Destination) -> Unit) {
+    // Return swipes are confined to this handle; scrolling content never navigates.
+    SpatialNavLayer(destination, onNavigate, Modifier.fillMaxWidth().testTag("return-handle")) {
+        TextButton(onClick = { onNavigate(Destination.Home) }, modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.returnHandle)) {
+            Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                Text(stringResource(R.string.back_home), color = MaterialTheme.colorScheme.onSurface)
+                val hint = when (destination) {
+                    Destination.Tasks -> R.string.return_down
+                    Destination.Timeline -> R.string.return_up
+                    Destination.Vault -> R.string.return_right
+                    Destination.Sync -> R.string.return_left
+                    else -> null
+                }
+                hint?.let {
+                    Text(stringResource(it), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
 }

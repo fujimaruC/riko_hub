@@ -47,6 +47,15 @@ class SettingsDataStore(context: Context) {
         require(value >= 0) { "Hint count must not be negative" }
         store.edit { it[hints] = value }
     }
+    suspend fun clearPinnedFocusIfMatches(id: Long, date: LocalDate?) {
+        store.edit {
+            if (it[pinId] == id && it[pinDate] == date?.toString()) {
+                it.remove(pinId)
+                it.remove(pinDate)
+            }
+        }
+    }
+
     suspend fun setPinnedFocus(id: Long?, date: LocalDate?) {
         require((id == null && date == null) || (id != null && id > 0 && date != null)) { "Pin requires task and date" }
         store.edit {
