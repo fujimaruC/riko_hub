@@ -27,4 +27,10 @@ class ContrastTest {
             }
         }
     }
+    @Test fun home_mode_washes_preserve_body_contrast() {
+        listOf(LightScheme to listOf(HomeTokens.calmLight, HomeTokens.denseLight),
+            DarkScheme to listOf(HomeTokens.calmDark, HomeTokens.denseDark)).forEach { (scheme, backgrounds) ->
+            backgrounds.forEach { assertTrue(contrast(scheme.onSurface, it) >= 4.5f) }
+        }
+    }
 }

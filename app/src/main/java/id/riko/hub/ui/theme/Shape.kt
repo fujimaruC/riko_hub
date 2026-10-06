@@ -19,4 +19,3 @@ internal val RikoMaterialShapes = Shapes(
     extraSmall = RikoShapes.xs, small = RikoShapes.small, medium = RikoShapes.medium,
     large = RikoShapes.wide, extraLarge = RikoShapes.tall,
 )
-// TODO(v0.1): Add Home-only blob shapes with the Phase 4 bubble field.

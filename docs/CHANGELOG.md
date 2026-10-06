@@ -4,6 +4,10 @@ All user-visible changes to Riko Hub. Format loosely follows Keep a Changelog. V
 
 ## [Unreleased]
 
+### Added
+- Home urgency bubbles with daily focus pinning, progress, next obligation, calm/dense modes and task overflow.
+- Home quick add, task peek actions, completion with undo, and reduced-motion/large-text behavior. Physical-device acceptance is pending.
+
 ### Planned for 0.1.0
 - Home with priority bubbles, today's focus, progress and quick add
 - Tasks with categories, deadlines, priority, status, undo delete

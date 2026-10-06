@@ -7,7 +7,7 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | Item | Value |
 |------|-------|
 | Version in development | 0.1.0 |
-| Current phase | Phase 2 complete; Phase 3 task CRUD next |
+| Current phase | Phase 4 Home visualization in progress |
 | Last successful build | Phase 2: assembleDebug + assembleDebugAndroidTest, 2026-10-06; BUILD SUCCESSFUL in 1m 3s |
 | Last test run | 11 JVM tests passed; 2 database phone tests passed; seed write/read after force-stop passed; lint 0 errors / 16 warnings |
 | Blockers | None for Phase 2; full TalkBack walkthrough remains deferred to release review |
@@ -19,12 +19,115 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | 0 | Project initialization | Done | 2026-10-05 | APK builds, installs and launches on a physical phone. |
 | 1 | Theme and navigation shell | Done | 2026-10-06 | Navigation, visual/font-scale and reduced-motion checks pass; theme restart verified in Phase 2. Full TalkBack release walkthrough remains deferred by user. |
 | 2 | Room database | Done | 2026-10-06 | Schema exported, JVM invariants and phone DAO checks pass; debug seed/settings survive process death. |
-| 3 | Task CRUD | Not started | | |
-| 4 | Home visualization | Not started | | |
+| 3 | Task CRUD | Done | 2026-10-06 | User approved Tasks usability; all available local gates pass; device-only checks deferred. |
+| 4 | Home visualization | In progress | 2026-10-06 | Core logic first; physical-device acceptance pending. |
 | 5 | Timeline | Not started | | |
 | 6 | Polish and v0.1 release | Not started | | |
 
 Status values: Not started, In progress, Done, Blocked.
+
+## Phase 4 report: Home visualization — 2026-10-06
+
+### What changed
+- Replaced the Home placeholder with greeting/date, today's progress, next obligation, ranked organic task bubbles, focus pin, calm/normal/dense modes, overflow and completed dots.
+- Added peek actions, quick add through the existing editor, completion/reflow/entry motion, haptic completion and undo that restores the previous status.
+- Added deterministic domain logic, lifecycle-controlled Room/time state, Indonesian descriptions/actions and large-text fallback. No Timeline implementation or later-version feature.
+
+### Files changed
+- `domain/logic/UrgencyCalculator.kt`, `FocusSelector.kt`, `BubbleLayoutPlanner.kt`, `HomeSnapshot.kt`: pure Home engine and time/progress projection.
+- `ui/home/HomeViewModel.kt`, `HomeScreen.kt`, `HomeContent.kt`, `BubbleField.kt`, `Bubble.kt`, `BubblePeekSheet.kt`: state, Home presentation and interactions.
+- `ui/theme/HomeTokens.kt`, `Shape.kt`: Home mode colors, blob curves and motion/size tokens.
+- `data/prefs/SettingsDataStore.kt`: atomically clear only the expired pin that was observed, preserving a newer user pin.
+- `ui/components/TaskEditorSheet.kt`: optional collapsed quick-add details; Tasks retains its expanded editor.
+- `res/values/strings.xml`, debug preview gallery, Home engine/contrast/instrumentation tests: copy and verification support.
+
+### Architecture decisions
+- Reuse existing concrete Room repositories, DataStore, injected Clock, manual DI and editor. No dependency, schema or permission changes.
+- Read projections use one clock snapshot. Rank/focus/layout/progress/next obligation are pure Kotlin. Progress is a set union so a task due and completed today counts once.
+- A visible-screen subscription ticks at most 60 seconds apart and at the next local midnight, refreshing on every repository/preference change. Lifecycle stop immediately cancels reads/ticks despite StateFlow's 5-second subscriber grace period. Resume reads a fresh clock/zone.
+- Drift reads animation state in a graphics layer; ID defines phase/period. Reduced motion and non-RESUMED state disable drift. Pairwise/edge clearance further caps the 2/3dp amplitude so animation cannot violate static overlap/bounds.
+- Large text (130% and up) conservatively uses the specified three-task-plus-overflow fallback with vertically staggered large bubbles; the field scrolls. This also applies below 296dp field width to preserve touch targets. At 200%, all fallback bubbles exceed the 72dp minimum. Full titles/priority/deadline remain in TalkBack and peek; truncated bubble titles are intentional.
+- Completed tasks briefly retain their prior placement while shrinking/fading/downward motion runs, then leave the field for the receded row (five dots plus count). Undo restores the original status, including IN_PROGRESS.
+
+### Slot coordinate correction
+- Original maximum-size template failed: slot 5 bottom was 0.043W outside H=0.95W; overlap 3/5 was about 0.04194W (allowed 0.024W); overlap 0/6 about 0.04175W (allowed 0.0216W).
+- Changed only slot 5 `(0.55, 0.94)` → `(0.495, 0.894)` and slot 6 `(0.10, 0.52)` → `(0.09, 0.542)`. Slot maxima, tiers, field ratio and the other five coordinates remain unchanged. The adjustments move the bottom bubble inward and separate the two offending pairs without moving the focus.
+- Tests cover all seven slots at maximum diameters, every mode, deterministic layout and simultaneous drift extremes.
+
+### Tests / build result
+- Core-only run: `testDebugUnitTest --offline --console plain`, `BUILD SUCCESSFUL in 2m 15s` before final UI additions.
+- Final assembled build/test/lint results are pending; this is not yet final acceptance evidence.
+- Initial UI compilation identified unsupported `Dp.Zero` / `animateDpOffsetAsState` calls and an ambiguous `LocalLifecycleOwner` import; replaced them with supported dp/Offset animation and an explicit lifecycle owner.
+- One intermediate incremental compile overlapped a helper extraction and reported unresolved `largeTextPlan` / `driftAllowance`; verification was restarted against the stable source set.
+
+### Known limitations
+- Home has not been visually rendered or manually exercised in this session. Preview code and instrumentation compilation are not runtime verification.
+- The temporary API 35 emulator remained offline after startup attempts; instrumentation and screenshot checks are unavailable in this environment.
+- Phase 4 remains In progress until its required real-device performance gate and runtime/accessibility checks are completed. No 60fps or jank claim is made.
+
+### Deferred (TODO notes added)
+- TODO(v0.1): real-device 60fps/drift performance, gesture feel, TalkBack walkthrough, 100%/130%/200% font scaling and touch ergonomics.
+- Physical-device-only verification deferred because no USB cable is currently available.
+- TODO(v0.1): run Home and Tasks instrumentation on a healthy emulator/device; review actual light/dark renders at 360/393/412/600dp. Emulator failure is an environment limitation, not a confirmed product defect.
+
+### Suggested next step
+- When the USB cable is available, install the built debug/test APKs, run the focused Home/Tasks tests and perform the physical acceptance pass. Do not start Phase 5 until Phase 4 is accepted.
+
+## Phase 3 final verification — 2026-10-06
+
+- User manually tested Tasks, confirmed it is good and usable, and explicitly approved Phase 4.
+- CONFIRMED: `JAVA_HOME=/opt/android-studio/jbr ./gradlew assembleDebug testDebugUnitTest lintDebug assembleDebugAndroidTest --offline --console plain`: `BUILD SUCCESSFUL in 4m 3s`; 84 tasks, 1 executed / 83 up-to-date. Existing JVM results: 14 tests, zero failures/errors. Lint: 0 errors, 16 warnings. App and instrumentation APKs compile.
+- Physical-device-only verification deferred because no USB cable is currently available.
+- No connected device or default AVD. Attempted an isolated API 35 headless emulator with the installed image: initial userdata storage checks failed; moving its temporary files into ignored project build storage allowed startup, but repeated ADB checks returned `adb: device offline`. Stopped the unhealthy emulator. No instrumentation, screenshot or emulator font-scale result is claimed.
+- Phase 3 is Done under the user's explicit hardware exception and manual usability approval. The existing CRUD/restart/200% instrumentation tests remain runnable but unexecuted in this pass. Physical Tasks font-scale and TalkBack follow-up remain deferred, not product failures.
+- Final log: `/tmp/rikohub-phase3-final.log`; emulator log: `/tmp/rikohub-emulator.log`. The historical report below describes earlier attempts; these are the final local results.
+- Next: implement only Phase 4; do not begin Timeline.
+
+## Phase 3 report: Task CRUD — 2026-10-06
+
+### What changed
+- Replaced the Tasks placeholder with a persistent grouped list, category filters, count summary, collapsed completed bucket, and a thumb-accessible Add action.
+- Added a scrolling task editor with title/notes validation, category, native date and optional time pickers, deadline shortcuts, priority and status. Failed saves preserve the draft and offer retry.
+- Added checkbox and right-swipe completion, left-swipe/editor soft deletion, and five-second snackbar undo. Accessibility-recommended timeouts extend the undo window.
+- Preserved the existing palette, bundled fonts, varied rounded shapes, compass and return gestures. Added empty, delayed loading and retryable read-error states.
+
+### Files changed
+- `domain/logic/TaskGrouping.kt` (new): pure time buckets, category filtering and local deadline conversion.
+- `ui/tasks/TasksViewModel.kt` (new): lifecycle-owned task state, Room writes, draft state and one-time snackbar effects.
+- `ui/tasks/TasksScreen.kt` (modified): lazy grouped list, filters, states and sheet integration.
+- `ui/tasks/TaskRow.kt`, `TaskLabels.kt` (new): task rows, accessible completion, swipes and Indonesian date/enum labels.
+- `ui/components/TaskEditorSheet.kt`, `TaskDeadlineFields.kt` (new): validated editor and platform date/time controls.
+- `ui/components/ScreenFrame.kt` (modified): extracted the existing return handle so Tasks can use a lazy list without nested vertical scrolling.
+- `res/values/strings.xml` (modified): Indonesian task copy and accurate placeholder wording.
+- `TaskGroupingTest.kt`, `ui/tasks/TaskCrudTest.kt` (new): bucket boundaries and focused UI/ViewModel persistence checks.
+- `README.md`, `docs/STATUS.md` (modified): usage and progress notes.
+
+### Architecture decisions
+- Reused concrete repositories, native pickers, existing Compose/Lifecycle dependencies, and manual application wiring. No new dependency, schema or network permission.
+- ViewModel state is collected with lifecycle awareness; Room reads and clock ticks are shared only while subscribed. The editor draft survives activity recreation in the ViewModel; an unsaved draft is not persisted through process death.
+- “Minggu ini” means the next 2–7 local dates, as explicitly defined in the data model, not the remaining calendar week. Completed tasks always go to Selesai; deleted tasks are excluded.
+- Date-only deadlines use local 23:59. An elapsed deadline today moves to Terlambat. Recompute every 30 seconds and immediately when the screen resumes after its subscription stops.
+- ViewModel checks run against an isolated on-device Room fixture and an injected fixed clock, covering the real write path without adding mock/fake repository layers or test dependencies.
+- The shared editor opens expanded in Tasks. Home quick-add integration belongs to Phase 4. Last-used category is retained within the Tasks ViewModel session.
+
+### Tests / build result
+- First compilation exposed an incorrect theme function name and recursive inferred return types; both were corrected.
+- Initial build: `assembleDebug testDebugUnitTest assembleDebugAndroidTest --offline --console plain`: `BUILD SUCCESSFUL in 3m 33s`; 14 JVM tests, 0 failures/errors.
+- The first phone attempt timed out because the display was asleep and lifecycle collection correctly remained stopped. Waking the phone resolved startup; the test host now keeps its own window awake without changing device settings.
+- Test selector failures (`Expected exactly '1' node but found '2' nodes`) were corrected by distinguishing the category filter from the editor and capturing the active dialog root.
+- The next run reached create/filter/edit and found the status label missing (`could not find any node ... 'Sedang dikerjakan'`). Lint identified the cause: `in_progress` collided with a private Compose resource carrying locale-specific translations. Renamed it to `task_in_progress`, removed obsolete placeholders, and used an Android plural resource for the count summary.
+- Initial lint completed with 0 errors / 20 warnings. Final local checks after those fixes passed: assembleDebug, testDebugUnitTest, lintDebug and assembleDebugAndroidTest; 14 JVM tests, zero failures/errors; lint 0 errors / 16 warnings. Phone checks are deferred under the user-approved hardware exception.
+
+### Known limitations
+- Full TalkBack walkthrough remains deferred by the user to release review.
+- Home quick add/bubbles and Timeline events remain Phases 4 and 5; no later-phase feature was introduced.
+- User manual Tasks usability approval is accepted. Physical-device-only verification deferred because no USB cable is currently available. The focused CRUD/restart/font-scale instrumentation could not run on the unhealthy emulator.
+
+### Deferred (TODO notes added)
+- `TODO(v0.2)` in Tasks: recurring tasks and subtasks, consistent with the existing roadmap.
+
+### Suggested next step
+- Phase 3 is closed with local verification and user manual approval. Proceed to authorized Phase 4; retain deferred device checks for the next cable-connected session.
 
 ## Phase 2 report: Room database — 2026-10-06
 
