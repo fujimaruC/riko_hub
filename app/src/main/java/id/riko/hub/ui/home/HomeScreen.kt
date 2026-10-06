@@ -1,89 +1,92 @@
 package id.riko.hub.ui.home
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import id.riko.hub.R
+import id.riko.hub.RikoHubApp
 import id.riko.hub.navigation.Destination
-import id.riko.hub.ui.compass.SpatialNavLayer
-import id.riko.hub.ui.components.FoundationNote
+import id.riko.hub.ui.components.TaskEditorSheet
 import id.riko.hub.ui.theme.*
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 fun HomeScreen(onNavigate: (Destination) -> Unit) {
-    SpatialNavLayer(Destination.Home, onNavigate, Modifier.fillMaxSize().testTag("screen-Home"), horizontalOnly = true) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            Column(Modifier.padding(Spacing.space5), verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelLarge)
-                Text(stringResource(R.string.greeting), style = MaterialTheme.typography.displayLarge, modifier = Modifier.semantics { heading() })
-                Text(stringResource(R.string.home_question), style = MaterialTheme.typography.bodyLarge)
-                TextButton(onClick = { onNavigate(Destination.Settings) }) {
-                    Text(stringResource(R.string.settings), color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
-            HomeHints(onNavigate, top = true)
-            // The field owns vertical drags; the surrounding page can still scroll at large font scales.
-            SpatialNavLayer(Destination.Home, onNavigate, Modifier.fillMaxWidth().testTag("home-field")) {
-                Surface(
-                    modifier = Modifier.padding(horizontal = Spacing.space5).fillMaxWidth(),
-                    shape = RikoShapes.asymA, color = LocalRikoColors.current.personal.container,
-                ) {
-                    Column(Modifier.padding(Spacing.space6).heightIn(min = Spacing.field), verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-                        Text(stringResource(R.string.home_space), style = MaterialTheme.typography.displayMedium)
-                        Text(stringResource(R.string.home_placeholder), style = MaterialTheme.typography.bodyLarge)
-                        Text(stringResource(R.string.swipe_hint), style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
-            HomeHints(onNavigate, top = false)
-            Column(Modifier.padding(Spacing.space5), verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-                DomainLabels()
-                FoundationNote()
-            }
+    val app = LocalContext.current.applicationContext as RikoHubApp
+    val model: HomeViewModel = viewModel(factory = viewModelFactory {
+        initializer { HomeViewModel(app.container.tasks, app.container.events, app.container.settings, app.container.clock) }
+    })
+    HomeRoute(model, onNavigate)
+}
+
+@Composable
+fun HomeRoute(model: HomeViewModel, onNavigate: (Destination) -> Unit) {
+    val state by model.state.collectAsStateWithLifecycle()
+    val lifecycle by androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    LifecycleStartEffect(model) { model.setActive(true); onStopOrDispose { model.setActive(false) } }
+    val reduced = rememberReducedMotion()
+    val haptic = LocalHapticFeedback.current
+    val snackbar = remember { SnackbarHostState() }
+    HomeMessages(model, snackbar)
+    val complete: (id.riko.hub.domain.model.Task) -> Unit = {
+        haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+        model.complete(it)
+    }
+    Box(Modifier.fillMaxSize()) {
+        HomeContent(state, reduced, lifecycle == Lifecycle.State.RESUMED, onNavigate,
+            { model.edit() }, model::peek, complete, model::pin, model::retryRead)
+        if (state.editor == null && state.peek == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+    }
+    val snapshot = state.snapshot
+    if (snapshot != null) {
+        state.editor?.let { task ->
+            TaskEditorSheet(task, snapshot.now, snapshot.zone, state.busy, snackbar,
+                model::change, model::save, { model.delete(task) }, model::dismissEditor, quickAdd = state.quickAdd)
+        }
+        snapshot.ranked.firstOrNull { it.task.id == state.peek }?.let { item ->
+            BubblePeekSheet(item.task, snapshot, state.busy, snackbar, { model.peek(null) },
+                { complete(item.task) }, { model.start(item.task) }, { model.edit(item.task) }, { model.pin(item.task.id) })
         }
     }
 }
 
 @Composable
-private fun HomeHints(onNavigate: (Destination) -> Unit, top: Boolean) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-        val targets = if (top) listOf(Destination.Timeline) else listOf(Destination.Sync, Destination.Tasks, Destination.Vault)
-        targets.forEach { target ->
-            TextButton(onClick = { onNavigate(target) }) {
-                Text(stringResource(when (target) {
-                    Destination.Timeline -> R.string.hint_timeline
-                    Destination.Sync -> R.string.hint_sync
-                    Destination.Tasks -> R.string.hint_tasks
-                    else -> R.string.hint_vault
-                }), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DomainLabels() {
-    val colors = LocalRikoColors.current
-    val domains = listOf(R.string.academic to colors.academic, R.string.organization to colors.organization,
-        R.string.personal to colors.personal, R.string.projects to colors.projects)
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        domains.chunked(2).forEachIndexed { index, row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                row.forEachIndexed { column, (label, accent) ->
-                    Surface(Modifier.weight(1f), color = accent.container,
-                        shape = if (index == column) RikoShapes.pill else RikoShapes.asymB) {
-                        Text(stringResource(label), Modifier.padding(Spacing.space3), style = MaterialTheme.typography.labelLarge)
+private fun HomeMessages(model: HomeViewModel, snackbar: SnackbarHostState) {
+    val completed = stringResource(R.string.home_completed)
+    val deleted = stringResource(R.string.deleted_task)
+    val undo = stringResource(R.string.undo)
+    val failure = stringResource(R.string.save_failed)
+    val retry = stringResource(R.string.retry)
+    val accessibility = LocalAccessibilityManager.current
+    LaunchedEffect(model, accessibility) {
+        model.effects.collect { effect ->
+            snackbar.currentSnackbarData?.dismiss()
+            when (effect) {
+                is HomeEffect.Failed -> if (snackbar.showSnackbar(failure, retry, withDismissAction = true,
+                    duration = SnackbarDuration.Indefinite) == SnackbarResult.ActionPerformed) effect.retry()
+                else -> {
+                    val timeout = accessibility?.calculateRecommendedTimeoutMillis(5_000, containsText = true, containsControls = true) ?: 5_000
+                    val result = withTimeoutOrNull(timeout) { snackbar.showSnackbar(
+                        if (effect is HomeEffect.Completed) completed else deleted, undo, withDismissAction = true, duration = SnackbarDuration.Indefinite) }
+                    if (result == SnackbarResult.ActionPerformed) when (effect) {
+                        is HomeEffect.Completed -> model.undo(effect.id, effect.previous)
+                        is HomeEffect.Deleted -> model.restore(effect.id)
+                        else -> Unit
                     }
                 }
             }
         }
     }
 }
-// TODO(v0.1): Add real Home content, urgency and bubbles in Phase 4; no fake tasks here.
+
+// TODO(v0.1): Verify real-device drift/frame rate, touch ergonomics, TalkBack and font scales when USB is available.

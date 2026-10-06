@@ -1,0 +1,100 @@
+package id.riko.hub.ui.components
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
+import id.riko.hub.R
+import id.riko.hub.domain.model.*
+import id.riko.hub.ui.tasks.label
+import id.riko.hub.ui.theme.*
+import java.time.ZoneId
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar: SnackbarHostState,
+                    onChange: (Task) -> Unit, onSave: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit, quickAdd: Boolean = false) {
+    var details by remember(task.id) { mutableStateOf(!quickAdd) }
+    ModalBottomSheet(onDismissRequest = { if (!busy) onDismiss() }, shape = RikoShapes.sheet,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        Column(Modifier.fillMaxWidth().imePadding()) {
+            SnackbarHost(snackbar)
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.space5).padding(bottom = Spacing.space6),
+                verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
+                Text(stringResource(if (task.id == 0L) R.string.new_task else R.string.edit_task), style = MaterialTheme.typography.titleLarge)
+                TaskTitle(task, busy, onChange, onSave)
+                TaskChoices(stringResource(R.string.category), Category.entries, task.category, { it.label() }, !busy) {
+                    onChange(task.copy(category = it))
+                }
+                TaskDeadlineFields(task, now, zone, !busy, onChange)
+                if (quickAdd) TextButton(onClick = { details = !details }) { Text(stringResource(R.string.home_details)) }
+                if (details) {
+                TaskChoices(stringResource(R.string.priority), Priority.entries, task.priority, { it.label() }, !busy) {
+                    onChange(task.copy(priority = it))
+                }
+                TaskChoices(stringResource(R.string.status), TaskStatus.entries, task.status, { it.label() }, !busy) {
+                    onChange(task.copy(status = it))
+                }
+                OutlinedTextField(value = task.notes.orEmpty(), onValueChange = { onChange(task.copy(notes = it)) },
+                    label = { Text(stringResource(R.string.task_notes)) }, enabled = !busy,
+                    isError = (task.notes?.length ?: 0) > 2000, supportingText = { Text(stringResource(R.string.notes_help)) },
+                    modifier = Modifier.fillMaxWidth().testTag("task-notes"), minLines = 2)
+                }
+                Button(onClick = onSave, enabled = !busy && validTaskInput(task), shape = RikoShapes.pill,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("task-save")) {
+                    Text(stringResource(if (busy) R.string.saving else R.string.save))
+                }
+                if (task.id != 0L) TextButton(onClick = onDelete, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.delete_task))
+                }
+                TextButton(onClick = onDismiss, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.close)) }
+            }
+        }
+    }
+}
+
+private fun validTaskInput(task: Task) = task.title.trim().length in 1..120 && (task.notes?.length ?: 0) <= 2000
+
+@Composable
+private fun TaskTitle(task: Task, busy: Boolean, onChange: (Task) -> Unit, onSave: () -> Unit) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { if (task.id == 0L) focus.requestFocus() }
+    OutlinedTextField(value = task.title, onValueChange = { onChange(task.copy(title = it)) }, enabled = !busy,
+        label = { Text(stringResource(R.string.task_title)) },
+        isError = task.title.isNotEmpty() && task.title.trim().length !in 1..120,
+        supportingText = { Text(stringResource(R.string.title_help)) },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { if (!busy && validTaskInput(task)) onSave() }),
+        modifier = Modifier.fillMaxWidth().focusRequester(focus).testTag("task-title"))
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun <T> TaskChoices(label: String, choices: List<T>, selected: T, text: (T) -> Int, enabled: Boolean, onSelect: (T) -> Unit) {
+    Column {
+        Text(label, style = MaterialTheme.typography.titleSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+            choices.forEach { choice ->
+                FilterChip(shape = RikoShapes.pill, selected = selected == choice, onClick = { onSelect(choice) }, enabled = enabled,
+                    label = { Text(stringResource(text(choice))) }, modifier = Modifier.heightIn(min = Spacing.touch))
+            }
+        }
+    }
+}
+
+@Preview @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun TaskChoicesPreview() = RikoHubTheme {
+    Surface { TaskChoices(stringResource(R.string.category), Category.entries, Category.PERSONAL, { it.label() }, true) {} }
+}
