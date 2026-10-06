@@ -1,0 +1,57 @@
+package id.riko.hub.data.prefs
+
+import android.content.Context
+import android.util.Log
+import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore
+import id.riko.hub.domain.model.*
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import java.io.IOException
+import java.time.LocalDate
+
+private val Context.settingsDataStore by preferencesDataStore(name = "settings")
+
+class SettingsDataStore(context: Context) {
+    private val store = context.applicationContext.settingsDataStore
+    private val theme = stringPreferencesKey("theme_mode")
+    private val name = stringPreferencesKey("display_name")
+    private val navigation = stringPreferencesKey("nav_style")
+    private val hints = intPreferencesKey("hints_shown_count")
+    private val pinId = longPreferencesKey("pinned_focus_task_id")
+    private val pinDate = stringPreferencesKey("pinned_focus_date")
+
+    val settings = store.data.catch { error ->
+        if (error !is IOException) throw error
+        Log.e("SettingsDataStore", "Cannot read settings", error)
+        emit(emptyPreferences())
+    }.map { values ->
+        val date = values[pinDate]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        val id = values[pinId]?.takeIf { it > 0 && date != null }
+        AppSettings(
+            themeMode = ThemeMode.entries.firstOrNull { it.name == values[theme] } ?: ThemeMode.SYSTEM,
+            displayName = values[name]?.takeIf { it.isNotBlank() } ?: "Riko",
+            navStyle = NavigationStyle.entries.firstOrNull { it.name == values[navigation] } ?: NavigationStyle.SPATIAL_COMPASS,
+            hintsShownCount = (values[hints] ?: 0).coerceAtLeast(0),
+            pinnedFocusTaskId = id, pinnedFocusDate = if (id == null) null else date,
+        )
+    }
+
+    suspend fun setTheme(mode: ThemeMode) { store.edit { it[theme] = mode.name } }
+    suspend fun setDisplayName(value: String) {
+        require(value.isNotBlank()) { "Display name must not be blank" }
+        store.edit { it[name] = value.trim() }
+    }
+    suspend fun setNavigationStyle(value: NavigationStyle) { store.edit { it[navigation] = value.name } }
+    suspend fun setHintsShownCount(value: Int) {
+        require(value >= 0) { "Hint count must not be negative" }
+        store.edit { it[hints] = value }
+    }
+    suspend fun setPinnedFocus(id: Long?, date: LocalDate?) {
+        require((id == null && date == null) || (id != null && id > 0 && date != null)) { "Pin requires task and date" }
+        store.edit {
+            if (id == null) { it.remove(pinId); it.remove(pinDate) }
+            else { it[pinId] = id; it[pinDate] = requireNotNull(date).toString() }
+        }
+    }
+}
