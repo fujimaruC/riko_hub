@@ -16,7 +16,7 @@ The default system Java 26 is not used for validation. No machine-wide Java or S
 
 Debug package: `id.riko.hub.debug`. Release package: `id.riko.hub`. Minimum Android: 8.0 (API 26).
 
-Phases 0–2 are implemented. Room persistence and settings storage exist; task CRUD, Home task bubbles and event UI are later phases. Release signing and shrinker verification belong to Phase 6; current release builds are unsigned and unminified.
+Phases 0–4 are implemented; Phase 4 runtime and physical-device acceptance remain pending. Tasks supports local CRUD, category filters, deadline buckets, completion and undo deletion. Home adds ranked urgency bubbles, daily focus pinning, progress, next obligation, quick add and completion undo. Timeline event UI remains Phase 5. Release signing and shrinker verification belong to Phase 6; current release builds are unsigned and unminified.
 
 ## Foundation navigation
 
@@ -44,3 +44,19 @@ Earlier Phase 1 checks passed seven phone UI tests and six reduced-motion naviga
 `DebugSeeder` exists only in debug source and runs only when explicitly requested. It does not seed normal launches. Restart checks use a separate private fixture database so they do not populate the real app database. Run the database checks with `-e class id.riko.hub.data.DatabaseTest`; the two restart stages require `SeedPersistenceTest#write_debug_seed -e persistenceStage write`, then force-stop, then `SeedPersistenceTest#read_after_process_death -e persistenceStage read` on the test runner. The staged checks skip during ordinary all-tests runs.
 
 Validation added command-line tools and an API 35 AOSP system image to the user-owned SDK, plus an isolated AVD/cache. Existing Java defaults and Android platforms were not upgraded. The test emulator has been stopped.
+
+## Task management
+
+Open Tugas and tap Tambah. The editor supports category, a date with optional time, priority, status and notes. Save requires a trimmed title of 1–120 characters and notes no longer than 2000 characters. Date-only deadlines use local 23:59. Swipe right to complete, swipe left to delete, or use the checkbox and editor buttons. Deletion offers a five-second undo, extended when Android accessibility settings recommend it.
+
+The done bucket starts collapsed. “Minggu ini” follows the data specification: the next 2–7 local dates, including across Sunday. Lists refresh their time buckets every 30 seconds while observed. The editor keeps its draft on write failure and activity recreation. Home quick add is integrated in Phase 4.
+
+Focused Phase 3 phone checks use a separate `phase3-ui-check.db`, preserving the real task database. Run the test runner with `-e class id.riko.hub.ui.tasks.TaskCrudTest`; see `docs/STATUS.md` for results.
+
+## Home visualization
+
+Tap a bubble for details, start/edit/complete actions or a daily focus pin. Long press completes directly; Urungkan restores the previous status. Tap the focus bubble’s outer ring to pin/unpin it. Extra tasks open Tugas through the overflow bubble. Large text uses three large task bubbles plus overflow in a scrolling field.
+
+Home uses Room flows and the injected clock, refreshing at least once per minute and at local midnight while the screen is started. Drift runs only while resumed and stops with system reduced motion. Home engine tests cover urgency, ranking, pins, modes, overflow, layout bounds/overlap, drift clearance, progress and rollover.
+
+`id.riko.hub.ui.home.HomeTest` contains the focused Home UI/ViewModel checks. No physical-device result is claimed for Phase 4: the USB cable is unavailable. The local emulator startup attempt stayed offline; instrumentation and actual rendered review are pending a healthy runtime. See `docs/STATUS.md` for the current build results and exact deferred gates.
