@@ -70,6 +70,7 @@
     <string name="task_reminder">Pengingat sebelum deadline (menit)</string>
     <string name="task_reminder_help">0–10080 menit</string>
     <string name="task_checklist">Checklist</string>
+    <string name="task_checklist_progress">%1$d/%2$d selesai</string>
     <string name="task_checklist_item">Item checklist</string>
     <string name="add_task_checklist">Tambah item</string>
     <string name="recurrence">Ulangi</string>
