@@ -1,0 +1,9 @@
+<resources>
+    <string name="settings_display_name">Nama tampilan</string>
+    <string name="settings_name_required">Nama tidak boleh kosong.</string>
+    <string name="settings_save_name">Simpan nama</string>
+    <string name="settings_navigation">Gaya navigasi</string>
+    <string name="settings_nav_spatial">Spasial + kompas</string>
+    <string name="settings_nav_compass">Kompas saja</string>
+    <string name="settings_save_failed">Pengaturan gagal disimpan.</string>
+</resources>

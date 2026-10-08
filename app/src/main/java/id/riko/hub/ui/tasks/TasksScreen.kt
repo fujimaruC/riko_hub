@@ -67,7 +67,7 @@ fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit) {
         }
     }
     Box(Modifier.fillMaxSize()) {
-        TasksContent(state, onNavigate, model::filter, model::toggleDone, { model.edit() }, model::edit,
+        TasksContent(state, onNavigate, model::filter, model::search, model::clearFilters, model::toggleDone, { model.edit() }, model::edit,
             { task, done -> model.complete(task, done) }, model::delete, model::retryRead)
         if (state.editor == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
@@ -78,7 +78,8 @@ fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit) {
 }
 
 @Composable
-fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilter: (Category?) -> Unit,
+fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilter: (Category?) -> Unit, onSearch: (String) -> Unit,
+                 onClearFilters: () -> Unit,
                  onExpand: () -> Unit, onAdd: () -> Unit, onEdit: (Task) -> Unit,
                  onComplete: (Task, Boolean) -> Unit, onDelete: (Task) -> Unit, onRetry: () -> Unit) {
     var showSkeleton by remember { mutableStateOf(false) }
@@ -95,6 +96,10 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
                 Text(pluralStringResource(R.plurals.tasks_count, state.todayCount, state.todayCount, state.tasks.size), style = MaterialTheme.typography.bodyMedium)
             }
             item { CategoryFilters(state.filter, onFilter) }
+            item {
+                OutlinedTextField(value = state.query, onValueChange = onSearch, singleLine = true,
+                    label = { Text(stringResource(R.string.task_search)) }, modifier = Modifier.fillMaxWidth().testTag("task-search"))
+            }
             when {
                 state.readFailed -> item {
                     Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surfaceVariant) {
@@ -107,7 +112,9 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
                 state.loading && showSkeleton -> items(4) {
                     Surface(Modifier.fillMaxWidth().height(Spacing.row), shape = RikoShapes.pill, color = MaterialTheme.colorScheme.surfaceVariant) {}
                 }
-                !state.loading && state.buckets.isEmpty() -> item { TasksEmpty(state.filter != null) { onFilter(null) } }
+                !state.loading && state.buckets.isEmpty() -> item {
+                    TasksEmpty(state.filter != null || state.query.isNotBlank(), onClearFilters)
+                }
                 !state.loading -> state.buckets.forEach { (bucket, tasks) ->
                     item(key = bucket.name) { BucketHeader(bucket, tasks.size, state.doneExpanded, onExpand) }
                     if (bucket != TaskBucket.DONE || state.doneExpanded) itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
@@ -172,6 +179,5 @@ private fun TasksEmpty(filtered: Boolean, onClear: () -> Unit) {
 @Preview @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, fontScale = 2f)
 @Composable
 private fun TasksPreview() = RikoHubTheme {
-    Surface { TasksContent(TasksUiState(loading = false), {}, {}, {}, {}, {}, { _, _ -> }, {}, {}) }
+    Surface { TasksContent(TasksUiState(loading = false), {}, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {}) }
 }
-// TODO(v0.2): Add recurring tasks and subtasks only after the local v0.1 loop is complete.

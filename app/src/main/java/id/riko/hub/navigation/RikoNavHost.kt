@@ -14,7 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.*
 import id.riko.hub.R
+import id.riko.hub.domain.model.AppSettings
+import id.riko.hub.domain.model.NavigationStyle
 import id.riko.hub.ui.compass.CompassChip
+import id.riko.hub.ui.compass.LocalNavigationStyle
 import id.riko.hub.ui.home.HomeScreen
 import id.riko.hub.ui.settings.SettingsScreen
 import id.riko.hub.ui.sync.SyncScreen
@@ -24,8 +27,17 @@ import id.riko.hub.ui.vault.VaultScreen
 import id.riko.hub.ui.theme.*
 import kotlinx.coroutines.launch
 
+data class SettingsWriteFailure(val id: Int, val retry: () -> Unit)
+
 @Composable
-fun RikoNavHost(mode: ThemeMode, onTheme: (ThemeMode) -> Unit) {
+fun RikoNavHost(
+    settings: AppSettings,
+    onTheme: (ThemeMode) -> Unit,
+    onDisplayName: (String) -> Unit = {},
+    onNavigationStyle: (NavigationStyle) -> Unit = {},
+    settingsWriteFailure: SettingsWriteFailure? = null,
+    onSettingsFailureDismissed: (Int) -> Unit = {},
+) {
     val controller = rememberNavController()
     val entry by controller.currentBackStackEntryAsState()
     val current = destination(entry)
@@ -33,6 +45,8 @@ fun RikoNavHost(mode: ThemeMode, onTheme: (ThemeMode) -> Unit) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val comingSoon = stringResource(R.string.coming_soon)
+    val settingsFailureMessage = stringResource(R.string.settings_save_failed)
+    val retryLabel = stringResource(R.string.retry)
     val navigate: (Destination) -> Unit = { target ->
         if (target != current) {
             if (target == Destination.Home) controller.popBackStack(Destination.Home.name, false)
@@ -43,15 +57,24 @@ fun RikoNavHost(mode: ThemeMode, onTheme: (ThemeMode) -> Unit) {
         }
     }
     BackHandler(current != Destination.Home) { navigate(Destination.Home) }
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbar) },
-        bottomBar = {
-            Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.space5, vertical = Spacing.space2), contentAlignment = Alignment.CenterEnd) {
-                CompassChip(current, reduced, navigate)
-            }
-        },
-    ) { padding ->
+    LaunchedEffect(settingsWriteFailure?.id) {
+        val failure = settingsWriteFailure ?: return@LaunchedEffect
+        when (snackbar.showSnackbar(settingsFailureMessage, retryLabel, withDismissAction = true,
+            duration = SnackbarDuration.Indefinite)) {
+            SnackbarResult.ActionPerformed -> failure.retry()
+            SnackbarResult.Dismissed -> onSettingsFailureDismissed(failure.id)
+        }
+    }
+    CompositionLocalProvider(LocalNavigationStyle provides settings.navStyle) {
+      Scaffold(
+          containerColor = MaterialTheme.colorScheme.background,
+          snackbarHost = { SnackbarHost(snackbar) },
+          bottomBar = {
+              Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.space5, vertical = Spacing.space2), contentAlignment = Alignment.CenterEnd) {
+                  CompassChip(current, reduced, navigate)
+              }
+          },
+      ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
             NavHost(
                 navController = controller,
@@ -68,14 +91,15 @@ fun RikoNavHost(mode: ThemeMode, onTheme: (ThemeMode) -> Unit) {
                     else slideOutOfContainer(direction, tween(Motion.medium, easing = Motion.standard))
                 },
             ) {
-                composable(Destination.Home.name) { HomeScreen(navigate) }
+                composable(Destination.Home.name) { HomeScreen(settings.hintsShownCount, navigate) }
                 composable(Destination.Tasks.name) { TasksScreen(navigate) }
                 composable(Destination.Timeline.name) { TimelineScreen(navigate) }
                 composable(Destination.Vault.name) { VaultScreen(navigate) { scope.launch { snackbar.showSnackbar(comingSoon) } } }
                 composable(Destination.Sync.name) { SyncScreen(navigate) }
-                composable(Destination.Settings.name) { SettingsScreen(mode, onTheme, navigate) }
+                composable(Destination.Settings.name) { SettingsScreen(settings, onTheme, onDisplayName, onNavigationStyle, navigate) }
             }
         }
+      }
     }
 }
 

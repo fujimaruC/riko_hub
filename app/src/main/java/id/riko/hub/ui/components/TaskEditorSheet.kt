@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -16,6 +18,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import id.riko.hub.R
 import id.riko.hub.domain.model.*
+import id.riko.hub.ui.tasks.ChecklistFields
+import id.riko.hub.ui.tasks.TaskExtensionFields
 import id.riko.hub.ui.tasks.label
 import id.riko.hub.ui.theme.*
 import java.time.ZoneId
@@ -25,6 +29,12 @@ import java.time.ZoneId
 fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar: SnackbarHostState,
                     onChange: (Task) -> Unit, onSave: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit, quickAdd: Boolean = false) {
     var details by remember(task.id) { mutableStateOf(!quickAdd) }
+    var estimateRaw by rememberSaveable(task.id) { mutableStateOf(task.estimatedMinutes?.toString().orEmpty()) }
+    var reminderRaw by rememberSaveable(task.id) { mutableStateOf(task.reminderMinutesBefore?.toString().orEmpty()) }
+    val changeTask: (Task) -> Unit = { changed ->
+        if (task.deadlineAt != null && changed.deadlineAt == null) reminderRaw = ""
+        onChange(changed)
+    }
     ModalBottomSheet(onDismissRequest = { if (!busy) onDismiss() }, shape = RikoShapes.sheet,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().imePadding()) {
@@ -33,13 +43,25 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
                 .padding(horizontal = Spacing.space5).padding(bottom = Spacing.space6),
                 verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
                 Text(stringResource(if (task.id == 0L) R.string.new_task else R.string.edit_task), style = MaterialTheme.typography.titleLarge)
-                TaskTitle(task, busy, onChange, onSave)
+                TaskTitle(task, busy, validTaskInput(task, estimateRaw, reminderRaw), onChange, onSave)
                 TaskChoices(stringResource(R.string.category), Category.entries, task.category, { it.label() }, !busy) {
                     onChange(task.copy(category = it))
                 }
-                TaskDeadlineFields(task, now, zone, !busy, onChange)
+                TaskDeadlineFields(task, now, zone, !busy, changeTask)
                 if (quickAdd) TextButton(onClick = { details = !details }) { Text(stringResource(R.string.home_details)) }
                 if (details) {
+                TaskExtensionFields(task, !busy, estimateRaw, { raw ->
+                    estimateRaw = raw
+                    val value = raw.toIntOrNull()
+                    if (raw.isBlank() || value?.let { it in 1..1440 } == true) onChange(task.copy(estimatedMinutes = value))
+                }, reminderRaw, { raw ->
+                    reminderRaw = raw
+                    val value = raw.toIntOrNull()
+                    if (raw.isBlank() || value?.let { it in 0..10080 } == true) onChange(task.copy(reminderMinutesBefore = value))
+                })
+                TaskChoices(stringResource(R.string.recurrence), Recurrence.entries, task.recurrence,
+                    { it.label() }, !busy && task.deadlineAt != null) { onChange(task.copy(recurrence = it)) }
+                ChecklistFields(task, !busy, onChange)
                 TaskChoices(stringResource(R.string.priority), Priority.entries, task.priority, { it.label() }, !busy) {
                     onChange(task.copy(priority = it))
                 }
@@ -51,7 +73,7 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
                     isError = (task.notes?.length ?: 0) > 2000, supportingText = { Text(stringResource(R.string.notes_help)) },
                     modifier = Modifier.fillMaxWidth().testTag("task-notes"), minLines = 2)
                 }
-                Button(onClick = onSave, enabled = !busy && validTaskInput(task), shape = RikoShapes.pill,
+                Button(onClick = onSave, enabled = !busy && validTaskInput(task, estimateRaw, reminderRaw), shape = RikoShapes.pill,
                     modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("task-save")) {
                     Text(stringResource(if (busy) R.string.saving else R.string.save))
                 }
@@ -64,10 +86,16 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
     }
 }
 
-private fun validTaskInput(task: Task) = task.title.trim().length in 1..120 && (task.notes?.length ?: 0) <= 2000
+private fun validTaskInput(task: Task, estimate: String, reminder: String) =
+    task.title.trim().length in 1..120 && (task.notes?.length ?: 0) <= 2000 &&
+        (estimate.isBlank() || estimate.toIntOrNull()?.let { it in 1..1440 } == true) &&
+        (reminder.isBlank() || reminder.toIntOrNull()?.let { it in 0..10080 } == true) &&
+        (reminder.isBlank() || task.deadlineAt != null) && (task.recurrence == Recurrence.NONE || task.deadlineAt != null) &&
+        task.checklist.size <= 100 && task.checklist.all { it.id.isNotBlank() && it.title.trim().length in 1..120 } &&
+        task.checklist.map { it.id }.toSet().size == task.checklist.size
 
 @Composable
-private fun TaskTitle(task: Task, busy: Boolean, onChange: (Task) -> Unit, onSave: () -> Unit) {
+private fun TaskTitle(task: Task, busy: Boolean, canSave: Boolean, onChange: (Task) -> Unit, onSave: () -> Unit) {
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { if (task.id == 0L) focus.requestFocus() }
     OutlinedTextField(value = task.title, onValueChange = { onChange(task.copy(title = it)) }, enabled = !busy,
@@ -75,7 +103,7 @@ private fun TaskTitle(task: Task, busy: Boolean, onChange: (Task) -> Unit, onSav
         isError = task.title.isNotEmpty() && task.title.trim().length !in 1..120,
         supportingText = { Text(stringResource(R.string.title_help)) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { if (!busy && validTaskInput(task)) onSave() }),
+        keyboardActions = KeyboardActions(onDone = { if (!busy && canSave) onSave() }),
         modifier = Modifier.fillMaxWidth().focusRequester(focus).testTag("task-title"))
 }
 
