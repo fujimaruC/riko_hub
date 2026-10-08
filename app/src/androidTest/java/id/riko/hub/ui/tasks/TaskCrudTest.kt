@@ -15,6 +15,7 @@ import androidx.room.Room
 import androidx.test.platform.app.InstrumentationRegistry
 import id.riko.hub.core.time.Clock
 import id.riko.hub.data.local.RikoDatabase
+import id.riko.hub.data.mapper.toDomain
 import id.riko.hub.data.repository.TaskRepository
 import id.riko.hub.domain.logic.taskDeadline
 import id.riko.hub.domain.model.*
@@ -80,9 +81,9 @@ class TaskCrudTest {
         assertEquals("HIGH", tasks().single().priority)
         assertEquals("Baca bab tiga", tasks().single().notes)
         assertEquals(45, tasks().single().estimatedMinutes)
-        assertEquals(Recurrence.WEEKLY, tasks().single().recurrence)
+        assertEquals(Recurrence.WEEKLY, tasks().single().toDomain().recurrence)
         assertEquals(30, tasks().single().reminderMinutesBefore)
-        assertEquals("Baca bab", tasks().single().checklist.single().title)
+        assertEquals("Baca bab", tasks().single().toDomain().checklist.single().title)
         assertEquals(taskDeadline(LocalDate.of(2026, 10, 7), null, clock.zone()), tasks().single().deadlineAt)
         rule.onNodeWithTag("filter-PERSONAL").performScrollTo().performClick()
         rule.onNodeWithText("Belum ada tugas di sini.").assertExists()
@@ -127,6 +128,29 @@ class TaskCrudTest {
         rule.onNodeWithText("Belum ada tugas di sini.").assertExists()
         rule.onNodeWithTag("task-search").performTextClearance()
         rule.onNodeWithTag("task-${tasks().single().id}").assertExists()
+    }
+
+    @Test fun checklist_progress_is_hidden_when_empty_and_updates_after_checking_item() {
+        rule.onNodeWithText("Tambah").performClick()
+        rule.onNodeWithTag("task-title").performTextInput("Siapkan presentasi")
+        save()
+        waitFor { tasks().size == 1 && model.state.value.editor == null }
+        rule.onNodeWithText("0/0 selesai").assertDoesNotExist()
+        val taskTag = "task-${tasks().single().id}"
+        rule.onNodeWithTag(taskTag).performScrollTo().performClick()
+        rule.onNodeWithTag("checklist-new").performScrollTo().performTextInput("Susun materi")
+        rule.onNodeWithText("Tambah item").performScrollTo().performClick()
+        rule.onNodeWithTag("checklist-new").performTextInput("Latihan")
+        rule.onNodeWithText("Tambah item").performScrollTo().performClick()
+        save()
+        waitFor { tasks().single().toDomain().checklist.size == 2 && model.state.value.editor == null }
+        rule.onNodeWithText("0/2 selesai").assertExists()
+        rule.onNodeWithTag(taskTag).performScrollTo().performClick()
+        rule.onNode(isToggleable() and hasParent(hasAnyDescendant(hasTestTag("checklist-title-0"))))
+            .performScrollTo().performClick()
+        save()
+        waitFor { tasks().single().toDomain().checklist.count { it.done } == 1 && model.state.value.editor == null }
+        rule.onNodeWithText("1/2 selesai").assertExists()
     }
 
     @Test fun large_text_both_themes_and_failed_save_keep_editor_usable() {

@@ -80,6 +80,10 @@ private fun TaskRowText(task: Task, showCategory: Boolean, now: Long, zone: Zone
                 maxLines = if (LocalDensity.current.fontScale >= 1.3f) Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis)
         }
         Text(deadlineLabel(task, now, zone), style = MaterialTheme.typography.bodyMedium)
+        if (task.checklist.isNotEmpty()) {
+            Text(stringResource(R.string.task_checklist_progress,
+                task.checklist.count { it.done }, task.checklist.size), style = MaterialTheme.typography.labelMedium)
+        }
         if (showCategory) Text(stringResource(task.category.label()), style = MaterialTheme.typography.labelMedium)
         if (task.status == TaskStatus.IN_PROGRESS) Row(verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {

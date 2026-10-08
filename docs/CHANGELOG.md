@@ -8,6 +8,8 @@ All user-visible changes to Riko Hub. Format loosely follows Keep a Changelog. V
 - Tidied Timeline with compact navigation, quieter day labels, a narrow path gutter and clearer event hierarchy.
 
 ### Added
+- Checklist completion/total progress on task rows, shown only when a checklist exists.
+- Existing task extensions preserved at the v0.2 checkpoint: search, recurrence, checklists, estimates, and Timeline day mode. Reminder offsets are stored, but notifications are not delivered.
 - Persistent display-name and navigation-style settings, with validation and retry/dismiss actions on save failure; dismissing a failure reveals the next pending preference failure.
 - Compass-only navigation and quieter Home hints after three launches.
 - Adaptive app icon, Android 12+ splash, and optimized release packaging with optional private signing.

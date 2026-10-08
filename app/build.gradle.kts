@@ -72,6 +72,11 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.datastore.preferences)
     implementation(libs.work.runtime)
+    constraints {
+        implementation(libs.kotlinx.serialization.core) {
+            because("Room schema serializers require the 1.8.1 serialization ABI")
+        }
+    }
     debugImplementation(libs.compose.tooling)
     debugImplementation(libs.compose.test.manifest)
     testImplementation(libs.junit)

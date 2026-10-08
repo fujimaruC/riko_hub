@@ -6,12 +6,24 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 
 | Item | Value |
 |------|-------|
-| Version in development | 0.1.0 |
-| Current phase | v0.1 accepted by the owner for personal daily use (2026-10-08); formal verification deferrals remain documented |
-| Last successful build | Phase 6 final local build: debug, 14 selected JVM tests, Android test APK and unsigned release APK; BUILD SUCCESSFUL (2026-10-08) |
-| Last test run | 14 selected JVM tests pass; SettingsTest passes on OPPO CPH2015; TimelineLayoutTest passes on OPPO CPH2015 (1 test, 10.241s) |
+| Version in development | 0.2.0 |
+| Current phase | v0.2 development; v0.1 accepted by the owner for personal daily use (2026-10-08) |
+| Last successful build | v0.2 debug and Android test APKs rebuilt after serialization alignment; BUILD SUCCESSFUL in 16m53s (2026-10-08). Release APK remains the historical Phase 6 artifact. |
+| Last test run | Full JVM suite: 46 passed. Latest outcome per phone test across initial/filtered runs: 19 passed, 6 failed, 2 skipped (27 cases). Room v1→v2 migration passes; UI suite is not green. |
 | Release status | Unsigned local build; not a public release |
 | Owner acceptance | App launches and operates; primary features work and UX is satisfactory. Prior manual deferrals and noncritical formal verification are intentionally accepted as deferred. |
+
+## v0.2 progress — 2026-10-08
+
+- Checkpoint `0263983` preserves the Phase 5–6 work and the task extensions already present in the working tree.
+- Existing implementation discovered at the checkpoint: task search, recurrence, checklists, estimates, and Timeline day mode. Reminder offsets are stored; notification delivery is not implemented.
+- Added checklist completion/total progress to Tasks rows, hidden when a task has no checklist.
+- Verification: debug APK assembled. The initial consolidated run stopped at Android test compilation; repaired a missing deadline-helper import and mapped task entities to domain models for checklist assertions. The affected Android test assembly and 15 targeted JVM tests then passed in 2m46s (0 failures/errors/skips). No repeated debug build, lint, release build, emulator or device test. One nonblocking MigrationTestHelper constructor deprecation warning remains.
+- Subsequent owner-requested full verification on OPPO CPH2015: all 46 JVM tests passed. Continuous Home motion initially caused Compose idle timeouts; the owner disabled the three system animation scales for the filtered retry. A Room test-helper serialization ABI mismatch was fixed by constraining the existing serialization core runtime to 1.8.1 for app/test consistency. Both APKs rebuilt successfully; all four task-extension database tests, including migration row preservation and recurrence undo/redo, passed.
+- Latest unique phone outcomes across the initial suite and affected-test reruns: 19 passed, 6 failed, 2 skipped. The filtered final run itself was 10 passed / 6 failed (16 tests). Remaining failures: opposite return swipe/tap does not display Home; theme selection remains unselected; Foundation rendering clips a long task title; Home peek/pin text exceeds bounds; checklist test selector matches two checkboxes; recurring-task CRUD test assumes a single row after completion. These assertions require follow-up; no claim that all six are product defects or that the UI suite passes.
+- Two SeedPersistence tests were skipped because their explicit process-restart stage was not supplied; that staged fixture writes app settings. No app data was cleared or app uninstalled. Phone animation scales remained at 0 after testing; the owner was asked to restore all three to 1×. No lint or release build was run.
+- Final filtered device log: `app/build/outputs/androidTest-results/connected/debug/CPH2015 - 9/testlog/test-results.log`. Report: `app/build/reports/androidTests/connected/debug/index.html`.
+- v0.1 remains accepted for personal daily use by the owner. Its formal verification deferrals remain accepted; the unsigned build is not a public release.
 
 ## Phase tracker
 
