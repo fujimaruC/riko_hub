@@ -1,11 +1,9 @@
 package id.riko.hub.ui.tasks
 
-import android.graphics.Bitmap
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.*
 import androidx.compose.material3.Surface
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
@@ -25,7 +23,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.*
 import org.junit.Assert.*
-import java.io.File
 import java.time.*
 
 class TaskCrudTest {
@@ -69,6 +66,11 @@ class TaskCrudTest {
         rule.onNodeWithTag("task-title").performScrollTo().performTextInput("Tugas basis data")
         rule.onNode(hasText("Akademik") and !hasTestTag("filter-ACADEMIC")).performScrollTo().performClick()
         rule.onNodeWithText("Besok").performScrollTo().performClick()
+        rule.onNodeWithText("Mingguan").performScrollTo().performClick()
+        rule.onNodeWithTag("task-estimate").performScrollTo().performTextInput("45")
+        rule.onNodeWithTag("task-reminder").performScrollTo().performTextInput("30")
+        rule.onNodeWithTag("checklist-new").performScrollTo().performTextInput("Baca bab")
+        rule.onNodeWithText("Tambah item").performScrollTo().performClick()
         rule.onNodeWithText("Tinggi").performScrollTo().performClick()
         rule.onNodeWithTag("task-notes").performScrollTo().performTextInput("Baca bab tiga")
         save()
@@ -77,6 +79,10 @@ class TaskCrudTest {
         assertEquals("ACADEMIC", tasks().single().category)
         assertEquals("HIGH", tasks().single().priority)
         assertEquals("Baca bab tiga", tasks().single().notes)
+        assertEquals(45, tasks().single().estimatedMinutes)
+        assertEquals(Recurrence.WEEKLY, tasks().single().recurrence)
+        assertEquals(30, tasks().single().reminderMinutesBefore)
+        assertEquals("Baca bab", tasks().single().checklist.single().title)
         assertEquals(taskDeadline(LocalDate.of(2026, 10, 7), null, clock.zone()), tasks().single().deadlineAt)
         rule.onNodeWithTag("filter-PERSONAL").performScrollTo().performClick()
         rule.onNodeWithText("Belum ada tugas di sini.").assertExists()
@@ -106,6 +112,23 @@ class TaskCrudTest {
         assertEquals("Baca bab tiga", tasks().single().notes)
     }
 
+    @Test fun invalid_numeric_draft_blocks_save_and_search_matches_title_or_notes() {
+        rule.onNodeWithText("Tambah").performClick()
+        rule.onNodeWithTag("task-title").performTextInput("Biology lab")
+        rule.onNodeWithTag("task-estimate").performScrollTo().performTextInput("0")
+        rule.onNodeWithTag("task-save").performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithTag("task-estimate").performTextReplacement("30")
+        rule.onNodeWithTag("task-notes").performScrollTo().performTextInput("Read chapter")
+        save()
+        waitFor { tasks().size == 1 && model.state.value.editor == null }
+        rule.onNodeWithTag("task-search").performScrollTo().performTextInput("CHAPTER")
+        rule.onNodeWithTag("task-${tasks().single().id}").assertExists()
+        rule.onNodeWithTag("task-search").performTextReplacement("missing")
+        rule.onNodeWithText("Belum ada tugas di sini.").assertExists()
+        rule.onNodeWithTag("task-search").performTextClearance()
+        rule.onNodeWithTag("task-${tasks().single().id}").assertExists()
+    }
+
     @Test fun large_text_both_themes_and_failed_save_keep_editor_usable() {
         rule.runOnIdle { scale.floatValue = 2f }
         rule.onNodeWithText("Tambah").performClick()
@@ -114,7 +137,6 @@ class TaskCrudTest {
             rule.runOnIdle { dark.value = night }
             rule.onNodeWithTag("task-title").performScrollTo()
             assertNoClipping()
-            snapshot("editor-top-$night")
             rule.onNodeWithText("Sedang dikerjakan").performScrollTo()
             assertNoClipping()
             rule.onNodeWithTag("task-save").performScrollTo().assertIsEnabled()
@@ -132,7 +154,6 @@ class TaskCrudTest {
         waitFor { tasks().size == 1 && model.state.value.editor == null }
         rule.onNodeWithTag("task-${tasks().single().id}").performScrollTo()
         assertNoClipping()
-        snapshot("task-list-200")
     }
 
     private fun assertNoClipping() {
@@ -145,11 +166,5 @@ class TaskCrudTest {
                         (0 until text.lineCount).any { text.getLineRight(it) > text.size.width + 1f || text.getLineBottom(it) > text.size.height + 1f })
                 }
             }
-    }
-    private fun snapshot(name: String) {
-        val directory = File(context.getExternalFilesDir(null), "phase3").apply { mkdirs() }
-        File(directory, "$name.png").outputStream().use {
-            rule.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
     }
 }

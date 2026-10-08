@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import id.riko.hub.R
 import id.riko.hub.navigation.Destination
@@ -13,7 +15,14 @@ import id.riko.hub.ui.theme.*
 @Composable
 fun VaultScreen(onNavigate: (Destination) -> Unit, onComingSoon: () -> Unit) {
     ScreenFrame(Destination.Vault, onNavigate) {
-        Text(stringResource(R.string.vault_placeholder), style = MaterialTheme.typography.bodyLarge)
+        Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surfaceVariant) {
+            Row(Modifier.fillMaxWidth().padding(Spacing.space5), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.space4)) {
+                Icon(painterResource(R.drawable.ic_cloud), contentDescription = null, modifier = Modifier.size(Spacing.space8),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.vault_placeholder), style = MaterialTheme.typography.bodyLarge)
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.space4)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
                 Folder(R.string.folder_academic, onComingSoon)

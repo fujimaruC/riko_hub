@@ -4,7 +4,15 @@ All user-visible changes to Riko Hub. Format loosely follows Keep a Changelog. V
 
 ## [Unreleased]
 
+### Changed
+- Tidied Timeline with compact navigation, quieter day labels, a narrow path gutter and clearer event hierarchy.
+
 ### Added
+- Persistent display-name and navigation-style settings, with validation and retry/dismiss actions on save failure; dismissing a failure reveals the next pending preference failure.
+- Compass-only navigation and quieter Home hints after three launches.
+- Adaptive app icon, Android 12+ splash, and optimized release packaging with optional private signing.
+- Weekly Timeline with events, task deadlines and completed work, week navigation, today positioning and a readable dense/large-text path.
+- Event creation/editing with native date/time pickers, validation, deletion and undo.
 - Home urgency bubbles with daily focus pinning, progress, next obligation, calm/dense modes and task overflow.
 - Home quick add, task peek actions, completion with undo, and reduced-motion/large-text behavior. Physical-device acceptance is pending.
 

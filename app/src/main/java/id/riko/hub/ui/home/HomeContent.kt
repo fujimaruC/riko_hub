@@ -9,6 +9,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
@@ -28,7 +30,8 @@ import java.util.Locale
 
 @Composable
 fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNavigate: (Destination) -> Unit,
-                onAdd: () -> Unit, onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit, onRetry: () -> Unit) {
+                onAdd: () -> Unit, onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit,
+                onRetry: () -> Unit, hintsShownCount: Int = 0) {
     val snapshot = state.snapshot
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val background by animateColorAsState(when (snapshot?.mode) {
@@ -57,7 +60,7 @@ fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNaviga
                         }
                     }
                 }
-                HomeHints(onNavigate, top = true)
+                HomeHints(onNavigate, top = true, alpha = edgeHintAlpha(hintsShownCount))
                 SpatialNavLayer(Destination.Home, onNavigate, Modifier.fillMaxWidth().background(fieldTint, RikoShapes.asymA).testTag("home-field").semantics { traversalIndex = 0f },
                     horizontalOnly = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
                     when {
@@ -75,7 +78,7 @@ fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNaviga
                         snapshot != null -> BubbleField(snapshot, reduced, resumed, onPeek, onComplete, onPin) { onNavigate(Destination.Tasks) }
                     }
                 }
-                HomeHints(onNavigate, top = false)
+                HomeHints(onNavigate, top = false, alpha = edgeHintAlpha(hintsShownCount))
             }
             Button(onClick = onAdd, enabled = !state.busy && !state.loading && !state.readFailed,
                 shape = RikoShapes.pill, modifier = Modifier.padding(horizontal = Spacing.space5, vertical = Spacing.space2)
@@ -142,15 +145,25 @@ private fun HomeLoading() {
     }
 }
 
+fun edgeHintAlpha(launchCount: Int) = if (launchCount > 3) 0.55f else 1f
+
 @Composable
-private fun HomeHints(onNavigate: (Destination) -> Unit, top: Boolean) {
+private fun HomeHints(onNavigate: (Destination) -> Unit, top: Boolean, alpha: Float) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
         val targets = if (top) listOf(Destination.Timeline) else listOf(Destination.Sync, Destination.Tasks, Destination.Vault)
         targets.forEach { target -> TextButton(onClick = { onNavigate(target) }) {
-            Text(stringResource(when (target) {
+            val label = stringResource(when (target) {
                 Destination.Timeline -> R.string.hint_timeline; Destination.Sync -> R.string.hint_sync
                 Destination.Tasks -> R.string.hint_tasks; else -> R.string.hint_vault
-            }), style = MaterialTheme.typography.labelSmall)
+            })
+            val ink = MaterialTheme.colorScheme.onSurface
+            // Keep labels readable; only the decorative direction fades after onboarding.
+            Text(buildAnnotatedString {
+                append(label)
+                label.forEachIndexed { index, char ->
+                    if (char in "↑←↓→") addStyle(SpanStyle(color = ink.copy(alpha = alpha)), index, index + 1)
+                }
+            }, color = ink, style = MaterialTheme.typography.labelSmall)
         } }
     }
 }

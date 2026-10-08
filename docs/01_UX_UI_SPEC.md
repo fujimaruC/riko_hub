@@ -250,6 +250,7 @@ Fields: Judul (required), Kategori, Deadline (date + optional time), Prioritas (
 - Path: a gentle S-curve line (3dp stroke, domain tint). Stops alternate left/right of the path with wide rounded panels (radius 24dp) that vary width with content.
 - Readability beats art: in a given day, if there are more than 6 stops, the path simplifies to a straight vertical line.
 - Keep path as a drawn Canvas element behind the content, not a layout.
+- User-authorized refinement (2026-10-07): Timeline uses a compact return handle, a single week-control row, quiet day separators and a narrow path gutter. Cards alternate with small insets instead of large side-to-side jumps; the path must not loop around card borders. Reserve tonal emphasis for today and keep empty days visually light.
 
 **INTERACTION**
 

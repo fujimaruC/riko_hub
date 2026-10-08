@@ -7,10 +7,11 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | Item | Value |
 |------|-------|
 | Version in development | 0.1.0 |
-| Current phase | Phase 4 Home visualization in progress |
-| Last successful build | Phase 2: assembleDebug + assembleDebugAndroidTest, 2026-10-06; BUILD SUCCESSFUL in 1m 3s |
-| Last test run | 11 JVM tests passed; 2 database phone tests passed; seed write/read after force-stop passed; lint 0 errors / 16 warnings |
-| Blockers | None for Phase 2; full TalkBack walkthrough remains deferred to release review |
+| Current phase | v0.1 accepted by the owner for personal daily use (2026-10-08); formal verification deferrals remain documented |
+| Last successful build | Phase 6 final local build: debug, 14 selected JVM tests, Android test APK and unsigned release APK; BUILD SUCCESSFUL (2026-10-08) |
+| Last test run | 14 selected JVM tests pass; SettingsTest passes on OPPO CPH2015; TimelineLayoutTest passes on OPPO CPH2015 (1 test, 10.241s) |
+| Release status | Unsigned local build; not a public release |
+| Owner acceptance | App launches and operates; primary features work and UX is satisfactory. Prior manual deferrals and noncritical formal verification are intentionally accepted as deferred. |
 
 ## Phase tracker
 
@@ -20,11 +21,125 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | 1 | Theme and navigation shell | Done | 2026-10-06 | Navigation, visual/font-scale and reduced-motion checks pass; theme restart verified in Phase 2. Full TalkBack release walkthrough remains deferred by user. |
 | 2 | Room database | Done | 2026-10-06 | Schema exported, JVM invariants and phone DAO checks pass; debug seed/settings survive process death. |
 | 3 | Task CRUD | Done | 2026-10-06 | User approved Tasks usability; all available local gates pass; device-only checks deferred. |
-| 4 | Home visualization | In progress | 2026-10-06 | Core logic first; physical-device acceptance pending. |
-| 5 | Timeline | Not started | | |
-| 6 | Polish and v0.1 release | Not started | | |
+| 4 | Home visualization | Done | 2026-10-06 | Implemented; direct testing was intentionally deferred and accepted by the owner for personal daily use. |
+| 5 | Timeline | Done | 2026-10-07 | Implemented; recorded focused tests remain evidence for their scope; broader visual/accessibility checks are deferred by owner acceptance. |
+| 6 | Polish and v0.1 release | Done | 2026-10-08 | Owner accepted v0.1 for personal daily use; formal checks remain deferred and the local release build is unsigned, not public. |
 
 Status values: Not started, In progress, Done, Blocked.
+
+## Phase 6 report: Polish and release preparation — 2026-10-08
+
+### Backup policy follow-up — 2026-10-08
+- Excluded app-private and device-protected data from cloud backup and device transfer. `allowBackup=false` alone is not sufficient on some Android 12+ OEM devices; legacy rules also cover Android 11 and earlier.
+- Validation: `:app:processDebugResources :app:processReleaseMainManifest` and `:app:processReleaseResources --offline --console plain` passed; assertions confirmed debug/release packaged manifests retain `allowBackup=false` and both backup-rule references. XML policy assertion passed. No device-transfer runtime check was run; `adb devices -l` found no connected device, and `keystore.properties` is absent.
+
+### What changed
+- The user explicitly authorized proceeding into the next phase. This permits Phase 6 implementation without marking the outstanding Phase 4/5 acceptance checks complete.
+- Settings now saves the display name, theme and navigation style through the existing DataStore. Blank names show an inline error; failed writes preserve the input and offer snackbar retry or dismissal. Failures are tracked per preference: a new write invalidates only that preference's stale retry/failure, unrelated failures stay pending, and dismissing one failure promotes the next oldest pending failure.
+- Compass-only mode disables spatial Home and return-handle swipes and hides return swipe instructions. The compass and Home buttons remain available. Home edge arrows fade to 55% after the first three fresh activity launches; configuration recreation does not increment the counter.
+- Added a palette-matched adaptive icon with a monochrome layer and native Android 12+ splash styling. Vault retains its honest disconnected state in an illustrated panel; Sync remains an honest static placeholder.
+- Release builds enable R8/resource shrinking and optional local signing. An absent keystore produces an explicitly unsigned artifact. No release key is generated; unsigned APKs cannot be installed until signed.
+
+### Files changed
+- `MainActivity.kt`, `data/prefs/SettingsDataStore.kt`, `ui/RikoHub.kt`: launch counting, shared settings state and write/retry handling.
+- `navigation/RikoNavHost.kt`, `ui/compass/SpatialNavLayer.kt`, `ui/components/ScreenFrame.kt`: navigation preference and truthful return controls.
+- `ui/settings/SettingsScreen.kt`, `ui/home/HomeScreen.kt`, `ui/home/HomeContent.kt`, `res/values/settings_strings.xml`: editable settings and hint fading. Removed the unused `ui/theme/ThemePreference.kt` wrapper.
+- `ui/vault/VaultScreen.kt`: existing cloud illustration and placeholder copy grouped in a panel.
+- `AndroidManifest.xml`, launcher drawables/mipmap resources, color/style resources: icon and splash.
+- `app/build.gradle.kts`, `app/proguard-rules.pro`, `README.md`: optimized release configuration and private signing instructions.
+- `androidTest/.../ui/settings/SettingsTest.kt`: isolated preference storage, validation, hint thresholds, enabled/disabled swipes and compass fallback. `test/.../ui/SettingsWriteTrackerTest.kt`: pending failure ordering, per-preference invalidation, guarded stale retry, success clearing and ID-scoped dismissal.
+
+### Architecture decisions
+- Reuse the existing DataStore, Compose controls, snackbar host, navigation layer and Android platform splash. No new dependency, schema, networking or later-version feature.
+- A navigation composition local controls every shared spatial gesture surface. Settings retains the simple state/callback interface rather than adding another ViewModel layer.
+- Tests inject a DataStore backed by a disposable cache file and a cancellable scope. Merely using the instrumentation Context would not reliably isolate the singleton preferences delegate.
+- Accessibility overrides the visual hint-opacity instruction: fading whole hint buttons yields 1.59:1 light / 3.42:1 dark text contrast at 55%. Hint labels now use full-opacity `onSurface`; only arrows fade. This follows the specification priority of accessibility over visual intent.
+- The icon follows design-token section 11: ivory background, lavender organic shape, ink compass and small coral dot within the safe zone. Android splash backgrounds follow system light/dark resources.
+
+### Tests / build result
+- CONFIRMED: final local build on 2026-10-08 completed successfully in 2m 14s (`assembleDebug`, four selected JVM test classes, `assembleDebugAndroidTest`, `assembleRelease`); 122 tasks, 12 executed / 110 up-to-date. The release APK is unsigned (2,136,529 bytes, about 2.04 MiB).
+- CONFIRMED: 14 selected JVM tests pass with 0 failures, errors or skips: TaskGrouping (3), TimelineBuilder (6), WriteRules (3), SettingsWriteTracker (2).
+- CONFIRMED: lint completed in 3m 16s with 0 errors and 11 warnings. Warnings: four PluralsCandidate, three UnusedResources, one AndroidGradlePluginVersion, one NewerVersionAvailable, one DataExtractionRules and one ObsoleteSdkInt. Dependency upgrades and warning cleanup are deferred; no warning-driven code changes were made.
+- CONFIRMED: debug and test APKs installed on OPPO CPH2015; `SettingsTest` passes its isolated preference storage/reopen, validation, hint-threshold and gesture checks. Full app relaunch and persistence of personal settings are not established by this isolated fixture. The first `TimelineLayoutTest` attempt stopped at `performScrollTo` because a lazy node was offscreen. After correcting test scrolling, the next run reached the empty-state check but failed on stale hardcoded copy (`Minggu ini masih lega.`; current string: `Ruang untuk cerita minggu ini.`). Normal and dense overflow inspections passed; empty-state overflow inspection was not reached. The resource-based assertion is corrected and the test APK rebuilt successfully in 1m 35s (52 tasks, 5 executed / 47 up-to-date). The phone initially disconnected before installation (`device ... not found`). After reconnection, the corrected APK installed successfully and the final layout-only run passed: `OK (1 test)` in 10.241 seconds. Normal dark, dense 200% light and empty 200% light overflow checks passed. Log: `app/build/reports/verification/phase6-layout-final.log`. No build or passing test was repeated in this final rerun.
+- An earlier overlapping Gradle execution failed during binary result renaming. No code failure was inferred from that operational error; all results above come from the subsequent clean final build.
+- CONFIRMED: debug and release manifests contain no `INTERNET` permission and set `allowBackup=false`. Android 12+ backup/device-transfer rules received static review and focused manifest/resource validation; runtime transfer behavior remains unverified.
+- No screenshots were taken during this verification pass; no `/tmp` scratch was used. Task scratch directories `.work-phase6/` and `.work-timeline/` were removed; phone test logs remain in the normal `app/build/reports/verification/` output directory.
+- These results document only the specific builds and checks performed; the owner has accepted remaining noncritical formal checks as deferred for personal daily use.
+- Initial sandbox Gradle launch failed with `Could not determine a usable wildcard IP for this machine.` The build was rerun with the required sandbox escalation.
+- First unrestricted build exposed a Gradle Kotlin DSL `Properties` import error; fixed with an explicit import before rerunning.
+- Independent review found compass-only return instructions still advertised disabled swipes; corrected before verification.
+- Launcher foreground was rendered from its Android vector paths and visually inspected. This is not a launcher/splash device test.
+
+### Known limitations and acceptance checklist disposition
+- **Functional and persistence:** previously recorded task/event tests remain evidence for their original scope. Isolated SettingsTest preference reopen and gesture checks pass; full app relaunch and personal-store persistence are not established. Actual task/event restart, process-death, Home quick-add timing and all-screen completion checks are not reclassified from source review alone.
+- **Phase 5 layout:** historical logcat recorded two interaction passes and one layout overflow failure (`Kembali ke Hari Ini`). In the current focused test, the first attempt stopped because the target lazy node was offscreen; the next reached but failed a stale hardcoded empty-state string assertion. After correcting the scroll and resource-based assertion, the final focused phone test passed all three normal/dense/empty states. This proves the tested layout assertions on this phone, not all-width visual quality or TalkBack acceptance.
+- **Offline and privacy:** no network integration is added. Airplane-mode operation and runtime network monitoring still need a device check. Signing secrets remain local and ignored; no release key is generated.
+- **Visual and accessibility:** all-width screenshots (360/393/412/600dp), 130/200% font scaling, full TalkBack/focus/touch-target review and screen-by-screen contrast remain open. Hint arrows fade while labels retain full-contrast ink; rendered screen-wide contrast still needs verification.
+- **UX state audit:** Home, Tasks and Timeline contain empty/loading/error/retry paths. Settings has validation and save retry. Vault/Sync have no remote operation, so loading/network-error states are not applicable; their disconnected copy is intentional. Fresh-user navigation discovery remains manual.
+- **Performance:** cold start below 1.5 s, seven-bubble frame pacing, 500-task scrolling and repeated-navigation memory checks require a healthy runtime. No performance claim is inferred from compilation.
+- **Code quality and release:** the selected JVM tests, debug/test/release builds, lint and release-manifest inspection are confirmed above. A clean-checkout build, signed release install/update preservation and R8 CRUD smoke test are separate gates. Android 12 backup/device-transfer runtime behavior remains unverified.
+- **Owner acceptance (2026-10-08):** owner reports that the app launches and operates, primary features work, and UX is satisfactory; v0.1 is accepted for personal daily use. Prior manual deferrals and noncritical formal verification are accepted as deferred. This acceptance does not claim automated, accessibility, performance, signed-release or public-release verification, and does not individually accept undocumented task extensions in the dirty worktree.
+- The local release artifact remains unsigned and is not a public release. Remaining checks below retain their recorded status and evidence.
+
+### Deferred (TODO notes added)
+- TODO(v0.1): remaining formal checks above are accepted as deferred for personal daily use; revisit before any signed or public release.
+- TODO(v0.2): deliberate manual export/import. Settings continues to warn that data is stored only on this device.
+- Vault/Drive v0.3 and Sync/transfer later-version TODOs remain unchanged.
+
+### Suggested next step
+- No further v0.1 work is required for the accepted personal-use scope. Revisit the remaining signed-release and visual/accessibility gates before any public release.
+
+## Timeline layout refinement — 2026-10-07
+
+- User authorized rearranging the messy Timeline and efficient screenshot-based verification. The initial phone screenshot showed an oversized return/header area, empty-day pills, a clipped today label and a path resembling a second card border.
+- Reused the return handle with a Timeline-only compact option. Consolidated week controls, replaced day pills with quiet separators and a today badge, moved the path into a narrow gutter, removed heavy card outlines, grouped kind/category metadata and widened the Add action.
+- Preserved Room data, chronology, editors, Undo and navigation. Dense/large-text paths remain straight; ordinary stops retain small alternating insets. Updated the UX specification to record the user-approved presentation refinement.
+- Added an isolated layout check for normal dark, dense 200% light and empty 200% states. Screenshot writing is explicit opt-in to private app cache, never the gallery; the focused check passed on OPPO CPH2015 in Phase 6 verification without screenshot output. Task scratch files were removed.
+
+## Phase 5 report: Timeline — 2026-10-07
+
+### What changed
+- User explicitly authorized proceeding to Phase 5 without direct Phase 4 testing. This overrides the earlier stop-after-Phase-4 instruction, not the outstanding acceptance gates. Phase 3 stays Done with its recorded automated results and user usability approval; Phase 4 stays In progress.
+- Replaced Timeline’s placeholder with a Monday–Sunday narrative path combining events, deadlines and completed tasks. Added week navigation, positioning at today, day labels, muted past stops, today borders, empty/error/loading states and straight paths for dense days or large text.
+- Added validated event create/edit/delete with native date/time pickers and accessible-timeout undo; task stops reuse the existing task editor. NOTE events retain their specific kind label.
+
+### Files changed
+- `domain/logic/TimelineBuilder.kt` and its JVM test: deterministic day grouping, ordering and half-open event clipping.
+- `ui/timeline/TimelineScreen.kt`, `TimelineContent.kt`, `TimelineStopRow.kt`, `TimelineViewModel.kt`: presentation, Canvas path, lifecycle-owned Room state and write effects.
+- `ui/components/EventEditorSheet.kt`, Timeline string resources and arrow vectors: event input, Indonesian copy and accessible navigation.
+- `androidTest/.../ui/timeline/TimelineTest.kt`: event CRUD/undo, task stop, week navigation, stale retry and 200% validation scenarios.
+- `README.md`, `docs/STATUS.md`, `docs/CHANGELOG.md`: usage, actual verification and visible unreleased changes.
+
+### Architecture decisions
+- Reuse concrete repositories, Room v1, injected Clock, existing task editor and design tokens. No new dependencies, schema, permissions or later-version integrations.
+- Pure builder emits seven local dates, orders by time/kind/entity ID, and clips spanning events at each local midnight, including DST. A task can have separate deadline and completion stops.
+- Visible lifecycle owns Room subscriptions and minute/midnight refresh; stopping cancels the loop. Canvas supplies decoration behind ordinary accessible, scrollable panels.
+- Retry callbacks retain the failed entity/draft. A write-generation guard invalidates older retries when a newer write starts, preventing an old retry from overwriting a newer successful edit. Each write clears the previous snackbar; latest-effect collection prevents an old indefinite failure from delaying a later deletion’s Undo.
+
+### Tests / build result
+- CONFIRMED: `assembleDebug :app:testDebugUnitTest --tests id.riko.hub.domain.logic.TimelineBuilderTest assembleDebugAndroidTest --offline --console plain --no-daemon --max-workers=1`: `BUILD SUCCESSFUL in 6m 8s`; 75 tasks, 27 executed / 48 up-to-date. Bundled Android Studio JDK; Kotlin compiler in-process.
+- CONFIRMED: final rebuild after snackbar/retry changes also succeeded on 2026-10-07: 75 tasks, 15 executed / 60 up-to-date. Gradle reported 9h 54m 6s elapsed across the interrupted overnight session; this is not a benchmark.
+- CONFIRMED: TimelineBuilder JUnit XML reports 6 tests, 0 failures, 0 errors, 0 skipped. Covers stable ties, week/day boundaries, deleted rows, point/spanning events and a 23-hour DST day.
+- CONFIRMED: event/Timeline previews compile, but previews were not rendered. Direct Phase 4 tests were intentionally not run.
+- CONFIRMED: OPPO CPH2015 focused `id.riko.hub.ui.timeline.TimelineTest` run: `OK (2 tests)` in 31.642 seconds. Covers event create/edit/delete/undo, task-stop editor, week navigation, retry target protection and invalid-end save validation at local 200% font scale. In-memory Room fixture leaves personal task/event data intact. No screenshots were taken or saved.
+- The first phone run failed both shared setup waits before Compose settled. Added `waitForIdle()` and a Timeline-root assertion before checking loaded state. Test APK rebuild passed in 4m 13s (52 tasks, 5 executed); the single focused rerun above passed. No broad test suite was rerun.
+- NOT PASSED: `lintDebug --offline --console plain --no-daemon --max-workers=1` reached `:app:lintAnalyzeDebug` but exceeded the 300-second limit (exit 124). No current lint pass or clean report is claimed. A remaining verification daemon was stopped before the final rebuild.
+- CONFIRMED: `git diff --check` passes. Scratch/log files used repository-local `.work-phase5/`, removed after checks. No `/tmp/` scratch was used in this pass. APKs and standard Gradle reports remain under `app/build/`.
+
+### Known limitations
+- Focused interactions and 200% event-editor validation pass on the phone. Full dense/multi-day visual review, all-content 200% readability, light/dark rendering and TalkBack remain unverified; the targeted tests do not prove those broader gates.
+- Unsaved editor drafts survive configuration changes in the ViewModel, not process death.
+- Historical status at the time of this Phase 5 report: Phase 5 remained In progress pending runtime acceptance; Phase 6 had not yet started. This was superseded by the subsequent user authorization and Phase 6 work recorded above.
+
+### Deferred (TODO notes added)
+- TODO(v0.1): complete lint on a responsive local tooling run; do not treat the timeout as a pass.
+- TODO(v0.1): inspect empty/dense/multi-day weeks, light/dark themes and all-content 200% font scale, and complete TalkBack/touch checks. The two focused `TimelineTest` scenarios now pass on the phone.
+- TODO(v0.1): optional long-press on an empty path to add an event; the specified Add event button is implemented.
+- Home’s existing runtime, gesture, real-device frame-rate/jank and accessibility gates remain pending; no Phase 4 completion is claimed.
+- The earlier cable limitation is historical. On 2026-10-07 the OPPO CPH2015 connected, both APK installations succeeded, and the focused phone checks passed after test synchronization was corrected. The actual app also launched successfully; its Timeline UI hierarchy showed the current week, today, a task deadline and Add event button.
+
+### Suggested next step
+- Resolve the lint timeout and complete the remaining focused visual/accessibility review. Keep Home checks deferred under the user’s skip instruction. Review before authorizing Phase 6; do not repeat the passing Timeline tests without relevant changes.
 
 ## Phase 4 report: Home visualization — 2026-10-06
 
@@ -71,7 +186,7 @@ Status values: Not started, In progress, Done, Blocked.
 - TODO(v0.1): run Home and Tasks instrumentation on a healthy emulator/device; review actual light/dark renders at 360/393/412/600dp. Emulator failure is an environment limitation, not a confirmed product defect.
 
 ### Suggested next step
-- When the USB cable is available, install the built debug/test APKs, run the focused Home/Tasks tests and perform the physical acceptance pass. Do not start Phase 5 until Phase 4 is accepted.
+- When the USB cable is available, install the built debug/test APKs, run the focused Home/Tasks tests and perform the physical acceptance pass. Subsequently superseded by explicit user authorization to implement Phase 5 without direct Phase 4 testing; Phase 4 acceptance remains pending.
 
 ## Phase 3 final verification — 2026-10-06
 
@@ -80,8 +195,8 @@ Status values: Not started, In progress, Done, Blocked.
 - Physical-device-only verification deferred because no USB cable is currently available.
 - No connected device or default AVD. Attempted an isolated API 35 headless emulator with the installed image: initial userdata storage checks failed; moving its temporary files into ignored project build storage allowed startup, but repeated ADB checks returned `adb: device offline`. Stopped the unhealthy emulator. No instrumentation, screenshot or emulator font-scale result is claimed.
 - Phase 3 is Done under the user's explicit hardware exception and manual usability approval. The existing CRUD/restart/200% instrumentation tests remain runnable but unexecuted in this pass. Physical Tasks font-scale and TalkBack follow-up remain deferred, not product failures.
-- Final log: `/tmp/rikohub-phase3-final.log`; emulator log: `/tmp/rikohub-emulator.log`. The historical report below describes earlier attempts; these are the final local results.
-- Next: implement only Phase 4; do not begin Timeline.
+- Phase 3 temporary build/emulator logs were removed during the user-requested cleanup. The historical report below describes earlier attempts; these are the final local results.
+- Historical next step was Phase 4 only; subsequently superseded by the user’s explicit Phase 5 authorization.
 
 ## Phase 3 report: Task CRUD — 2026-10-06
 

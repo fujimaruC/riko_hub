@@ -1,0 +1,21 @@
+<resources>
+    <string name="timeline_add_event">Tambah acara</string>
+    <string name="timeline_previous_week">Minggu sebelumnya</string>
+    <string name="timeline_next_week">Minggu berikutnya</string>
+    <string name="timeline_current_week">Minggu ini</string>
+    <string name="timeline_week_range">%1$s–%2$s</string>
+    <string name="timeline_today_marker">Hari ini</string>
+    <string name="timeline_deadline_stop">Deadline tugas</string>
+    <string name="timeline_completed_stop">Tugas selesai</string>
+    <string name="timeline_stop_metadata">%1$s · %2$s</string>
+    <string name="timeline_time_range">%1$s–%2$s</string>
+    <string name="timeline_date_time">%1$s, %2$s</string>
+    <string name="timeline_deleted_event">Acara dihapus</string>
+    <string name="timeline_date_only">Sepanjang hari</string>
+    <string name="timeline_empty_hint">Tambah acara saat ada rencana baru.</string>
+    <string name="timeline_today_label">Hari ini</string>
+    <string name="timeline_week_mode">Minggu</string>
+    <string name="timeline_day_mode">Hari</string>
+    <string name="timeline_previous_day">Hari sebelumnya</string>
+    <string name="timeline_next_day">Hari berikutnya</string>
+</resources>

@@ -17,6 +17,7 @@ data class TasksUiState(
     val tasks: List<Task> = emptyList(),
     val buckets: Map<TaskBucket, List<Task>> = emptyMap(),
     val filter: Category? = null,
+    val query: String = "",
     val doneExpanded: Boolean = false,
     val loading: Boolean = true,
     val readFailed: Boolean = false,
@@ -59,7 +60,7 @@ class TasksViewModel(private val repository: TaskRepository, private val clock: 
     val state: StateFlow<TasksUiState> = combine(data, controls, ticks) { loaded, ui, time ->
         val (now, zone) = time
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        ui.copy(tasks = loaded.tasks, buckets = groupTasks(loaded.tasks, ui.filter, now, zone),
+        ui.copy(tasks = loaded.tasks, buckets = groupTasks(loaded.tasks, ui.filter, now, zone, ui.query),
             loading = loaded.loading, readFailed = loaded.failed, now = now, zone = zone,
             todayCount = loaded.tasks.count { task -> task.deadlineAt?.let {
                 Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == today
@@ -68,6 +69,8 @@ class TasksViewModel(private val repository: TaskRepository, private val clock: 
 
     fun retryRead() { reload.value++ }
     fun filter(category: Category?) { controls.update { it.copy(filter = category) } }
+    fun search(query: String) { controls.update { it.copy(query = query) } }
+    fun clearFilters() { controls.update { it.copy(query = "", filter = null) } }
     fun toggleDone() { controls.update { it.copy(doneExpanded = !it.doneExpanded) } }
     fun edit(task: Task? = null) {
         if (!controls.value.busy) controls.update { it.copy(editor = task ?: Task(title = "", category = lastCategory)) }

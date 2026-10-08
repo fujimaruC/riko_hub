@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riko Hub - v0.1 Progress</title>
+<link rel="stylesheet" href="progress.css">
+</head>
+<body>
+<h1>Riko Hub - v0.1 Progress</h1>
+<div class="sub">Source: docs/STATUS.md and docs/04_ROADMAP.md. Tap a phase for details.</div>
+<div class="overall">
+  <div class="row"><b>Overall v0.1</b><span class="big">67%</span></div>
+  <div class="track"><div class="fill wip" style="width:67%"></div></div>
+</div><details>
+  <summary><div class="row"><span>Phase 0 - Project initialization</span><span><span class="badge done">Done</span> 100%</span></div>
+  <div class="track"><div class="fill done" style="width:100%"></div></div></summary>
+  <div class="detail">APK builds, installs and launches on a physical phone.</div>
+</details>
+<details>
+  <summary><div class="row"><span>Phase 1 - Theme and navigation shell</span><span><span class="badge done">Done</span> 100%</span></div>
+  <div class="track"><div class="fill done" style="width:100%"></div></div></summary>
+  <div class="detail">Navigation, font-scale and reduced-motion checks pass. TalkBack walkthrough deferred.</div>
+</details><details>
+  <summary><div class="row"><span>Phase 2 - Room database</span><span><span class="badge done">Done</span> 100%</span></div>
+  <div class="track"><div class="fill done" style="width:100%"></div></div></summary>
+  <div class="detail">Schema exported, JVM invariants and phone DAO checks pass; seed data survives process death.</div>
+</details>
+<details>
+  <summary><div class="row"><span>Phase 3 - Task CRUD</span><span><span class="badge done">Done</span> 100%</span></div>
+  <div class="track"><div class="fill done" style="width:100%"></div></div></summary>
+  <div class="detail">User approved Tasks usability; local gates pass; device-only checks deferred.</div>
+</details><details open>
+  <summary><div class="row"><span>Phase 4 - Home visualization</span><span><span class="badge wip">In progress</span> ~70%</span></div>
+  <div class="track"><div class="fill wip" style="width:70%"></div></div></summary>
+  <div class="detail">Home engine and UI are implemented. Final build/test/lint and real-device acceptance are pending. The 70% is my estimate.
+    <div class="small">Core logic (urgency, focus, layout) - 100%<div class="track"><div class="fill wip" style="width:100%"></div></div></div>
+    <div class="small">Home UI (bubbles, peek, quick add) - 100%<div class="track"><div class="fill wip" style="width:100%"></div></div></div>
+    <div class="small">Final build, tests, lint - 30%<div class="track"><div class="fill wip" style="width:30%"></div></div></div>
+    <div class="small">Real-device 60fps, TalkBack, font scale - 0%<div class="track"><div class="fill wip" style="width:0%"></div></div></div>
+  </div>
+</details><details>
+  <summary><div class="row"><span>Phase 5 - Timeline</span><span><span class="badge todo">Not started</span> 0%</span></div>
+  <div class="track"><div class="fill todo" style="width:0%"></div></div></summary>
+  <div class="detail">Blocked until Phase 4 is accepted.</div>
+</details>
+<details>
+  <summary><div class="row"><span>Phase 6 - Polish and v0.1 release</span><span><span class="badge todo">Not started</span> 0%</span></div>
+  <div class="track"><div class="fill todo" style="width:0%"></div></div></summary>
+  <div class="detail">Settings, accessibility pass, release APK.</div>
+</details>
+<p class="note">Phases 0-3 and 5-6 mirror the STATUS.md tracker. Overall is the simple average of the 7 phases.</p>
+</body>
+</html>

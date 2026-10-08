@@ -4,6 +4,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
@@ -12,7 +13,10 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalDensity
 import id.riko.hub.navigation.Destination
 import id.riko.hub.navigation.SpatialMap
+import id.riko.hub.domain.model.NavigationStyle
 import id.riko.hub.ui.theme.Spacing
+
+val LocalNavigationStyle = compositionLocalOf { NavigationStyle.SPATIAL_COMPASS }
 
 @Composable
 fun SpatialNavLayer(
@@ -26,7 +30,7 @@ fun SpatialNavLayer(
     val density = LocalDensity.current
     val edge = with(density) { Spacing.edgeExclusion.toPx() }
     val threshold = with(density) { Spacing.swipeThreshold.toPx() }
-    Box(modifier.pointerInput(from, edge, threshold, horizontalOnly) {
+    val gestureModifier = if (LocalNavigationStyle.current == NavigationStyle.COMPASS_ONLY) Modifier else Modifier.pointerInput(from, edge, threshold, horizontalOnly) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             // Use the original down position, before touch slop can move outside the edge zone.
@@ -51,5 +55,6 @@ fun SpatialNavLayer(
                 if (dragging && (!startsAtEdge || kotlin.math.abs(total.y) > kotlin.math.abs(total.x))) change.consume()
             }
         }
-    }) { content() }
+    }
+    Box(modifier.then(gestureModifier)) { content() }
 }

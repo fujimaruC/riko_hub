@@ -1,6 +1,7 @@
 package id.riko.hub.ui.home
 
 import android.view.WindowManager
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -22,10 +23,15 @@ import id.riko.hub.domain.model.*
 import id.riko.hub.navigation.Destination
 import id.riko.hub.ui.theme.RikoHubTheme
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import org.junit.*
 import org.junit.Assert.*
 import java.time.*
+import java.io.File
 
 class HomeTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
@@ -39,7 +45,8 @@ class HomeTest {
     private lateinit var tasks: TaskRepository
     private lateinit var model: HomeViewModel
     private lateinit var preferences: SettingsDataStore
-    private lateinit var original: AppSettings
+    private lateinit var settingsScope: CoroutineScope
+    private lateinit var settingsFile: File
     private val store = ViewModelStore()
     private val scale = mutableFloatStateOf(1f)
     private val dark = mutableStateOf(false)
@@ -49,8 +56,12 @@ class HomeTest {
         rule.runOnUiThread { rule.activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
         database = Room.inMemoryDatabaseBuilder(context, RikoDatabase::class.java).build()
         tasks = TaskRepository(database, clock)
-        preferences = SettingsDataStore(context)
-        runBlocking { original = preferences.settings.first(); preferences.setPinnedFocus(null, null) }
+        settingsFile = File(context.cacheDir, "home-test.preferences_pb")
+        settingsFile.delete()
+        settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        preferences = SettingsDataStore(PreferenceDataStoreFactory.create(
+            scope = settingsScope, produceFile = { settingsFile },
+        ))
         model = HomeViewModel(tasks, EventRepository(database, clock), preferences, clock)
         store.put("home", model)
         rule.setContent {
@@ -63,7 +74,8 @@ class HomeTest {
     @After fun cleanup() {
         rule.runOnIdle { store.clear() }
         database.close()
-        runBlocking { preferences.setPinnedFocus(original.pinnedFocusTaskId, original.pinnedFocusDate) }
+        runBlocking { settingsScope.coroutineContext[kotlinx.coroutines.Job]!!.cancelAndJoin() }
+        settingsFile.parentFile?.listFiles { _, name -> name.startsWith(settingsFile.name) }?.forEach { it.delete() }
     }
     private fun waitFor(condition: () -> Boolean) = rule.waitUntil(10_000, condition)
     private fun all() = runBlocking { tasks.observeAll().first() }

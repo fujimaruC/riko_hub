@@ -31,6 +31,22 @@ class WriteRulesTest {
         assertEquals(120, prepareTask(Task(title = "x".repeat(120), notes = "x".repeat(2000)), null, 100).title.length)
     }
 
+    @Test fun task_extensions_are_validated_and_checklist_titles_trimmed() {
+        val valid = Task(title = "Repeat", deadlineAt = 100, recurrence = Recurrence.DAILY,
+            estimatedMinutes = 1440, reminderMinutesBefore = 10080,
+            checklist = listOf(ChecklistItem(title = " Step ")))
+        assertEquals("Step", prepareTask(valid, null, 100).checklist.single().title)
+        assertThrows(IllegalArgumentException::class.java) { prepareTask(Task(title = "Estimate", estimatedMinutes = 0), null, 100) }
+        assertThrows(IllegalArgumentException::class.java) { prepareTask(Task(title = "Reminder", reminderMinutesBefore = 1), null, 100) }
+        assertThrows(IllegalArgumentException::class.java) { prepareTask(Task(title = "Repeat", recurrence = Recurrence.WEEKLY), null, 100) }
+        assertThrows(IllegalArgumentException::class.java) {
+            prepareTask(Task(title = "Checklist", checklist = listOf(ChecklistItem(title = " "))), null, 100)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            prepareTask(Task(title = "Checklist", checklist = List(101) { ChecklistItem(title = "Step $it") }), null, 100)
+        }
+    }
+
     @Test fun events_validate_time_order_and_preserve_identity() {
         val initial = prepareEvent(Event(title = "  Kelas  ", startAt = 100, endAt = 100), null, 200).copy(id = 1)
         val edited = prepareEvent(initial.copy(title = "Kelas baru", createdAt = 999), initial, 50)

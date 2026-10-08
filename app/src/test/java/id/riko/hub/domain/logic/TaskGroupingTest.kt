@@ -28,6 +28,19 @@ class TaskGroupingTest {
         assertEquals(TaskBucket.DONE, taskBucket(task(-1).copy(status = TaskStatus.DONE), now, zone))
     }
 
+    @Test fun title_and_notes_search_intersects_category_and_whitespace_clears_search() {
+        val tasks = listOf(
+            task(0, 1).copy(title = "Read Biology", notes = "Chapter two"),
+            task(0, 2).copy(title = "Other", notes = "BIOLOGY notes", category = Category.ACADEMIC),
+            task(0, 3).copy(title = "Plan", category = Category.ORGANIZATION),
+        )
+        assertEquals(listOf(1L), groupTasks(tasks, Category.PERSONAL, now, zone, " biology ")
+            .values.flatten().map { it.id })
+        assertEquals(listOf(2L), groupTasks(tasks, Category.ACADEMIC, now, zone, "biology")
+            .values.flatten().map { it.id })
+        assertEquals(3, groupTasks(tasks, null, now, zone, "  ").values.flatten().size)
+    }
+
     @Test fun midnight_timezone_and_dst_use_local_dates() {
         val midnight = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
         assertEquals(TaskBucket.TOMORROW, taskBucket(task(1), midnight - 1, zone))

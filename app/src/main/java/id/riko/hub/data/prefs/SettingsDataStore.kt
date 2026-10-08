@@ -2,6 +2,7 @@ package id.riko.hub.data.prefs
 
 import android.content.Context
 import android.util.Log
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import id.riko.hub.domain.model.*
@@ -12,8 +13,8 @@ import java.time.LocalDate
 
 private val Context.settingsDataStore by preferencesDataStore(name = "settings")
 
-class SettingsDataStore(context: Context) {
-    private val store = context.applicationContext.settingsDataStore
+class SettingsDataStore(private val store: DataStore<Preferences>) {
+    constructor(context: Context) : this(context.applicationContext.settingsDataStore)
     private val theme = stringPreferencesKey("theme_mode")
     private val name = stringPreferencesKey("display_name")
     private val navigation = stringPreferencesKey("nav_style")
@@ -46,6 +47,9 @@ class SettingsDataStore(context: Context) {
     suspend fun setHintsShownCount(value: Int) {
         require(value >= 0) { "Hint count must not be negative" }
         store.edit { it[hints] = value }
+    }
+    suspend fun recordAppLaunch() {
+        store.edit { values -> values[hints] = ((values[hints] ?: 0).coerceIn(0, 3) + 1).coerceAtMost(4) }
     }
     suspend fun clearPinnedFocusIfMatches(id: Long, date: LocalDate?) {
         store.edit {
