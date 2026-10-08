@@ -24,8 +24,10 @@ fun taskBucket(task: Task, now: Long, zone: ZoneId): TaskBucket {
     }
 }
 
-fun groupTasks(tasks: List<Task>, filter: Category?, now: Long, zone: ZoneId): Map<TaskBucket, List<Task>> {
-    val visible = tasks.filter { it.deletedAt == null && (filter == null || it.category == filter) }
+fun groupTasks(tasks: List<Task>, filter: Category?, now: Long, zone: ZoneId, query: String = ""): Map<TaskBucket, List<Task>> {
+    val needle = query.trim()
+    val visible = tasks.filter { it.deletedAt == null && (filter == null || it.category == filter) &&
+        (needle.isEmpty() || it.title.contains(needle, ignoreCase = true) || it.notes.orEmpty().contains(needle, ignoreCase = true)) }
         .sortedWith(compareBy<Task> { it.deadlineAt ?: Long.MAX_VALUE }.thenBy { it.id })
     return TaskBucket.entries.associateWith { bucket -> visible.filter { taskBucket(it, now, zone) == bucket } }
         .filterValues { it.isNotEmpty() }

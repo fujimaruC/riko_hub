@@ -2,12 +2,14 @@ package id.riko.hub.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.Index
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "tasks", indices = [
     Index(value = ["deadlineAt"], name = "index_tasks_deadline"),
     Index(value = ["status", "deletedAt"], name = "index_tasks_status_deleted"),
     Index(value = ["syncId"], unique = true, name = "index_tasks_syncId"),
+    Index(value = ["generatedFromTaskId"], unique = true, name = "index_tasks_generatedFromTaskId"),
 ])
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -23,6 +25,13 @@ data class TaskEntity(
     val updatedAt: Long,
     val completedAt: Long?,
     val deletedAt: Long?,
+    val estimatedMinutes: Int?,
+    @ColumnInfo(defaultValue = "'NONE'") val recurrence: String,
+    @ColumnInfo(defaultValue = "'[]'") val checklistJson: String,
+    val reminderMinutesBefore: Int?,
+    val generatedFromTaskId: Long?,
+    @ColumnInfo(defaultValue = "0") val generationPristine: Boolean,
+    val recurrenceAnchorAt: Long?,
 )
 
 @Entity(tableName = "events", indices = [

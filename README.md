@@ -16,7 +16,7 @@ The default system Java 26 is not used for validation. No machine-wide Java or S
 
 Debug package: `id.riko.hub.debug`. Release package: `id.riko.hub`. Minimum Android: 8.0 (API 26).
 
-Phases 0–4 are implemented; Phase 4 runtime and physical-device acceptance remain pending. Tasks supports local CRUD, category filters, deadline buckets, completion and undo deletion. Home adds ranked urgency bubbles, daily focus pinning, progress, next obligation, quick add and completion undo. Timeline event UI remains Phase 5. Release signing and shrinker verification belong to Phase 6; current release builds are unsigned and unminified.
+Phase 6 implementation is in place; final packaging verification remains pending. Home and Timeline runtime acceptance also remain pending. The user authorized Phase 5 without direct Phase 4 testing. Tasks supports local CRUD, category filters, deadline buckets, completion and undo deletion. Home adds ranked urgency bubbles, daily focus pinning, progress, next obligation, quick add and completion undo. Timeline merges events, deadlines and completed work into a Monday–Sunday narrative path, with event editing and deletion undo. Release builds use R8/resource shrinking and sign only when local keystore properties are configured.
 
 ## Foundation navigation
 
@@ -24,7 +24,7 @@ Phases 0–4 are implemented; Phase 4 runtime and physical-device acceptance rem
 - Horizontal drags beginning within 24dp of either edge are ignored by app navigation.
 - Tap the icon-only compass ball for its labeled menu. Hold it to bloom soft bubbles, drag 28dp toward a destination, and release to move there. No labels appear during the hold. Home hints also work as buttons.
 - Back returns to Home. Neighbor screens also have a full-width, 96dp return handle with a direction hint. Tap it or swipe in the indicated direction; scrolling the content does not navigate.
-- Settings offers system/light/dark themes saved locally with DataStore. Display name and navigation-style preferences belong to Phase 6.
+- Settings saves system/light/dark theme, display name, and spatial-plus-compass or compass-only navigation preferences locally with DataStore.
 - System animator scale 0 switches navigation to fades. Fonts and icons are bundled; runtime needs no internet.
 
 ## Verification
@@ -60,3 +60,28 @@ Tap a bubble for details, start/edit/complete actions or a daily focus pin. Long
 Home uses Room flows and the injected clock, refreshing at least once per minute and at local midnight while the screen is started. Drift runs only while resumed and stops with system reduced motion. Home engine tests cover urgency, ranking, pins, modes, overflow, layout bounds/overlap, drift clearance, progress and rollover.
 
 `id.riko.hub.ui.home.HomeTest` contains the focused Home UI/ViewModel checks. No physical-device result is claimed for Phase 4: the USB cable is unavailable. The local emulator startup attempt stayed offline; instrumentation and actual rendered review are pending a healthy runtime. See `docs/STATUS.md` for the current build results and exact deferred gates.
+
+## Timeline
+
+Use the week arrows or Minggu ini to browse. Timeline opens at today, merges task deadlines/completions with events, and splits spanning events across their local dates. Tap a stop to edit its task or event. Tambah acara supports kind, category, start, optional end, location and notes; deletion offers undo. Dense days and large text use a straight path.
+
+`TimelineBuilderTest` covers ordering, Monday boundaries, deleted records, point/spanning events and DST. `id.riko.hub.ui.timeline.TimelineTest` contains event CRUD/undo, task editor, week navigation, retry-target and 200% validation checks; both focused scenarios passed on the OPPO CPH2015 on 2026-10-07. Full visual/TalkBack review and lint remain pending. No screenshots were generated in this pass. See `docs/STATUS.md` for observed results.
+
+## Release build and signing
+
+Release builds enable R8 optimization and resource shrinking. Without a local `keystore.properties`, Gradle prints that the release will be unsigned and produces an unsigned APK. To sign releases, create and back up a private keystore yourself; never commit it:
+
+```sh
+keytool -genkeypair -v -keystore riko-hub-release.jks -alias riko-hub -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Create `keystore.properties` in the repository root (already git-ignored):
+
+```properties
+storeFile=riko-hub-release.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=riko-hub
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+Keep both files private and backed up securely. Losing the keystore prevents installing updates over an existing signed install. Build with `./gradlew assembleRelease`; the APK is under `app/build/outputs/apk/release/`. When signing is configured it is signed as `app-release.apk`. Without signing configuration, Gradle produces `app-release-unsigned.apk`; it cannot be installed until signed with a private key. Install updates over an existing app only when signed with the same key and using a higher `versionCode`.

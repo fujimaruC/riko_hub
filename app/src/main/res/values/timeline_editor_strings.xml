@@ -1,0 +1,28 @@
+<resources>
+    <string name="event_new">Tambah acara</string>
+    <string name="event_edit">Edit acara</string>
+    <string name="event_title">Judul (wajib)</string>
+    <string name="event_title_help">Judul maksimal 120 karakter.</string>
+    <string name="event_title_required_error">Judul wajib diisi.</string>
+    <string name="event_title_too_long">Judul maksimal 120 karakter.</string>
+    <string name="event_kind">Jenis acara</string>
+    <string name="event_kind_class">Kelas</string>
+    <string name="event_kind_exam">Ujian</string>
+    <string name="event_kind_meeting">Rapat</string>
+    <string name="event_kind_activity">Kegiatan</string>
+    <string name="event_kind_note">Catatan</string>
+    <string name="event_kind_other">Lainnya</string>
+    <string name="event_category">Kategori</string>
+    <string name="event_start">Waktu mulai</string>
+    <string name="event_end">Waktu selesai</string>
+    <string name="event_date_button">Tanggal: %1$s</string>
+    <string name="event_time_button">Jam: %1$s</string>
+    <string name="event_add_end">Tambahkan waktu selesai (opsional)</string>
+    <string name="event_remove_end">Hapus waktu selesai</string>
+    <string name="event_end_before_start">Waktu selesai harus sama dengan atau setelah waktu mulai.</string>
+    <string name="event_location">Lokasi (opsional)</string>
+    <string name="event_notes">Catatan (opsional)</string>
+    <string name="event_notes_help">Maksimal 2000 karakter.</string>
+    <string name="event_notes_too_long">Catatan maksimal 2000 karakter.</string>
+    <string name="event_delete">Hapus acara</string>
+</resources>
