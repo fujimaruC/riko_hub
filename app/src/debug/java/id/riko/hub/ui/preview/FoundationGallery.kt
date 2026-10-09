@@ -44,5 +44,5 @@ private fun ComponentGallery() {
 @Preview(name = "Tasks / dark", widthDp = 393, heightDp = 852, uiMode = 0x20)
 @Composable
 private fun TasksPreview() {
-    RikoHubTheme { Surface { id.riko.hub.ui.tasks.TasksScreen {} } }
+    RikoHubTheme { Surface { id.riko.hub.ui.tasks.TasksScreen(onNavigate = {}) } }
 }

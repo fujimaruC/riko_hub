@@ -23,6 +23,8 @@ interface TaskDao {
     // Internal transaction reads include deleted rows for restore; never expose them to UI.
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun adminFindForWrite(id: Long): TaskEntity?
+    @Query("SELECT * FROM tasks ORDER BY id")
+    suspend fun adminFindAllForReminders(): List<TaskEntity>
     @Query("SELECT * FROM tasks WHERE generatedFromTaskId = :parentId")
     suspend fun findGeneratedSuccessor(parentId: Long): TaskEntity?
     @Query("SELECT COUNT(*) FROM tasks")

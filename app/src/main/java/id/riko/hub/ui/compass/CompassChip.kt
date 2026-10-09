@@ -111,8 +111,8 @@ fun CompassChip(current: Destination, reducedMotion: Boolean, onNavigate: (Desti
                     }
                 }
                 .graphicsLayer {
-                    translationX = dragOffset.x * 0.25f
-                    translationY = dragOffset.y * 0.25f
+                    translationX = dragOffset.x * 0.5f
+                    translationY = dragOffset.y * 0.5f
                     scaleX = 1f + bloom * 0.08f
                     scaleY = 1f + bloom * 0.08f
                 }

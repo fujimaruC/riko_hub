@@ -9,6 +9,7 @@ import id.riko.hub.data.local.Migrations
 import id.riko.hub.data.prefs.SettingsDataStore
 import id.riko.hub.data.repository.EventRepository
 import id.riko.hub.data.repository.TaskRepository
+import id.riko.hub.work.TaskReminders
 
 class AppContainer(context: Context, val clock: Clock = SystemClock) {
     private val appContext = context.applicationContext
@@ -16,7 +17,8 @@ class AppContainer(context: Context, val clock: Clock = SystemClock) {
         Room.databaseBuilder(appContext, RikoDatabase::class.java, "riko_hub.db")
             .addMigrations(Migrations.MIGRATION_1_2).build()
     }
-    val tasks by lazy { TaskRepository(database, clock) }
+    val reminders by lazy { TaskReminders(appContext) }
+    val tasks by lazy { TaskRepository(database, clock) { reminders.requestReconciliation() } }
     val events by lazy { EventRepository(database, clock) }
     val settings by lazy { SettingsDataStore(appContext) }
 }
