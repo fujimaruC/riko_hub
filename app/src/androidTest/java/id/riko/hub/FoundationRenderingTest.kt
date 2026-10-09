@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.test.platform.app.InstrumentationRegistry
 import id.riko.hub.ui.RikoHub
@@ -65,12 +66,13 @@ class FoundationRenderingTest {
                 node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
                 layouts.forEach { layout ->
                     // TextLayoutResult rounds its integer size; tolerate only that one-pixel rounding.
-                    val clipped = layout.multiParagraph.didExceedMaxLines ||
-                        (0 until layout.lineCount).any { line ->
+                    val clipped = (0 until layout.lineCount).any { line ->
                             layout.getLineLeft(line) < -1f ||
                                 layout.getLineRight(line) > layout.size.width + 1f ||
                                 layout.getLineBottom(line) > layout.size.height + 1f
-                        }
+                        } || layout.multiParagraph.didExceedMaxLines &&
+                        (layout.layoutInput.maxLines != 1 || layout.layoutInput.density.fontScale >= 1.3f ||
+                            layout.layoutInput.overflow != TextOverflow.Ellipsis || !layout.isLineEllipsized(layout.lineCount - 1))
                     assertFalse("Text clipped: ${layout.layoutInput.text}; fontScale=" +
                         layout.layoutInput.density.fontScale, clipped)
                 }

@@ -3,6 +3,10 @@ package id.riko.hub
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import id.riko.hub.RikoHubApp
+import id.riko.hub.ui.theme.ThemeMode
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
@@ -11,14 +15,26 @@ class FoundationNavigationTest {
 
     private fun backHome() {
         rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
-        rule.onNodeWithTag("screen-Home").assertIsDisplayed()
+        assertScreen("Home")
+    }
+
+    private fun assertScreen(route: String) {
+        rule.waitUntil(5_000) { rule.onAllNodesWithTag("screen-$route").fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithTag("screen-$route").assertIsDisplayed()
+    }
+
+    private fun awaitTheme(mode: ThemeMode, label: String) {
+        rule.waitUntil(5_000) {
+            runBlocking { (rule.activity.application as RikoHubApp).container.settings.settings.first().themeMode == mode } &&
+                rule.onAllNodes(hasText(label) and isSelected()).fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test fun compass_visits_all_neighbors_and_back_returns_home() {
         listOf("Tugas" to "Tasks", "Timeline" to "Timeline", "Vault" to "Vault", "Sync" to "Sync").forEach { (label, route) ->
             rule.onNodeWithTag("compass-ball").performClick()
             rule.onNodeWithText(label).performClick()
-            rule.onNodeWithTag("screen-$route").assertIsDisplayed()
+            assertScreen(route)
             backHome()
         }
     }
@@ -31,7 +47,7 @@ class FoundationNavigationTest {
         )
         swipes.forEach { (route, gesture) ->
             rule.onNodeWithTag("home-field").performTouchInput(gesture)
-            rule.onNodeWithTag("screen-$route").assertIsDisplayed()
+            assertScreen(route)
             backHome()
         }
     }
@@ -46,11 +62,11 @@ class FoundationNavigationTest {
             rule.onNodeWithTag("compass-ball").performClick()
             rule.onNodeWithText(label).performClick()
             rule.onNodeWithTag("return-handle").performTouchInput(gesture)
-            rule.onNodeWithTag("screen-Home").assertIsDisplayed()
+            assertScreen("Home")
             rule.onNodeWithTag("compass-ball").performClick()
             rule.onNodeWithText(label).performClick()
             rule.onNodeWithText("Kembali ke Hari Ini").performClick()
-            rule.onNodeWithTag("screen-Home").assertIsDisplayed()
+            assertScreen("Home")
         }
     }
 
@@ -73,11 +89,32 @@ class FoundationNavigationTest {
     }
 
     @Test fun theme_selection_survives_activity_recreation_and_settings_back_returns_home() {
-        rule.onNodeWithText("Pengaturan").performClick()
-        rule.onNodeWithText("Gelap").performClick().assertIsSelected()
-        rule.activityRule.scenario.recreate()
-        rule.onNodeWithText("Gelap").assertIsSelected()
-        rule.onNodeWithText("Terang").performClick().assertIsSelected()
-        backHome()
+        val settings = (rule.activity.application as RikoHubApp).container.settings.settings
+        val original = runBlocking { settings.first().themeMode }
+        try {
+            rule.onNodeWithText("Pengaturan").performClick()
+            rule.onNodeWithText("Gelap").performClick()
+            awaitTheme(ThemeMode.DARK, "Gelap")
+            rule.activityRule.scenario.recreate()
+            awaitTheme(ThemeMode.DARK, "Gelap")
+            rule.onNodeWithText("Terang").performClick()
+            awaitTheme(ThemeMode.LIGHT, "Terang")
+            backHome()
+        } finally {
+            rule.waitForIdle()
+            if (rule.onAllNodesWithTag("setting-theme-DARK").fetchSemanticsNodes().isEmpty()) {
+                if (rule.onAllNodesWithTag("screen-Home").fetchSemanticsNodes().isEmpty())
+                    rule.onNodeWithText("Kembali ke Hari Ini").performClick()
+                rule.onNodeWithText("Pengaturan").performClick()
+            }
+            val label = when (original) {
+                ThemeMode.SYSTEM -> "Ikuti sistem"
+                ThemeMode.LIGHT -> "Terang"
+                ThemeMode.DARK -> "Gelap"
+            }
+            rule.onNodeWithText(label).performClick()
+            awaitTheme(original, label)
+            backHome()
+        }
     }
 }
