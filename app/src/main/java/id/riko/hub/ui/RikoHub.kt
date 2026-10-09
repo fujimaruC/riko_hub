@@ -40,7 +40,7 @@ internal class SettingsWriteTracker {
 }
 
 @Composable
-fun RikoHub(onDarkThemeChanged: (Boolean) -> Unit = {}) {
+fun RikoHub(openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}, onDarkThemeChanged: (Boolean) -> Unit = {}) {
     val context = LocalContext.current.applicationContext
     val settingsStore = (context as RikoHubApp).container.settings
     val settings by remember(settingsStore) { settingsStore.settings }.collectAsState(initial = AppSettings())
@@ -77,6 +77,7 @@ fun RikoHub(onDarkThemeChanged: (Boolean) -> Unit = {}) {
             onDisplayName = { value -> persist(SettingsPreference.DISPLAY_NAME) { settingsStore.setDisplayName(value) } },
             onNavigationStyle = { value -> persist(SettingsPreference.NAVIGATION_STYLE) { settingsStore.setNavigationStyle(value) } },
             settingsWriteFailure = writes.earliestFailure(),
-            onSettingsFailureDismissed = writes::dismiss)
+            onSettingsFailureDismissed = writes::dismiss,
+            openTaskId = openTaskId, onTaskOpenConsumed = onTaskOpenConsumed)
     }
 }

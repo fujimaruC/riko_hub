@@ -1,0 +1,9 @@
+<resources>
+    <string name="reminder_permission_on">Notifikasi aktif untuk pengingat tugas.</string>
+    <string name="reminder_permission_denied">Izin notifikasi belum diberikan. Tugas tetap tersimpan tanpa pemberitahuan.</string>
+    <string name="reminder_app_notifications_off">Notifikasi aplikasi sedang dimatikan. Tugas tetap tersimpan.</string>
+    <string name="reminder_channel_notifications_off">Kategori notifikasi pengingat dimatikan. Tugas tetap tersimpan.</string>
+    <string name="reminder_enable_notifications">Aktifkan notifikasi</string>
+    <string name="reminder_open_settings">Buka pengaturan</string>
+    <string name="reminder_timing_help">Waktu pengingat bersifat perkiraan dan dapat terlambat. Pengingat yang waktunya sudah lewat tidak dijadwalkan.</string>
+</resources>

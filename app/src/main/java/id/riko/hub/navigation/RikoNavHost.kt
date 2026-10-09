@@ -37,6 +37,8 @@ fun RikoNavHost(
     onNavigationStyle: (NavigationStyle) -> Unit = {},
     settingsWriteFailure: SettingsWriteFailure? = null,
     onSettingsFailureDismissed: (Int) -> Unit = {},
+    openTaskId: Long? = null,
+    onTaskOpenConsumed: () -> Unit = {},
 ) {
     val controller = rememberNavController()
     val entry by controller.currentBackStackEntryAsState()
@@ -57,6 +59,7 @@ fun RikoNavHost(
         }
     }
     BackHandler(current != Destination.Home) { navigate(Destination.Home) }
+    LaunchedEffect(openTaskId) { if (openTaskId != null) navigate(Destination.Tasks) }
     LaunchedEffect(settingsWriteFailure?.id) {
         val failure = settingsWriteFailure ?: return@LaunchedEffect
         when (snackbar.showSnackbar(settingsFailureMessage, retryLabel, withDismissAction = true,
@@ -92,7 +95,7 @@ fun RikoNavHost(
                 },
             ) {
                 composable(Destination.Home.name) { HomeScreen(settings.hintsShownCount, navigate) }
-                composable(Destination.Tasks.name) { TasksScreen(navigate) }
+                composable(Destination.Tasks.name) { TasksScreen(navigate, openTaskId, onTaskOpenConsumed) }
                 composable(Destination.Timeline.name) { TimelineScreen(navigate) }
                 composable(Destination.Vault.name) { VaultScreen(navigate) { scope.launch { snackbar.showSnackbar(comingSoon) } } }
                 composable(Destination.Sync.name) { SyncScreen(navigate) }

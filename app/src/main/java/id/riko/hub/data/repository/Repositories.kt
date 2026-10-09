@@ -20,13 +20,13 @@ private suspend fun <T> RikoDatabase.write(block: suspend () -> T): T = try {
     throw error
 }
 
-class TaskRepository(private val database: RikoDatabase, private val clock: Clock) {
+class TaskRepository(private val database: RikoDatabase, private val clock: Clock, private val onMutation: () -> Unit = {}) {
     private val dao = database.tasks()
     fun observeActive() = dao.observeActive().map { rows -> rows.map { it.toDomain() } }
     fun observeAll() = dao.observeAll().map { rows -> rows.map { it.toDomain() } }
     fun observeById(id: Long) = dao.observeById(id).map { it?.toDomain() }
 
-    suspend fun upsert(task: Task): Long = database.write { save(task) }
+    suspend fun upsert(task: Task): Long = database.write { save(task) }.also { requestReconciliation() }
 
     private suspend fun save(task: Task): Long {
         val previous = if (task.id == 0L) null else dao.adminFindForWrite(task.id)?.toDomain()
@@ -72,7 +72,7 @@ class TaskRepository(private val database: RikoDatabase, private val clock: Cloc
         val previous = requireNotNull(dao.adminFindForWrite(id)?.toDomain()) { "Task does not exist" }
         save(previous.copy(status = status))
         Unit
-    }
+    }.also { requestReconciliation() }
 
     suspend fun softDelete(id: Long) = setDeleted(id, true)
     suspend fun restore(id: Long) = setDeleted(id, false)
@@ -80,6 +80,13 @@ class TaskRepository(private val database: RikoDatabase, private val clock: Cloc
         val previous = requireNotNull(dao.adminFindForWrite(id)) { "Task does not exist" }
         val timestamp = maxOf(clock.now(), previous.createdAt, previous.updatedAt)
         dao.setDeletedAt(id, if (deleted) previous.deletedAt ?: timestamp else null, timestamp)
+    }.also { requestReconciliation() }
+
+    private fun requestReconciliation() {
+        try { onMutation() }
+        catch (error: Exception) {
+            if (error !is CancellationException) Log.e("RikoRepository", "Reminder reconciliation request failed", error)
+        }
     }
 }
 
