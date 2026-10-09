@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,17 +32,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
-fun TasksScreen(onNavigate: (Destination) -> Unit) {
+fun TasksScreen(onNavigate: (Destination) -> Unit, openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}) {
     val app = LocalContext.current.applicationContext as RikoHubApp
     val model: TasksViewModel = viewModel(factory = viewModelFactory {
         initializer { TasksViewModel(app.container.tasks, app.container.clock) }
     })
-    TasksRoute(model, onNavigate)
+    TasksRoute(model, onNavigate, openTaskId, onTaskOpenConsumed)
 }
 
 @Composable
-fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit) {
+fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit, openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}) {
+    val app = LocalContext.current.applicationContext as RikoHubApp
+    val reminderPermission = rememberReminderPermissionState { app.container.reminders.requestReconciliation() }
     val state by model.state.collectAsStateWithLifecycle()
+    LaunchedEffect(openTaskId, state.loading, state.readFailed, state.busy, state.editor, state.tasks) {
+        val id = openTaskId ?: return@LaunchedEffect
+        if (!state.loading && !state.readFailed && !state.busy && state.editor == null) {
+            state.tasks.firstOrNull { it.id == id }?.let(model::edit)
+            onTaskOpenConsumed()
+        }
+    }
     val snackbar = remember { SnackbarHostState() }
     val deleted = stringResource(R.string.deleted_task)
     val undo = stringResource(R.string.undo)
@@ -73,7 +82,7 @@ fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit) {
     }
     state.editor?.let { task ->
         TaskEditorSheet(task, state.now, state.zone, state.busy, snackbar, model::change, model::save,
-            { model.delete(task) }, model::dismissEditor)
+            { model.delete(task) }, model::dismissEditor, reminderPermission = reminderPermission)
     }
 }
 

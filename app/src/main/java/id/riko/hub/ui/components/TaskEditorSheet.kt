@@ -12,11 +12,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import id.riko.hub.R
+import id.riko.hub.RikoHubApp
 import id.riko.hub.domain.model.*
 import id.riko.hub.ui.tasks.ChecklistFields
 import id.riko.hub.ui.tasks.TaskExtensionFields
@@ -27,7 +29,10 @@ import java.time.ZoneId
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar: SnackbarHostState,
-                    onChange: (Task) -> Unit, onSave: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit, quickAdd: Boolean = false) {
+                    onChange: (Task) -> Unit, onSave: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit, quickAdd: Boolean = false,
+                    reminderPermission: ReminderPermissionState? = null) {
+    val app = LocalContext.current.applicationContext as RikoHubApp
+    val permission = reminderPermission ?: rememberReminderPermissionState { app.container.reminders.requestReconciliation() }
     var details by remember(task.id) { mutableStateOf(!quickAdd) }
     var estimateRaw by rememberSaveable(task.id) { mutableStateOf(task.estimatedMinutes?.toString().orEmpty()) }
     var reminderRaw by rememberSaveable(task.id) { mutableStateOf(task.reminderMinutesBefore?.toString().orEmpty()) }
@@ -59,6 +64,10 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
                     val value = raw.toIntOrNull()
                     if (raw.isBlank() || value?.let { it in 0..10080 } == true) onChange(task.copy(reminderMinutesBefore = value))
                 })
+                if (reminderRaw.isNotBlank()) {
+                    Text(stringResource(R.string.reminder_timing_help), style = MaterialTheme.typography.bodySmall)
+                    ReminderPermissionNotice(permission)
+                }
                 TaskChoices(stringResource(R.string.recurrence), Recurrence.entries, task.recurrence,
                     { it.label() }, !busy && task.deadlineAt != null) { onChange(task.copy(recurrence = it)) }
                 ChecklistFields(task, !busy, onChange)

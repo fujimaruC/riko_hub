@@ -38,6 +38,8 @@ class TaskCrudTest {
     private val store = ViewModelStore()
     private val scale = mutableFloatStateOf(1f)
     private val dark = mutableStateOf(false)
+    private val openTaskId = mutableStateOf<Long?>(null)
+    private val taskOpenConsumed = mutableStateOf(false)
 
     @Before fun setup() {
         rule.runOnUiThread { rule.activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
@@ -47,7 +49,7 @@ class TaskCrudTest {
         store.put("tasks", model)
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, scale.floatValue)) {
-                RikoHubTheme(darkTheme = dark.value) { Surface { TasksRoute(model) {} } }
+                RikoHubTheme(darkTheme = dark.value) { Surface { TasksRoute(model, {}, openTaskId.value) { taskOpenConsumed.value = true } } }
             }
         }
         rule.waitUntil(5_000) { !model.state.value.loading }
@@ -60,6 +62,19 @@ class TaskCrudTest {
     private fun tasks() = runBlocking { database.tasks().observeAll().first() }
     private fun waitFor(condition: () -> Boolean) = rule.waitUntil(5_000, condition)
     private fun save() { rule.onNodeWithTag("task-save").performScrollTo().performClick() }
+
+    @Test fun opening_notification_id_opens_existing_task_and_consumes_missing_id() {
+        rule.onNodeWithText("Tambah").performClick()
+        rule.onNodeWithTag("task-title").performTextInput("Buka dari pengingat")
+        save()
+        waitFor { tasks().size == 1 && model.state.value.editor == null }
+        val id = tasks().single().id
+        rule.runOnIdle { openTaskId.value = id }
+        waitFor { model.state.value.editor?.id == id && taskOpenConsumed.value }
+        rule.runOnIdle { model.dismissEditor(); openTaskId.value = null; taskOpenConsumed.value = false }
+        rule.runOnIdle { openTaskId.value = id + 10_000L }
+        waitFor { taskOpenConsumed.value && model.state.value.editor == null }
+    }
 
     @Test fun editor_filter_complete_reopen_delete_undo_and_restart_preserve_data() {
         rule.onNodeWithText("Tambah").performClick()
@@ -94,12 +109,15 @@ class TaskCrudTest {
         save()
         waitFor { tasks().single().status == "IN_PROGRESS" && model.state.value.editor == null }
         rule.onNodeWithTag("check-$id").performScrollTo().performClick()
-        waitFor { tasks().single().status == "DONE" }
-        assertNotNull(tasks().single().completedAt)
+        waitFor { tasks().first { it.id == id }.status == "DONE" }
+        val generated = tasks().single { it.generatedFromTaskId == id }
+        assertEquals(TaskStatus.NOT_STARTED, generated.toDomain().status)
+        assertNotNull(tasks().first { it.id == id }.completedAt)
         rule.onNodeWithTag("done-bucket").performScrollTo().performClick()
         rule.onNodeWithTag("check-$id").performScrollTo().performClick()
-        waitFor { tasks().single().status == "NOT_STARTED" }
-        assertNull(tasks().single().completedAt)
+        waitFor { tasks().first { it.id == id }.status == "NOT_STARTED" }
+        assertNull(tasks().first { it.id == id }.completedAt)
+        assertTrue(tasks().none { it.id == generated.id })
         rule.onNodeWithTag("task-$id").performScrollTo().performClick()
         rule.onNodeWithText("Hapus tugas").performScrollTo().performClick()
         waitFor { tasks().isEmpty() }
@@ -146,8 +164,12 @@ class TaskCrudTest {
         waitFor { tasks().single().toDomain().checklist.size == 2 && model.state.value.editor == null }
         rule.onNodeWithText("0/2 selesai").assertExists()
         rule.onNodeWithTag(taskTag).performScrollTo().performClick()
-        rule.onNode(isToggleable() and hasParent(hasAnyDescendant(hasTestTag("checklist-title-0"))))
-            .performScrollTo().performClick()
+        val checklistItems = rule.onAllNodes(
+            isToggleable() and hasParent(hasAnyDescendant(hasTestTag("checklist-title-0"))),
+            useUnmergedTree = true,
+        )
+        checklistItems.assertCountEquals(2)
+        checklistItems.onFirst().performScrollTo().performClick()
         save()
         waitFor { tasks().single().toDomain().checklist.count { it.done } == 1 && model.state.value.editor == null }
         rule.onNodeWithText("1/2 selesai").assertExists()

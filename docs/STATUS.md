@@ -8,10 +8,33 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 |------|-------|
 | Version in development | 0.2.0 |
 | Current phase | v0.2 development; v0.1 accepted by the owner for personal daily use (2026-10-08) |
-| Last successful build | v0.2 debug and Android test APKs rebuilt after serialization alignment; BUILD SUCCESSFUL in 16m53s (2026-10-08). Release APK remains the historical Phase 6 artifact. |
-| Last test run | Full JVM suite: 46 passed. Latest outcome per phone test across initial/filtered runs: 19 passed, 6 failed, 2 skipped (27 cases). Room v1→v2 migration passes; UI suite is not green. |
+| Last successful build | Reminder milestone: debug + Android test APKs built successfully in 10m26s (2026-10-09). Release APK remains the historical Phase 6 artifact. |
+| Last test run | 5 focused reminder JVM tests passed; new device checks are pending (ADB empty). Historical full-suite evidence: 46 JVM passed; 19 phone passed, 6 failed, 2 skipped across runs, including a passing Room v1→v2 migration. |
 | Release status | Unsigned local build; not a public release |
 | Owner acceptance | App launches and operates; primary features work and UX is satisfactory. Prior manual deferrals and noncritical formal verification are intentionally accepted as deferred. |
+
+## Local deadline reminders — 2026-10-09
+
+- Preservation checkpoint: `7fbe3f7` contains the existing v0.2 work. Unexplained untracked `wl-copy` is excluded and untouched.
+- Implemented local WorkManager reminders using existing deadline/offset fields, unique per-task work, post-commit reconciliation and app-resume recovery. Edits replace work; completion/deletion cancel it; reopening, restore and recurring successors are evaluated independently. Delivery rechecks the latest task inside a Room transaction before posting.
+- New reminder times already elapsed are skipped; matching queued work may deliver late. No exact alarm, foreground service, networking, dependency or schema change. Date-only deadlines retain the existing local 23:59 instant. Disabled notifications are suppressed without retry polling.
+- Added the Indonesian notification channel, explicit task-opening notification intent, and contextual Android 13+ `POST_NOTIFICATIONS` permission UI. Denial does not prevent saving tasks. Task opening waits for reads/writes and existing drafts; consumed notification intents are cleared.
+- Compass drag translation now follows 50% of finger movement instead of 25% on both axes; hold appearance, activation thresholds and timing are unchanged.
+- Verification: `JAVA_HOME=/opt/android-studio/jbr ./gradlew :app:assembleDebug :app:testDebugUnitTest --tests id.riko.hub.domain.logic.TaskReminderDecisionTest :app:assembleDebugAndroidTest --offline --console plain --max-workers=1` passed in 10m26s; 5 reminder JVM tests passed, zero failures/errors. Earlier compiler failures in the scheduling callback and a debug preview caller were corrected before this incremental run. No lint, release pipeline, emulator initialization, data clearing or unrelated regression run.
+- ADB was empty at final verification. Four `TaskReminderWorkerTest` methods (real WorkManager scheduling and notification posting, using isolated fixtures) and three focused `TaskCrudTest` methods are compiled but unexecuted. Android 13+ permission behavior, cold/warm notification entry, process-restart delivery and the lighter compass drag remain unverified on-device. The reminder milestone needs this focused device check before runtime acceptance.
+
+### Six-failure triage
+
+| Recorded failure | Classification and action |
+|---|---|
+| Return swipe/tap | D: cause unresolved; added a destination wait without changing gestures. Not reclassified as fixed without a rerun. |
+| Theme selection | C: asynchronous DataStore/UI assertion; wait for persisted and rendered selection, and restore the original preference in the fixture. |
+| Foundation title clipping | B: normal-size task-title ellipsis is intentional; allow confirmed single-line ellipsis below 1.3× while retaining geometric bounds checks. |
+| Home peek/pin at 200% | D: failing text bounds are recorded, but the overflowing element is not localized. Layout and assertion remain unchanged. |
+| Checklist selector | B: two legitimate item checkboxes; scope to the checklist group and explicitly select its first item. |
+| Recurring-task CRUD | B: completion intentionally creates a successor; assert the source by ID and the generated task separately. |
+
+- Next: finish the focused reminder device checks, then local manual export/import with SAF, a versioned format, validation and non-destructive duplicate handling. Export/import was not started during reminder implementation.
 
 ## v0.2 progress — 2026-10-08
 
