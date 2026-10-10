@@ -26,6 +26,7 @@ fun SettingsScreen(
     onDisplayName: (String) -> Unit,
     onNavigationStyle: (NavigationStyle) -> Unit,
     onNavigate: (Destination) -> Unit,
+    backupContent: @Composable () -> Unit = {},
 ) {
     var name by rememberSaveable(settings.displayName) { mutableStateOf(settings.displayName) }
     var nameError by remember { mutableStateOf(false) }
@@ -81,6 +82,7 @@ fun SettingsScreen(
             }
         }
         Text(stringResource(R.string.local_data), style = MaterialTheme.typography.bodyMedium)
+        backupContent()
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import id.riko.hub.domain.model.*
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import java.time.LocalDate
@@ -21,6 +22,26 @@ class SettingsDataStore(private val store: DataStore<Preferences>) {
     private val hints = intPreferencesKey("hints_shown_count")
     private val pinId = longPreferencesKey("pinned_focus_task_id")
     private val pinDate = stringPreferencesKey("pinned_focus_date")
+
+    data class BackupValues(val theme: String, val displayName: String, val navigation: String, val hints: Int, val pinnedFocusSyncId: String?, val pinnedFocusDate: String?)
+
+    suspend fun backupValues(taskSyncIds: Map<Long, String>): BackupValues {
+        val values = store.data.first()
+        return BackupValues(values[theme] ?: "SYSTEM", values[name] ?: "Riko", values[navigation] ?: "SPATIAL_COMPASS", values[hints] ?: 0, values[pinId]?.let(taskSyncIds::get), values[pinDate])
+    }
+
+    suspend fun restoreBackup(values: BackupValues, pinIdValue: Long?) {
+        store.edit {
+            it[theme] = values.theme
+            it[name] = values.displayName
+            it[navigation] = values.navigation
+            it[hints] = values.hints
+            if (pinIdValue != null && values.pinnedFocusDate != null) {
+                it[pinId] = pinIdValue
+                it[pinDate] = values.pinnedFocusDate
+            } else { it.remove(pinId); it.remove(pinDate) }
+        }
+    }
 
     val settings = store.data.catch { error ->
         if (error !is IOException) throw error

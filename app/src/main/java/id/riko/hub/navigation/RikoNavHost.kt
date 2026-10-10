@@ -40,6 +40,7 @@ fun RikoNavHost(
     onSettingsFailureDismissed: (Int) -> Unit = {},
     openTaskId: Long? = null,
     onTaskOpenConsumed: () -> Unit = {},
+    backupContent: @Composable () -> Unit = {},
 ) {
     val controller = rememberNavController()
     val entry by controller.currentBackStackEntryAsState()
@@ -110,7 +111,7 @@ fun RikoNavHost(
                 composable(Destination.Timeline.name) { TimelineScreen(navigate) }
                 composable(Destination.Vault.name) { VaultScreen(navigate) { scope.launch { snackbar.showSnackbar(comingSoon) } } }
                 composable(Destination.Sync.name) { SyncScreen(navigate) }
-                composable(Destination.Settings.name) { SettingsScreen(settings, onTheme, onDisplayName, onNavigationStyle, navigate) }
+                composable(Destination.Settings.name) { SettingsScreen(settings, onTheme, onDisplayName, onNavigationStyle, navigate, backupContent) }
             }
         }
       }

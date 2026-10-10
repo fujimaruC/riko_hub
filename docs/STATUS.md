@@ -7,11 +7,151 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | Item | Value |
 |------|-------|
 | Version in development | 0.2.0 |
-| Current phase | v0.2 development; v0.1 accepted by the owner for personal daily use (2026-10-08) |
+| Current phase | v0.2 Milestone 4 clock-widget refinement complete in source; owner visual acceptance pending. Prior widget functions and Milestone 3 accepted by owner. |
 | Last successful build | Daily Studio redesign: owner confirmed build/install (2026-10-10); installed APK updated 09:28:22 and SHA-256 matches local debug APK. Build duration not supplied. Release remains the historical Phase 6 artifact. |
 | Last test run | 5 focused reminder JVM tests passed; new device checks are pending (ADB empty). Historical full-suite evidence: 46 JVM passed; 19 phone passed, 6 failed, 2 skipped across runs, including a passing Room v1→v2 migration. |
 | Release status | Unsigned local build; not a public release |
 | Owner acceptance | App launches and operates; primary features work and UX is satisfactory. Prior manual deferrals and noncritical formal verification are intentionally accepted as deferred. |
+
+## Milestone 4 — final clock widget visual refinement — 2026-10-11
+
+- Owner reports the preceding native widget works on OPPO CPH2015 (Android 9), displays real tasks and opens the correct task when tapped. This is owner-reported verification, not a device test performed in this refinement. The new appearance remains pending owner build, installation and visual acceptance; final v0.2 QA and v0.3 have not begun.
+- Refined the existing widget into one ivory rounded surface: small Riko Hub header, dominant 48sp ink clock, 19sp Indonesian weekday, 16sp full date, 17sp bold task titles and subtle lavender/coral dots. A 42dp Smol Miyu sits in reserved header space at the corner, without covering text. The existing 250dp width and 272dp minimum height remain. There are no nested task cards or weather elements, APIs, permissions or dependencies.
+- Platform `TextClock` runs inside the launcher RemoteViews and displays `h:mm a` or `HH:mm` according to device time preference. No fixed timezone is assigned. Time remains visible in loading, empty and unavailable task states. No minute WorkManager polling, screen-wake listener, background service or exact alarm was introduced. [TextClock](https://developer.android.com/reference/android/widget/TextClock) is supported by [RemoteViews](https://developer.android.com/reference/android/widget/RemoteViews).
+- Weekday and full date are formatted explicitly with Indonesian `id-ID` locale and the current local timezone. Existing bounded urgency scheduling remains; when no eligible task produces a boundary, the widget schedules the next local midnight for its date. Time/timezone/date callbacks are preserved and `LOCALE_CHANGED` now requests rendering. This avoids a stale date indefinitely when no tasks exist, but WorkManager execution can still be delayed by Android background policy. The clock itself does not depend on that work.
+- The existing top-three urgency selection, active/deleted filtering, task PendingIntent identity and task routing are unchanged. Presentation chooses one, two or three rows from launcher height and font scale: conservative normal-scale thresholds are 322dp for two rows and 386dp for three. Smaller sizes retain the primary task and hide metadata; larger sizes display concise deadline/priority metadata. Unused rows and their click actions are hidden/cleared. Header, clock and date taps open the app. Repository mutation hooks, local import hooks, recurrence, reminders and database schema are unchanged.
+- All eight owner assets in `design-assets/miyu-widget/` are present. Optimized copies in `drawable-nodpi/widget_miyu_01.png` through `widget_miyu_08.png` map to source filenames in sorted filename order. Transparent empty margins were trimmed and copies resized proportionally to at most 192px, retaining RGBA alpha. Combined copies total **459,400 bytes**, versus **11,366,525 bytes** for originals. Originals remain unchanged. No replacement artwork was generated.
+- Each successful existing widget render independently chooses one of eight expressions at random. Selection does not read task urgency or status and requests no extra refresh. Loading/error renders use the first expression as a stable fallback. The decorative image preserves aspect ratio with `fitCenter` and is excluded from accessibility focus.
+- Verification actually executed: **36 XML files** parsed; **79 widget source/resource references** resolved; source assertions checked RemoteViews-supported classes, TextClock 12/24-hour formats and default timezone, absence of weather references, and all eight PNG dimensions/alpha. Baseline hashes verified the task selection, navigation, mutation/import wiring, backup/reminder sources and original artwork are preserved. Final whitespace checks passed. Independent source review found no material issue. These checks do not prove compilation or rendered appearance.
+- Added two focused JVM test methods for row capacity thresholds/font scale and next local midnight across DST when tasks are empty. Test source was reviewed; **tests were not executed**. No Gradle build, lint, installation or device QA was performed.
+
+Files changed in this refinement:
+
+- `app/src/main/AndroidManifest.xml` — locale refresh action.
+- `app/src/main/java/id/riko/hub/ui/widget/TaskWidgetProvider.kt` — clock/date presentation, row capacity, mascot selection and empty-task date scheduling.
+- `app/src/main/java/id/riko/hub/domain/logic/TaskWidgetPresentation.kt` — pure row capacity and local midnight helpers.
+- `app/src/test/java/id/riko/hub/domain/logic/TaskWidgetPresentationTest.kt` — focused source tests.
+- `app/src/main/res/layout/task_widget.xml`
+- `app/src/main/res/values/widget_styles.xml`
+- `app/src/main/res/values/widget_strings.xml`
+- `app/src/main/res/drawable-nodpi/widget_miyu_01.png` through `widget_miyu_08.png`
+- `docs/STATUS.md`
+
+### Owner visual acceptance
+
+Build/install once using the existing signing identity and preserving app data. Optionally run the focused presentation test class with `./gradlew :app:testDebugUnitTest --tests id.riko.hub.domain.logic.TaskWidgetPresentationTest`.
+
+1. Inspect the new widget on OPPO CPH2015 in 12-hour and 24-hour modes. Verify complete clock digits and AM/PM, Indonesian weekday/full date, and the small corner mascot without text overlap.
+2. Resize from the supported minimum to taller/wider sizes. Verify one/two/three task presentation, readable long titles, metadata, empty rows and task-specific taps. Check enlarged fonts and TalkBack; no rendered fit or accessibility success is claimed here.
+3. Leave the widget visible across minute changes without opening the app, including with zero tasks. Verify the clock advances. Cross midnight and check the date, allowing for delayed background work; test time/timezone/locale changes on a QA device.
+4. Check empty/loading/unavailable task presentation still retains clock/date. Observe several normal task/resize refreshes to verify mascot variation without urgency-dependent expressions.
+
+Remaining limitations: fixed light palette; static Indonesian date can lag midnight while WorkManager is delayed; minimum-width 12-hour clock and large-font layouts may truncate and require a wider/taller widget. Compilation, updated launcher rendering, background clock lifecycle and final visual acceptance remain owner QA. Stop here until owner acceptance.
+
+## v0.2 Milestone 4 — native top-three task widget — 2026-10-10
+
+- Source implementation is complete for owner review. Milestone 3 has been manually accepted by the owner. Milestone 4 acceptance and final v0.2 QA remain pending; no v0.3 work is authorized or started.
+- Verified branch `checkpoint/rikohub-phase6` and the dirty working tree before implementation. Existing local backup implementation, tests, preferences, reminder work and the untracked Gradle JVM file are preserved. The only extension to the existing backup wiring is a widget request in `AppContainer` after its post-commit reminder callback, using `finally` so reminder enqueue failure cannot suppress widget refresh.
+- Native `AppWidgetProvider` and `RemoteViews` display up to three active tasks, ordered by `UrgencyCalculator.rank(...).take(3)`. Completed and soft-deleted records are excluded. Home's manual pin is separate from this priority list; the widget introduces no competing urgency algorithm. The app header, compact Indonesian focus label, task titles, local deadline/priority metadata, and loading/empty/unavailable states use standard widget-compatible layouts and the existing ivory, lavender, ink and coral palette. No library, network interface, animation, collection service or database migration was added.
+- Header taps open the app. Row taps use the existing task-ID entry contract and task editor destination. Explicit activity PendingIntents use distinct widget-specific data URIs, `FLAG_UPDATE_CURRENT | FLAG_IMMUTABLE`, and `CLEAR_TOP | SINGLE_TOP`. Existing navigation consumes absent/deleted IDs without opening a nonexistent task. Widget taps perform no task mutation.
+- The existing repository callback runs after committed create/edit/status/delete/restore transactions, including recurrence successor creation/restoration and completion undo. It now also requests widget updates. Successful local backup import requests updates after Room commit and the separate preference step, including reminder reconciliation failure. Widget enqueue/render failures are isolated from persistence and do not change backup's existing reminder-failure reporting.
+- Addition, system widget updates, resize, reboot, time/timezone changes, package replacement and app resume request refresh. `DATE_CHANGED` is also registered; Android's background broadcast restrictions mean the widget does not rely on its delivery. Serialized immediate render work reads current active tasks. A separate unique one-time job targets the earliest next local midnight, three-hour urgency boundary, or strict overdue boundary (`deadline + 1 ms`). A frozen clock snapshot keeps each render's ordering/labels consistent. No active tasks cancel boundary work; removing the last widget cancels it. Provider periodic updates are disabled. Rendering retries at most three attempts, and widget work is separate from reminder work.
+- Focused evidence actually executed: Python ElementTree parsed **36** resource/manifest XML files; **66** widget Kotlin/XML resource references resolved; assertions checked RemoteViews-supported layout classes, provider metadata/registration, non-exported receiver, disabled periodic polling, resize minimum and existing minSdk 26. Baseline hashes confirmed existing changed/new files outside authorized integration/documentation remain intact. `git diff --check` and new-file whitespace checks passed. Independent source review found no material issue after correcting unsupported plain View markers, minimum touch/resize sizes, cancellation propagation and failure handling. These checks are not compilation or runtime evidence.
+- Added **5 JVM test methods** for zero/one/two/three/overflow selection, mixed urgency order and ties, done/deleted filtering, WITA/DST midnight, three-hour/strict-overdue transitions and overflow-safe deadline handling. Added **2 isolated Room instrumentation test methods** for successful mutation callbacks, recurrence/undo/delete/restore, failed-write suppression and callback failure preserving committed data. Existing backup tests already cover rollback skipping post-commit effects and callback/preference failure after commit. **None of these test methods was executed in this milestone.**
+
+Changed files for Milestone 4 (relative to project root):
+
+- `app/src/main/AndroidManifest.xml`
+- `app/src/main/java/id/riko/hub/AppContainer.kt`
+- `app/src/main/java/id/riko/hub/MainActivity.kt`
+- `app/src/main/java/id/riko/hub/domain/logic/TaskWidgetSelection.kt`
+- `app/src/main/java/id/riko/hub/ui/widget/TaskWidgetProvider.kt`
+- `app/src/main/res/layout/task_widget.xml`
+- `app/src/main/res/xml/task_widget_info.xml`
+- `app/src/main/res/values/widget_strings.xml`
+- `app/src/main/res/values/widget_styles.xml`
+- `app/src/main/res/values/widget_colors.xml`
+- `app/src/main/res/drawable/widget_background.xml`
+- `app/src/main/res/drawable/widget_lavender_pill.xml`
+- `app/src/main/res/drawable/widget_lavender_dot.xml`
+- `app/src/main/res/drawable/widget_coral_dot.xml`
+- `app/src/test/java/id/riko/hub/domain/logic/TaskWidgetSelectionTest.kt`
+- `app/src/androidTest/java/id/riko/hub/data/TaskWidgetMutationHookTest.kt`
+- `docs/STATUS.md`
+
+### Limitations and remaining acceptance gaps
+
+- WorkManager execution is inexact and can be delayed by Doze, battery policy or launcher behavior. Time labels/ranking can lag their boundary until work runs; app resume and system callbacks provide recovery. No exact alarm or foreground service is used.
+- The widget deliberately uses a fixed ivory/light palette, regardless of app theme. It supports horizontal/vertical enlargement with a 250dp minimum width and 272dp minimum height. Long titles/metadata truncate; large fonts may require a taller widget. Actual host sizing, accessibility, font scaling and rendering have not been observed.
+- No Gradle build, lint, compiled tests, installation, device interactions or personal task changes were performed. API compatibility was checked against source and official documentation, not an Android 9 device. APK compilation/resource linking, cold/warm task navigation, launcher lifecycle, scheduling and owner acceptance remain open.
+- Platform references: [RemoteViews supported controls](https://developer.android.com/reference/android/widget/RemoteViews), [receiver export behavior](https://developer.android.com/guide/topics/manifest/receiver-element), [PendingIntent identity/mutability](https://developer.android.com/reference/android/app/PendingIntent), [widget layout and resize metadata](https://developer.android.com/develop/ui/views/appwidgets/layouts), and [inexact delayed WorkManager jobs](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work).
+
+### Owner build and widget QA
+
+Build the APK once and run the focused selection test class:
+
+```sh
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest --tests id.riko.hub.domain.logic.TaskWidgetSelectionTest
+```
+
+On an owner-managed disposable QA installation/device, run only the mutation-hook instrumentation class:
+
+```sh
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=id.riko.hub.data.TaskWidgetMutationHookTest
+```
+
+The new instrumentation tests use in-memory Room and do not access the personal task database or enqueue reminder/widget jobs. Owner handles APK installation using the existing signing identity and preserving data; no uninstall or data clearing is needed.
+
+1. On Android 9, add the widget with zero, one, two, three and more than three disposable active tasks. Verify urgency/tie ordering and exclusion of completed/deleted tasks. Home pinning must not reorder this priority list.
+2. Tap the header, then each row with the app closed and already open. Verify the matching editor opens. Delete a disposable task while its old widget row remains visible, then tap it before refresh; the app must safely show Tasks. Verify taps do not complete/delete tasks.
+3. Create/edit titles, priorities and deadlines; complete/delete/undo/restore tasks; complete and undo recurring tasks. Check all installed widget instances refresh after each commit and show recurrence successors correctly.
+4. Import a disposable local backup, with and without preference restore. Verify imported active tasks appear and repeated imports remain non-destructive. Preserve the accepted backup/reminder behavior.
+5. Resize to supported minimum and larger sizes; inspect long titles, 200% text, TalkBack, empty/error presentation and multiple widget instances. Remove the last widget, then add it again.
+6. Cross a deadline's three-hour and overdue boundaries and local midnight; test reboot and time/timezone changes on the QA device. Allow for inexact scheduling and record actual observed delays. Confirm reopening the app refreshes the widget after delayed/background work.
+
+Record build, focused tests and phone observations before accepting Milestone 4. Stop here until owner acceptance authorizes final v0.2 QA.
+
+## v0.2 Milestone 3 — manual local backup — 2026-10-10
+
+- Implementation based on checkpoint `c2881ee` on `checkpoint/rikohub-phase6`. Daily Studio, Miyu assets, Room version 2 and existing task mutation behavior are preserved. The untracked `gradle/gradle-daemon-jvm.properties` is untouched. No device data access, builds, installations, lint, commits or pushes in this milestone.
+- Settings offers SAF `CreateDocument` export and `OpenDocument` import. UTF-8 JSON format version 1 contains metadata (`app`, epoch-millisecond `createdAt`), all tasks/events including completed records and tombstones, and theme/name/navigation/hints/pin preferences. No WorkManager jobs or local database IDs are exported. Relationships use `generatedFromSyncId` and `pinnedFocusSyncId`; pin dates use ISO local dates. No dependency, storage permission or cloud integration added.
+- Validation rejects unsupported versions, missing/unknown/duplicate keys, wrong types, malformed UTF-8/JSON, invalid enums/ranges/relationships, duplicate identities and cycles before mutation. Files are limited to 8 MiB and 10,000 total task/event records, with nesting/allocation limits. Android's JSON reader needs an additional lexical check for malformed escapes/literals; see [AOSP JsonReader source](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/util/JsonReader.java).
+- Import preview shows totals, inserts, duplicates and conflicts; confirmation is required. Existing records, including deleted ones, win by `syncId`. Conflicting recurrence successors and dependent new descendants are skipped rather than overwriting the existing chain. Preview is invalidated if Room data changes before confirmation. Accepted task/event inserts and local relationship remapping occur in one Room transaction; insertion failure rolls back that transaction.
+- Preference restoration defaults off. Opt-in restoration uses a separate DataStore edit after Room commit and remaps the pin through stable identity. Preference failure leaves imported records intact and is reported separately. Reminder reconciliation is requested after Room commit using the existing unique-work scheduler, including after preference failure; enqueue failure is reported with a reopen-app retry instruction. This is not cross-storage atomicity or proof of notification delivery.
+- Source review corrected a cancellation gap around transaction return: a confirmed, bounded import completes the transaction and post-commit reconciliation even if its screen closes. Cancellation before entry writes nothing. Removed backup-only display-name/location length restrictions that rejected data accepted by existing writers. Rollback tests compare the original, nondefault preference store.
+- Final source checks: tracked and new-file whitespace checks pass; values XML parses and all backup UI string references resolve. Tests cover malformed structure/UTF-8, limits/future versions, round trips/tombstones, merge conflicts, ancestry/pin remapping, rollback, partial preference failures, cancellation and repeated reminder reconciliation. These are source-reviewed assertions, not executed test results.
+- Focused isolated instrumentation tests are included for codec/round-trip and merge/rollback behavior. They have **not been executed**. Compilation, SAF provider behavior, configuration/process recreation, accessibility and visual checks remain owner QA. Milestone 3 was subsequently manually accepted by the owner; its historical unexecuted-test gaps remain recorded. See the Milestone 4 entry above for current widget status. v0.2 remains incomplete; v0.3 is not started.
+
+Changed files (relative to the project root):
+
+- `app/src/main/java/id/riko/hub/data/backup/LocalBackupService.kt`
+- `app/src/main/java/id/riko/hub/data/local/dao/Daos.kt`
+- `app/src/main/java/id/riko/hub/data/prefs/SettingsDataStore.kt`
+- `app/src/main/java/id/riko/hub/ui/settings/BackupSettings.kt`
+- `app/src/main/java/id/riko/hub/ui/settings/SettingsScreen.kt`
+- `app/src/main/java/id/riko/hub/ui/RikoHub.kt`
+- `app/src/main/java/id/riko/hub/navigation/RikoNavHost.kt`
+- `app/src/main/java/id/riko/hub/AppContainer.kt`
+- `app/src/main/java/id/riko/hub/work/TaskReminders.kt`
+- `app/src/main/res/values/backup_strings.xml`
+- `app/src/androidTest/java/id/riko/hub/data/backup/LocalBackupServiceTest.kt`
+- `app/src/androidTest/java/id/riko/hub/data/backup/LocalBackupMergeTest.kt`
+- `app/src/androidTest/java/id/riko/hub/work/LocalBackupReminderReconcileTest.kt`
+- `docs/STATUS.md`
+
+### Owner verification for Milestone 3
+
+Build once, then run only the three backup test classes on a disposable QA installation/device:
+
+```sh
+./gradlew :app:assembleDebug
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=id.riko.hub.data.backup.LocalBackupServiceTest,id.riko.hub.data.backup.LocalBackupMergeTest,id.riko.hub.work.LocalBackupReminderReconcileTest
+```
+
+The tests use in-memory databases and temporary preferences, not the user's task database. The reminder test schedules only isolated jobs with large fixture IDs and cancels those jobs afterward. Instrumentation installation/lifecycle is still owner-managed. To update the personal app without clearing data, use the same debug signing identity: `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+
+Manual QA: cancel both pickers; export/reimport with preference restore unchecked; verify duplicates/conflicts and no overwrite; opt into settings restoration using disposable fixtures; inspect Indonesian preview/errors and large text; rotate/background during selection; try invalid/future/oversized files; verify reminder enqueue/delivery and completed/deleted exclusion using disposable tasks. A process interruption may leave an incomplete export file; retry export. Record actual results before acceptance.
 
 ## Home startup placeholder — 2026-10-10
 

@@ -25,6 +25,8 @@ interface TaskDao {
     suspend fun adminFindForWrite(id: Long): TaskEntity?
     @Query("SELECT * FROM tasks ORDER BY id")
     suspend fun adminFindAllForReminders(): List<TaskEntity>
+    @Query("SELECT * FROM tasks ORDER BY id")
+    suspend fun backupSnapshot(): List<TaskEntity>
     @Query("SELECT * FROM tasks WHERE generatedFromTaskId = :parentId")
     suspend fun findGeneratedSuccessor(parentId: Long): TaskEntity?
     @Query("SELECT COUNT(*) FROM tasks")
@@ -50,6 +52,8 @@ interface EventDao {
     suspend fun adminFindForWrite(id: Long): EventEntity?
     @Query("SELECT COUNT(*) FROM events")
     suspend fun adminCount(): Int
+    @Query("SELECT * FROM events ORDER BY id")
+    suspend fun backupSnapshot(): List<EventEntity>
     @Insert suspend fun insert(event: EventEntity): Long
     @Update suspend fun update(event: EventEntity): Int
     @Query("UPDATE events SET deletedAt = :deletedAt, updatedAt = :updatedAt WHERE id = :id")
