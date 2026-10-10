@@ -37,6 +37,14 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.Executor
 
 class TaskReminders(private val context: Context) {
+    suspend fun requestReconciliationChecked() = withContext(Dispatchers.IO) {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            RECONCILIATION_WORK,
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            OneTimeWorkRequestBuilder<ReminderReconciliationWorker>().build(),
+        ).result.get(30, TimeUnit.SECONDS)
+    }
+
     fun requestReconciliation() {
         try {
             val operation = WorkManager.getInstance(context).enqueueUniqueWork(

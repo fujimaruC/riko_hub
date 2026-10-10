@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         try { (application as RikoHubApp).container.reminders.requestReconciliation() }
         catch (error: Exception) { Log.e("MainActivity", "Cannot reconcile task reminders", error) }
+        try { (application as RikoHubApp).container.widgets.requestUpdate() }
+        catch (error: Exception) { Log.e("MainActivity", "Cannot update task widgets", error) }
     }
 
     private fun consumeTaskOpen() {

@@ -1,0 +1,29 @@
+<resources>
+    <string name="backup_description">Ekspor tugas dan agenda, termasuk yang selesai atau dihapus, beserta pengaturan ke berkas JSON. Pilih lokasi penyimpanan lokal melalui pemilih dokumen; tidak ada integrasi cloud.</string>
+    <string name="backup_export">Ekspor cadangan</string>
+    <string name="backup_import">Impor cadangan</string>
+    <string name="backup_export_failed">Cadangan tidak dapat dibuat.</string>
+    <string name="backup_export_done">Cadangan berhasil disimpan.</string>
+    <string name="backup_export_write_failed">Cadangan sudah dibuat, tetapi berkas tidak dapat ditulis.</string>
+    <string name="backup_read_failed">Berkas cadangan tidak dapat dibaca.</string>
+    <string name="backup_import_failed">Impor tidak dapat diselesaikan.</string>
+    <string name="backup_export_lost">Ekspor terputus setelah aplikasi dimulai ulang. Coba ekspor kembali; bila berkas kosong terlihat, hapus berkas tersebut.</string>
+    <string name="backup_picker_failed">Pemilih berkas tidak dapat dibuka. Coba lagi.</string>
+    <string name="backup_invalid">Berkas cadangan tidak valid.</string>
+    <string name="backup_too_large">Berkas cadangan terlalu besar.</string>
+    <string name="backup_version">Versi berkas cadangan tidak didukung.</string>
+    <string name="backup_stale">Data berubah sejak pratinjau. Pilih ulang berkas dan tinjau kembali.</string>
+    <string name="backup_preview_title">Tinjau cadangan</string>
+    <string name="backup_preview_counts">Isi berkas: %1$d tugas dan %2$d agenda.</string>
+    <string name="backup_preview_new">Akan ditambahkan: %1$d tugas dan %2$d agenda.</string>
+    <string name="backup_preview_duplicates">Duplikat yang dilewati: %1$d.</string>
+    <string name="backup_preview_conflicts">Konflik yang dilewati: %1$d.</string>
+    <string name="backup_existing_wins">Data yang ada dipertahankan; tidak diganti atau dihapus.</string>
+    <string name="backup_restore_settings">Pulihkan pengaturan dari cadangan</string>
+    <string name="backup_restore_explanation">Jika dicentang, tema, nama, navigasi, jumlah petunjuk, dan pin saat ini akan diganti. Pengaturan disimpan terpisah dari data.</string>
+    <string name="backup_confirm">Impor</string>
+    <string name="backup_cancel">Batal</string>
+    <string name="backup_imported">Impor selesai: %1$d tugas dan %2$d agenda ditambahkan.</string>
+    <string name="backup_preferences_failed">Pengaturan gagal dipulihkan. Data yang ditambahkan tetap tersimpan.</string>
+    <string name="backup_reminders_failed">Permintaan pembaruan pengingat gagal dimasukkan. Buka ulang aplikasi untuk mencoba memperbarui pengingat. Data yang ditambahkan tetap tersimpan.</string>
+</resources>
