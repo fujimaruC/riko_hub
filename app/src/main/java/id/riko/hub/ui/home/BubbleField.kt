@@ -23,7 +23,9 @@ fun BubbleField(snapshot: HomeSnapshot, reduced: Boolean, resumed: Boolean,
                 onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit, onOverflow: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxWidth().semantics { isTraversalGroup = true }) {
         val largeText = LocalDensity.current.fontScale >= 1.3f || maxWidth < Spacing.field + Spacing.returnHandle
-        val target = if (largeText) BubbleLayoutPlanner.largeTextPlan(snapshot.ranked, snapshot.focus) else snapshot.bubbles
+        val planned = if (largeText) BubbleLayoutPlanner.largeTextPlan(snapshot.ranked, snapshot.focus) else snapshot.bubbles
+        val target = if (!largeText && planned.size == 1 && planned.single().urgency != null)
+            listOf(planned.single().copy(x = .5, y = .5, diameter = HomeTokens.singleTargetDiameter)) else planned
         var shown by remember { mutableStateOf(target) }
         val completedIds = snapshot.doneToday.map { it.id }.toSet()
         LaunchedEffect(target, completedIds, reduced, resumed) {
@@ -44,7 +46,7 @@ fun BubbleField(snapshot: HomeSnapshot, reduced: Boolean, resumed: Boolean,
                         }
                     } }
                 }
-            } else Box(Modifier.fillMaxWidth().height(width * BubbleLayoutPlanner.HEIGHT_RATIO.toFloat())) {
+            } else if (shown.isNotEmpty()) Box(Modifier.fillMaxWidth().height(width * BubbleLayoutPlanner.HEIGHT_RATIO.toFloat())) {
                 shown.forEachIndexed { index, item -> key(item.id) {
                     val position = DpOffset(width * (item.x - item.diameter / 2).toFloat(),
                         width * (item.y * BubbleLayoutPlanner.HEIGHT_RATIO - item.diameter / 2).toFloat())
