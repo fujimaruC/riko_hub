@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
@@ -21,16 +22,16 @@ import id.riko.hub.ui.theme.*
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
-fun HomeScreen(hintsShownCount: Int = 0, onNavigate: (Destination) -> Unit) {
+fun HomeScreen(hintsShownCount: Int = 0, onBackgroundColorChanged: (Color) -> Unit = {}, navigationControl: @Composable () -> Unit = {}, onNavigate: (Destination) -> Unit) {
     val app = LocalContext.current.applicationContext as RikoHubApp
     val model: HomeViewModel = viewModel(factory = viewModelFactory {
         initializer { HomeViewModel(app.container.tasks, app.container.events, app.container.settings, app.container.clock) }
     })
-    HomeRoute(model, hintsShownCount, onNavigate)
+    HomeRoute(model, hintsShownCount, onBackgroundColorChanged, navigationControl, onNavigate)
 }
 
 @Composable
-fun HomeRoute(model: HomeViewModel, hintsShownCount: Int = 0, onNavigate: (Destination) -> Unit) {
+fun HomeRoute(model: HomeViewModel, hintsShownCount: Int = 0, onBackgroundColorChanged: (Color) -> Unit = {}, navigationControl: @Composable () -> Unit = {}, onNavigate: (Destination) -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
     val lifecycle by androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     LifecycleStartEffect(model) { model.setActive(true); onStopOrDispose { model.setActive(false) } }
@@ -44,7 +45,8 @@ fun HomeRoute(model: HomeViewModel, hintsShownCount: Int = 0, onNavigate: (Desti
     }
     Box(Modifier.fillMaxSize()) {
         HomeContent(state, reduced, lifecycle == Lifecycle.State.RESUMED, onNavigate,
-            { model.edit() }, model::peek, complete, model::pin, model::retryRead, hintsShownCount)
+            { model.edit() }, model::peek, complete, model::pin, model::retryRead, hintsShownCount, onBackgroundColorChanged,
+            navigationControl)
         if (state.editor == null && state.peek == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
     val snapshot = state.snapshot
