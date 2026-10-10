@@ -78,6 +78,7 @@ fun RikoHub(openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}, onDar
             onNavigationStyle = { value -> persist(SettingsPreference.NAVIGATION_STYLE) { settingsStore.setNavigationStyle(value) } },
             settingsWriteFailure = writes.earliestFailure(),
             onSettingsFailureDismissed = writes::dismiss,
+            backupContent = { id.riko.hub.ui.settings.BackupSettingsSection((context as RikoHubApp).container.backups) },
             openTaskId = openTaskId, onTaskOpenConsumed = onTaskOpenConsumed)
     }
 }

@@ -1,0 +1,7 @@
+<resources>
+    <string name="widget_description">Jam lokal dan tugas yang perlu diperhatikan</string>
+    <string name="widget_loading">Memuat tugas…</string>
+    <string name="widget_unavailable">Tugas belum bisa dimuat</string>
+    <string name="widget_empty">Belum ada fokus. Semua aman.</string>
+    <string name="widget_overdue">Terlambat</string>
+</resources>
