@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.*
@@ -43,6 +44,9 @@ fun RikoNavHost(
     val controller = rememberNavController()
     val entry by controller.currentBackStackEntryAsState()
     val current = destination(entry)
+    val materialBackground = MaterialTheme.colorScheme.background
+    val homeBackground = remember(materialBackground) { mutableStateOf(materialBackground) }
+    val onHomeBackgroundChanged: (Color) -> Unit = remember(homeBackground) { { homeBackground.value = it } }
     val reduced = rememberReducedMotion()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -70,12 +74,15 @@ fun RikoNavHost(
     }
     CompositionLocalProvider(LocalNavigationStyle provides settings.navStyle) {
       Scaffold(
-          containerColor = MaterialTheme.colorScheme.background,
+          containerColor = if (current == Destination.Home) homeBackground.value else materialBackground,
+          contentColor = MaterialTheme.colorScheme.onBackground,
           snackbarHost = { SnackbarHost(snackbar) },
           bottomBar = {
+            if (current != Destination.Home) {
               Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.space5, vertical = Spacing.space2), contentAlignment = Alignment.CenterEnd) {
                   CompassChip(current, reduced, navigate)
               }
+            }
           },
       ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
@@ -94,7 +101,11 @@ fun RikoNavHost(
                     else slideOutOfContainer(direction, tween(Motion.medium, easing = Motion.standard))
                 },
             ) {
-                composable(Destination.Home.name) { HomeScreen(settings.hintsShownCount, navigate) }
+                composable(Destination.Home.name) {
+                    HomeScreen(hintsShownCount = settings.hintsShownCount,
+                        onBackgroundColorChanged = onHomeBackgroundChanged,
+                        navigationControl = { CompassChip(current, reduced, navigate) }, onNavigate = navigate)
+                }
                 composable(Destination.Tasks.name) { TasksScreen(navigate, openTaskId, onTaskOpenConsumed) }
                 composable(Destination.Timeline.name) { TimelineScreen(navigate) }
                 composable(Destination.Vault.name) { VaultScreen(navigate) { scope.launch { snackbar.showSnackbar(comingSoon) } } }

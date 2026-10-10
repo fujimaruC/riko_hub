@@ -8,9 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
@@ -31,7 +32,8 @@ import java.util.Locale
 @Composable
 fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNavigate: (Destination) -> Unit,
                 onAdd: () -> Unit, onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit,
-                onRetry: () -> Unit, hintsShownCount: Int = 0) {
+                onRetry: () -> Unit, hintsShownCount: Int = 0, onBackgroundColorChanged: (Color) -> Unit = {},
+                navigationControl: @Composable () -> Unit = {}) {
     val snapshot = state.snapshot
     val dark = MaterialTheme.colorScheme.background.luminance() < .5f
     val background by animateColorAsState(when (snapshot?.mode) {
@@ -39,28 +41,23 @@ fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNaviga
         HomeMode.DENSE -> MaterialTheme.colorScheme.background
         else -> MaterialTheme.colorScheme.background
     }, tween(if (reduced || !resumed) Motion.fast else Motion.long), label = "home mode")
+    SideEffect { onBackgroundColorChanged(background) }
+    if (state.loading && !state.readFailed) {
+        Box(Modifier.fillMaxSize().background(background).testTag("screen-Home").semantics { isTraversalGroup = true },
+            contentAlignment = Alignment.Center) { HomeLoading() }
+        return
+    }
     val fieldTint by animateColorAsState(if (snapshot?.mode == HomeMode.DENSE)
         (if (dark) HomeTokens.denseDark else HomeTokens.denseLight).copy(alpha = HomeTokens.denseWashAlpha) else background,
         tween(if (reduced || !resumed) Motion.fast else Motion.long), label = "field wash")
-    SpatialNavLayer(Destination.Home, onNavigate, Modifier.fillMaxSize().testTag("screen-Home"), horizontalOnly = true) {
-        Column(Modifier.fillMaxSize().background(background).semantics { isTraversalGroup = true }) {
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = Spacing.space5),
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+        Column(Modifier.fillMaxSize().background(background).testTag("screen-Home").semantics { isTraversalGroup = true }) {
+            SpatialNavLayer(Destination.Home, onNavigate, Modifier.weight(1f).fillMaxWidth(), horizontalOnly = true) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.space5),
                 verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
                 HomeHeader(state, onNavigate)
-                if (snapshot != null && snapshot.total > 0) HomeProgress(snapshot, reduced, resumed)
-                snapshot?.next?.let { next ->
-                    Surface(shape = RikoShapes.pill, color = MaterialTheme.colorScheme.surfaceVariant) {
-                        Row(Modifier.fillMaxWidth().padding(Spacing.space3), horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                            Icon(androidx.compose.ui.res.painterResource(if (next.event) R.drawable.ic_event else R.drawable.ic_schedule),
-                                contentDescription = null, modifier = Modifier.size(Spacing.space6))
-                            Text(stringResource(if (next.event) R.string.home_next_event else R.string.home_next_task),
-                                style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                            Text(stringResource(R.string.home_next, Instant.ofEpochMilli(next.at).atZone(snapshot.zone).format(taskTimeFormat), next.title),
-                                style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(2f))
-                        }
-                    }
-                }
-                HomeHints(onNavigate, top = true, alpha = edgeHintAlpha(hintsShownCount))
+                Text(stringResource(R.string.home_focus_space), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 SpatialNavLayer(Destination.Home, onNavigate, Modifier.fillMaxWidth().background(fieldTint, RikoShapes.asymA).testTag("home-field").semantics { traversalIndex = 0f },
                     horizontalOnly = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f) {
                     when {
@@ -70,7 +67,6 @@ fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNaviga
                                 TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                             }
                         }
-                        state.loading -> HomeLoading()
                         snapshot != null && snapshot.ranked.isEmpty() -> Column {
                             HomeEmpty(snapshot.doneToday.isNotEmpty())
                             BubbleField(snapshot, reduced, resumed, onPeek, onComplete, onPin) { onNavigate(Destination.Tasks) }
@@ -78,32 +74,56 @@ fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNaviga
                         snapshot != null -> BubbleField(snapshot, reduced, resumed, onPeek, onComplete, onPin) { onNavigate(Destination.Tasks) }
                     }
                 }
-                HomeHints(onNavigate, top = false, alpha = edgeHintAlpha(hintsShownCount))
+                if ((snapshot != null && snapshot.total > 0) || snapshot?.next != null) {
+                    Column(Modifier.fillMaxWidth().padding(top = Spacing.space2), verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
+                        if (snapshot != null && snapshot.total > 0) HomeProgress(snapshot, reduced, resumed)
+                        snapshot?.let { current -> current.next?.let { next ->
+                            Row(Modifier.fillMaxWidth().padding(vertical = Spacing.space2), horizontalArrangement = Arrangement.spacedBy(Spacing.space3),
+                                verticalAlignment = Alignment.Top) {
+                                Icon(androidx.compose.ui.res.painterResource(if (next.event) R.drawable.ic_event else R.drawable.ic_schedule),
+                                    contentDescription = null, modifier = Modifier.padding(top = Spacing.space1).size(Spacing.space5),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Column(Modifier.weight(1f)) {
+                                    Text(stringResource(if (next.event) R.string.home_next_event else R.string.home_next_task),
+                                        style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(stringResource(R.string.home_next, Instant.ofEpochMilli(next.at).atZone(current.zone).format(taskTimeFormat), next.title),
+                                        style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
+                        } }
+                    }
+                }
             }
-            Button(onClick = onAdd, enabled = !state.busy && !state.loading && !state.readFailed,
-                shape = RikoShapes.pill, modifier = Modifier.padding(horizontal = Spacing.space5, vertical = Spacing.space2)
-                    .heightIn(min = Spacing.touch).testTag("home-add")) { Text(stringResource(R.string.home_quick_add)) }
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.space5, vertical = Spacing.space2),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.space2), verticalAlignment = Alignment.CenterVertically) {
+                Button(onClick = onAdd, enabled = !state.busy && !state.loading && !state.readFailed,
+                    shape = RikoShapes.pill, modifier = Modifier.weight(1f).heightIn(min = Spacing.touch).testTag("home-add")) {
+                    Text(stringResource(R.string.home_quick_add), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                navigationControl()
+            }
         }
     }
 }
 
 @Composable
 private fun HomeHeader(state: HomeUiState, onNavigate: (Destination) -> Unit) {
-    Column(Modifier.padding(top = Spacing.space4)) {
-        Text(stringResource(R.string.home_greeting, state.name.ifBlank { stringResource(R.string.home_default_name) }), style = MaterialTheme.typography.displayLarge,
-            modifier = Modifier.semantics { heading(); traversalIndex = -2f })
+    Column(Modifier.padding(top = Spacing.space3), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
         val snapshot = state.snapshot
+        if (snapshot != null) Text(snapshot.today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.forLanguageTag("id-ID"))),
+            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+            Text(stringResource(R.string.home_greeting, state.name.ifBlank { stringResource(R.string.home_default_name) }),
+                style = MaterialTheme.typography.displayMedium, modifier = Modifier.weight(1f).semantics { heading(); traversalIndex = -2f })
+            TextButton(onClick = { onNavigate(Destination.Settings) }, modifier = Modifier.heightIn(min = Spacing.touch)) {
+                Text(stringResource(R.string.settings), color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
         if (snapshot != null) {
             Text(if (snapshot.urgentCount == 0) stringResource(if (snapshot.ranked.isEmpty() && snapshot.doneToday.isNotEmpty())
                 R.string.home_clear else R.string.home_calm) else stringResource(R.string.home_urgent, snapshot.urgentCount),
-                style = MaterialTheme.typography.bodyMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = RikoShapes.pill, color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.weight(1f)) {
-                    Text(snapshot.today.format(DateTimeFormatter.ofPattern("EEEE, d MMM", Locale.forLanguageTag("id-ID"))),
-                        style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(Spacing.space2))
-                }
-                TextButton(onClick = { onNavigate(Destination.Settings) }) { Text(stringResource(R.string.settings)) }
-            }
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -112,14 +132,11 @@ private fun HomeHeader(state: HomeUiState, onNavigate: (Destination) -> Unit) {
 private fun HomeProgress(snapshot: HomeSnapshot, reduced: Boolean, resumed: Boolean) {
     val progress by androidx.compose.animation.core.animateFloatAsState(snapshot.done.toFloat() / snapshot.total,
         if (reduced || !resumed) androidx.compose.animation.core.snap() else tween(Motion.short), label = "today progress")
-    Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surfaceVariant) {
-        Row(Modifier.fillMaxWidth().padding(Spacing.space3), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-            CircularProgressIndicator(progress = { progress },
-                modifier = Modifier.size(Spacing.space8).clearAndSetSemantics {}, color = LocalRikoColors.current.personal.color)
-            Text(stringResource(R.string.home_progress, snapshot.done, snapshot.total), style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.testTag("home-progress").semantics { traversalIndex = 2f })
-        }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
+        Text(stringResource(R.string.home_progress, snapshot.done, snapshot.total), style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("home-progress").semantics { traversalIndex = 2f })
+        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(Spacing.space1), color = LocalRikoColors.current.personal.color,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant, drawStopIndicator = {})
     }
 }
 
@@ -140,33 +157,12 @@ private fun HomeEmpty(allDone: Boolean) {
 private fun HomeLoading() {
     var show by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { delay(150); show = true }
-    if (show) Row(Modifier.fillMaxWidth().height(Spacing.illustration), horizontalArrangement = Arrangement.SpaceAround) {
-        repeat(3) { Surface(Modifier.size(Spacing.touch), shape = HomeBlobShapes[it], color = MaterialTheme.colorScheme.surfaceVariant) {} }
+    if (show) Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.space5), contentAlignment = Alignment.Center) {
+        LinearProgressIndicator(Modifier.widthIn(max = 320.dp).fillMaxWidth())
     }
 }
 
 fun edgeHintAlpha(launchCount: Int) = if (launchCount > 3) 0.55f else 1f
-
-@Composable
-private fun HomeHints(onNavigate: (Destination) -> Unit, top: Boolean, alpha: Float) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-        val targets = if (top) listOf(Destination.Timeline) else listOf(Destination.Sync, Destination.Tasks, Destination.Vault)
-        targets.forEach { target -> TextButton(onClick = { onNavigate(target) }) {
-            val label = stringResource(when (target) {
-                Destination.Timeline -> R.string.hint_timeline; Destination.Sync -> R.string.hint_sync
-                Destination.Tasks -> R.string.hint_tasks; else -> R.string.hint_vault
-            })
-            val ink = MaterialTheme.colorScheme.onSurface
-            // Keep labels readable; only the decorative direction fades after onboarding.
-            Text(buildAnnotatedString {
-                append(label)
-                label.forEachIndexed { index, char ->
-                    if (char in "↑←↓→") addStyle(SpanStyle(color = ink.copy(alpha = alpha)), index, index + 1)
-                }
-            }, color = ink, style = MaterialTheme.typography.labelSmall)
-        } }
-    }
-}
 
 @Preview @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Preview(fontScale = 2f, heightDp = 1000)
