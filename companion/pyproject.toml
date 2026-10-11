@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "riko-hub-companion"
+version = "0.4.0"
+description = "Riko Hub Laptop Companion"
+requires-python = ">=3.11"
+dependencies = ["cryptography>=43,<51", "zeroconf>=0.132,<1.0"]
+
+[project.scripts]
+rikohub = "riko_companion.cli:main"
+
+[tool.setuptools]
+packages = ["riko_companion"]
