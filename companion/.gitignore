@@ -1,9 +1,14 @@
 .venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
+build/
+dist/
 identity-key.pem
 identity-cert.pem
 trusted-phones.json
 laptop-id
 companion.lock
+companion-runtime.json
+network.json
 .write-*

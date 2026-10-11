@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import http.client
+import hashlib
 import socket
 import ssl
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import parse_qs, urlsplit
 
 from .state import StateError
 
@@ -33,8 +35,8 @@ class BoundedTLSServer(HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
 
-    def __init__(self, address, handler, context, state, bind_and_activate=True):
-        self.context, self.state = context, state
+    def __init__(self, address, handler, context, state, bind_and_activate=True, handoff=None):
+        self.context, self.state, self.handoff = context, state, handoff
         self.slots = threading.BoundedSemaphore(8)
         self.lifecycle_lock = threading.Lock()
         self.closing = False
@@ -194,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
         if len(headers) > 64 or sum(len(k) + len(v) + 4 for k, v in headers) > 8192:
             self._send(400, {"error": "invalid_request"})
             return False
-        if self.command != "POST":
+        if self.command not in ("POST", "PUT"):
             self.server.cancel_request_deadline(self.connection)
         return True
 
@@ -204,12 +206,28 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send(self, status, payload):
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+        if len(body) > 65536:
+            status = 503
+            body = b'{"error":"response_too_large"}'
+        self.connection.settimeout(10)
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(body)
+        self.close_connection = True
+
+    def _send_bytes(self, status, value, digest=None):
+        self.connection.settimeout(10)
+        self.send_response(status)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Length", str(len(value)))
+        if digest is not None:
+            self.send_header("X-Riko-Chunk-SHA256", digest)
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(value)
         self.close_connection = True
 
     def _success(self, **extra):
@@ -223,6 +241,18 @@ class Handler(BaseHTTPRequestHandler):
             self._send(426, {"error": "protocol_mismatch"})
             return False
         return True
+
+    def _protocol2(self, body=None):
+        raw = self.headers.get("X-Riko-Protocol") if body is None else body.get("protocol")
+        valid = raw == "2" if body is None else type(raw) is int and raw == 2
+        if not valid:
+            self._send(426, {"error": "protocol_mismatch"})
+            return False
+        return True
+
+    def _success2(self, **extra):
+        return {"protocol": 2, "peer_id": self.state.peer_id, "name": self.state.name,
+                "capabilities": ["files", "text", "workspace"], **extra}
 
     def _read_json(self):
         lengths = self.headers.get_all("Content-Length", [])
@@ -262,6 +292,56 @@ class Handler(BaseHTTPRequestHandler):
             raise StateError("invalid_request")
         return value
 
+    def _read_chunk(self):
+        lengths = self.headers.get_all("Content-Length", [])
+        if len(lengths) != 1 or self.headers.get_all("Transfer-Encoding"):
+            raise StateError("invalid_request")
+        value = lengths[0]
+        if not value.isascii() or not value.isdecimal() or len(value) > 7 or (value != "0" and value.startswith("0")):
+            raise StateError("invalid_request")
+        length = int(value)
+        if length > 262144:
+            raise StateError("too_large")
+        digest = self.headers.get("X-Riko-Chunk-SHA256", "")
+        if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+            raise StateError("invalid_request")
+        raw = self.rfile.read(length)
+        self.server.cancel_request_deadline(self.connection)
+        if len(raw) != length:
+            raise StateError("invalid_request")
+        return raw, digest
+
+    @staticmethod
+    def _query_int(query, key, required=True):
+        values = query.get(key, [])
+        if not values and not required:
+            return None
+        if len(values) != 1 or not values[0].isascii() or not values[0].isdecimal() or len(values[0]) > 10:
+            raise StateError("invalid_request")
+        return int(values[0])
+
+    def _v2_peer(self):
+        if not self._protocol2():
+            return None
+        if self.server.handoff is None:
+            raise StateError("not_configured")
+        header = self.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            raise StateError("unauthorized")
+        token = header[7:]
+        peer_id = self.state.authenticated(token)
+        with self.state.lock:
+            self.server.handoff.require_peer(peer_id, self.state.trust)
+        return peer_id, token
+
+    def _v2_operation(self, peer_id, token, operation):
+        # Keep authorization stable through one bounded request, including disk writes.
+        with self.state.lock:
+            if self.state._device_for_token(token) != peer_id:
+                raise StateError("unauthorized")
+            self.server.handoff.require_peer(peer_id, self.state.trust)
+            return operation()
+
     def _auth(self):
         if not self._protocol():
             return None
@@ -274,7 +354,14 @@ class Handler(BaseHTTPRequestHandler):
         if self.state.shutting_down:
             self._send(503, {"error": "shutting_down"})
             return False
-        if self.path not in {"/v1/hello", "/v1/pair", "/v1/status", "/v1/disconnect", "/v1/trust"}:
+        path = urlsplit(self.path).path
+        if (path not in {"/v1/hello", "/v1/pair", "/v1/status", "/v1/disconnect", "/v1/trust"} and
+                not path.startswith("/v2/")):
+            self._send(404, {"error": "not_found"})
+            return False
+        if path.startswith("/v2/"):
+            if method in ("GET", "POST", "PUT"):
+                return True
             self._send(404, {"error": "not_found"})
             return False
         if (method, self.path) not in {
@@ -289,13 +376,19 @@ class Handler(BaseHTTPRequestHandler):
         status = {
             "invalid_request": 400, "unauthorized": 401, "bad_pairing_key": 403,
             "approval_denied": 403, "occupied": 409, "too_large": 413,
-            "resource_limit": 429, "shutting_down": 503,
+            "resource_limit": 429, "shutting_down": 503, "forbidden": 403,
+            "not_found": 404, "conflict": 409, "storage_failure": 503,
+            "not_configured": 503, "integrity_mismatch": 422,
         }.get(error.code, 400)
         self._send(status, {"error": error.code})
 
     def do_GET(self):
         try:
             if not self._route("GET"):
+                return
+            path = urlsplit(self.path).path
+            if path.startswith("/v2/"):
+                self._get_v2(path)
                 return
             if self.path == "/v1/hello":
                 self._send(200, self._success())
@@ -306,12 +399,20 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, self._success(status="connected"))
         except StateError as error:
             self._error(error)
+        except ValueError:
+            self._error(StateError("invalid_request"))
+        except Exception:
+            self._send(503, {"error": "storage_failure"})
 
     def do_POST(self):
         try:
             if not self._route("POST"):
                 return
             body = self._read_json()
+            path = urlsplit(self.path).path
+            if path.startswith("/v2/"):
+                self._post_v2(path, body)
+                return
             if not self._protocol(body):
                 return
             if self.path == "/v1/pair":
@@ -332,6 +433,8 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(200, self._success())
         except StateError as error:
             self._error(error)
+        except ValueError:
+            self._error(StateError("invalid_request"))
         except Exception:
             self._send(503, {"error": "storage_failure"})
 
@@ -351,7 +454,136 @@ class Handler(BaseHTTPRequestHandler):
     def _unsupported(self):
         self._send(404, {"error": "not_found"})
 
-    do_PUT = _unsupported
+    def _get_v2(self, path):
+        if path == "/v2/hello":
+            if urlsplit(self.path).query:
+                raise StateError("invalid_request")
+            if not self._protocol2():
+                return
+            header = self.headers.get("Authorization", "")
+            if not header.startswith("Bearer "):
+                raise StateError("unauthorized")
+            peer_id = self.state.authenticated(header[7:])
+            with self.state.lock:
+                current = self.state.trust.get(peer_id)
+                grant = self.server.handoff.grants.get(peer_id) if self.server.handoff else None
+                allowed = bool(current and grant and current.get("token_hash") == grant.get("token_hash"))
+                if grant and not allowed:
+                    try:
+                        self.server.handoff.require_peer(peer_id, self.state.trust)
+                    except StateError:
+                        allowed = False
+            self._send(200, {"protocol": 2, "peer_id": self.state.peer_id,
+                "capabilities": ["files", "text", "workspace"],
+                "limits": {"chunk_bytes": 262144, "file_bytes": 67108864,
+                           "store_bytes": 268435456, "text_bytes": 2048,
+                           "json_response_bytes": 65536}, "handoff_allowed": allowed})
+            return
+        auth = self._v2_peer()
+        if auth is None:
+            return
+        peer_id, token = auth
+        parsed = urlsplit(self.path)
+        query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True) if parsed.query else {}
+        def operation():
+            if path == "/v2/transfers" and not query:
+                return {"transfers": self.server.handoff.list_transfers(peer_id)}
+            if path == "/v2/offers" and not query:
+                return {"offers": self.server.handoff.offers(peer_id)}
+            if path == "/v2/texts" and not query:
+                return {"texts": self.server.handoff.list_texts(peer_id)}
+            if path == "/v2/workspaces" and not query:
+                return self.server.handoff.list_workspaces(peer_id)
+            if path.startswith("/v2/transfers/") and path.endswith("/chunks"):
+                transfer_id = path[len("/v2/transfers/"):-len("/chunks")].rstrip("/")
+                if set(query) != {"offset", "length"}:
+                    raise StateError("invalid_request")
+                offset, length = self._query_int(query, "offset"), self._query_int(query, "length")
+                value = self.server.handoff.read_chunk(peer_id, transfer_id, offset, length)
+                return ("bytes", value, hashlib.sha256(value).hexdigest())
+            if path.startswith("/v2/transfers/") and not query:
+                transfer_id = path[len("/v2/transfers/"):]
+                return {"transfer": self.server.handoff._view(self.server.handoff.transfer(peer_id, transfer_id))}
+            if path.startswith("/v2/texts/") and not path.endswith("/consume") and not query:
+                return {"text": self.server.handoff.get_text(peer_id, path[len("/v2/texts/"):])}
+            raise StateError("not_found")
+        result = self._v2_operation(peer_id, token, operation)
+        if isinstance(result, tuple) and result[0] == "bytes":
+            self._send_bytes(200, result[1], result[2])
+        else:
+            self._send(200, self._success2(**result))
+
+    def _post_v2(self, path, body):
+        if path == "/v2/hello":
+            self._send(404, {"error": "not_found"})
+            return
+        if not self._protocol2(body):
+            return
+        auth = self._v2_peer()
+        if auth is None:
+            return
+        peer_id, token = auth
+        if urlsplit(self.path).query:
+            raise StateError("invalid_request")
+        def operation():
+            if path == "/v2/transfers":
+                return {"transfer": self.server.handoff.create_upload(peer_id, body)}
+            if path in ("/v2/text", "/v2/texts"):
+                return {"text": self.server.handoff.receive_text(peer_id, body)}
+            if path == "/v2/workspaces":
+                return {"workspace": self.server.handoff.save_workspace(peer_id, body)}
+            parts = path.split("/")
+            if len(parts) == 5 and parts[1:3] == ["v2", "transfers"] and parts[4] in ("consent", "commit", "cancel"):
+                transfer_id, action = parts[3], parts[4]
+                if action == "consent":
+                    return {"transfer": self.server.handoff.consent(peer_id, transfer_id, body)}
+                if action == "commit":
+                    return {"transfer": self.server.handoff.commit(peer_id, transfer_id, body)}
+                return {"transfer": self.server.handoff.cancel(peer_id, transfer_id, body)}
+            if len(parts) == 5 and parts[1:3] == ["v2", "texts"] and parts[4] == "consume":
+                self.server.handoff.consume_text(peer_id, parts[3], body)
+                return {"consumed": True}
+            raise StateError("not_found")
+        result = self._v2_operation(peer_id, token, operation)
+        if path == "/v2/transfers" and result["transfer"]["state"] == "awaiting_approval":
+            print(f"Handoff upload {result['transfer']['transfer_id']} from {peer_id}; type handoff approve {result['transfer']['transfer_id']}", flush=True)
+        elif path in ("/v2/text", "/v2/texts"):
+            print(f"Text receipt {result['text']['text_id']} from {peer_id}; type handoff texts to review", flush=True)
+        self._send(200, self._success2(**result))
+
+    def do_PUT(self):
+        try:
+            if not self._route("PUT"):
+                return
+            path = urlsplit(self.path).path
+            if not path.startswith("/v2/transfers/") or not path.endswith("/chunks"):
+                raise StateError("not_found")
+            if urlsplit(self.path).query == "":
+                raise StateError("invalid_request")
+            if not self._protocol2():
+                return
+            auth = self._v2_peer()
+            if auth is None:
+                return
+            peer_id, token = auth
+            query = parse_qs(urlsplit(self.path).query, keep_blank_values=True, strict_parsing=True)
+            if set(query) != {"offset"}:
+                raise StateError("invalid_request")
+            offset = self._query_int(query, "offset")
+            data, digest = self._read_chunk()
+            transfer_id = path[len("/v2/transfers/"):-len("/chunks")].rstrip("/")
+            def operation():
+                self.server.handoff.write_chunk(peer_id, transfer_id, offset, data, digest)
+                return self.server.handoff._view(self.server.handoff.transfer(peer_id, transfer_id))
+            transfer = self._v2_operation(peer_id, token, operation)
+            self._send(200, self._success2(transfer=transfer))
+        except StateError as error:
+            self._error(error)
+        except ValueError:
+            self._error(StateError("invalid_request"))
+        except Exception:
+            self._send(503, {"error": "storage_failure"})
+
     do_PATCH = _unsupported
     do_OPTIONS = _unsupported
     do_HEAD = _unsupported
