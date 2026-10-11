@@ -6,12 +6,50 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 
 | Item | Value |
 |------|-------|
-| Version in development | 0.3.0 (version code 300) |
-| Current phase | Materials Vault implementation integrated; Google Cloud configuration, live authorization/transfers and owner device acceptance pending. v0.2 is accepted and closed. |
+| Version in development | 0.4.0 (version code 400) |
+| Current phase | Laptop Companion source implementation on feature/v04-laptop-companion; all compilation, tests, network/device verification and acceptance belong to Riko and remain pending. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
+| v0.4 execution evidence | None: no builds, lint/static-analysis suites, automated tests, service startup or device verification executed. Historical v0.3 evidence below does not verify v0.4. |
 | Last successful build | Owner-reported BUILD SUCCESSFUL in 7m 53s (2026-10-11), 44 tasks. Fresh v0.3 debug APK: 16,948,362 bytes, SHA-256 50ba882cdccae7b89073e86636b452e9c103c10e2c55d794de34cf5e7a8e7d5a. Not installed in this mission. Future builds are owner-controlled. |
 | Last test run | Fresh reports: 11 focused Vault UI/state JVM tests passed, 0 failures/errors/skips. Ten Drive API tests compiled but have no execution report. Historical v0.2 evidence is retained below. |
 | Release status | Unsigned local build; not a public release |
-| Owner acceptance | v0.2 approved and completed by owner. v0.3 remains unaccepted until Google integration and on-device checks are verified. |
+| Owner acceptance | v0.2 approved and closed. v0.3 implementation checkpointed at 44d6c67, with live Google QA separately pending. v0.4 requires owner verification and acceptance. |
+
+## v0.4 — Laptop Companion implementation — 2026-10-11
+
+- Created `feature/v04-laptop-companion` at protected v0.3 checkpoint `44d6c67`, preserving the untracked `gradle/gradle-daemon-jvm.properties`. No reset, clean, stash, commit, push or separate Claude-worktree change occurred. v0.2 stays accepted; outstanding v0.3 Google Drive QA is independently tracked and was not revisited.
+- Added a real foreground Linux Python companion: explicit RFC1918 IPv4 bind, DNS-SD `_rikohub._tcp.local.`, HTTPS JSON endpoints, a persistent P-256 certificate/laptop UUID, console pairing approval, trusted-phone status and revocation, and clean stop/EOF/Ctrl-C/SIGTERM handling. No root or autostart service. Python dependencies are limited to cryptography and zeroconf; no Android dependency was added.
+- Replaced the existing Sync placeholder with an Indonesian Laptop Companion UI on the unchanged navigation route. Includes nearby laptops, bounded refresh/loading/no-Wi-Fi/empty states, explicit pairing-key entry, approval feedback, saved laptop status, connect/disconnect, confirmed forget, and recovery controls. Existing Riko theme/ScreenFrame/shapes are reused.
+- Pairing uses an owner-obtained out-of-band payload containing the laptop UUID, full DER SHA-256 certificate pin and random 256-bit one-time secret. The payload expires after 120 seconds; explicit laptop approval is required within 60 seconds and before expiry. TLS 1.2+ and the exact certificate pin protect initial pairing and reconnect. A fresh random bearer token authenticates the phone; the laptop persists only its SHA-256 hash. No network-provided pin, trust-on-first-use, plaintext fallback or custom encryption algorithm exists.
+- Android stores one laptop's minimal trust record encrypted with Android Keystore AES-GCM in private preferences. Linux stores at most eight trusted phones and its identity in a process-locked owner-only directory, with atomic/fsynced writes and 0600 files. Pairing secrets and tokens are excluded from diagnostic logs. The explicit local `pair` command displays its temporary payload to the operator.
+- Discovery and connection monitoring are foreground-only. Android uses the API-26-compatible NSD resolve flow, bounded scans/serialized resolution, Wi-Fi network binding, callback ownership checks and bounded HTTPS response reads. Heartbeats are every 15 seconds with capped network backoff; connected requires a validated protocol/peer/capability/status response. Laptop presence expires after 45 seconds without an authenticated check. Android 17 target-37 local-network permission is requested only on that OS; Android 9 has no new runtime prompt.
+- Forget attempts authenticated remote revocation and performs explicit local deletion, with truthful offline/unconfirmed-revocation guidance. Certificate replacement requires re-pairing. Protocol 1 provides presence only; unsupported versions/identities fail closed. No file transfer, clipboard, remote shell/control, task synchronization, Drive synchronization, cloud relay, Room migration or app-data endpoint was introduced.
+- Linux request handling is bounded to eight TLS workers, 8 KiB JSON/header limits, a five-second handshake timeout and a ten-second absolute request-receipt deadline independent of the approval wait. Shutdown coordinates socket/worker/timer cleanup and blocks post-stop state mutations.
+
+Files:
+- Added `companion/.gitignore`, `requirements.txt`, `README.md`, `riko_companion/{__init__.py,__main__.py,server.py,state.py,storage.py}`, and `tests/test_state.py`.
+- Added `app/src/main/java/id/riko/hub/data/remote/device/{CompanionProtocol.kt,CompanionRepository.kt}`.
+- Added `app/src/main/java/id/riko/hub/ui/sync/{SyncUiState.kt,SyncViewModel.kt}`; modified `SyncScreen.kt`.
+- Added `app/src/main/res/values/companion_strings.xml` and `app/src/test/java/id/riko/hub/data/remote/device/CompanionProtocolTest.kt`.
+- Modified `AppContainer.kt` (lazy companion service), `AndroidManifest.xml` (network/multicast/local-network permissions), `app/build.gradle.kts` (0.4.0/code 400), and this status document.
+- Added [setup guide](V04_LAPTOP_COMPANION_SETUP.md) and [protocol/security contract](V04_COMPANION_PROTOCOL.md).
+
+Source review and verification limits:
+- Confirmed branch `feature/v04-laptop-companion` and HEAD `44d6c67`. Compared 189 protected baseline files: no unexpected existing-file changes; the untracked Gradle JVM criteria file is byte-identical. Parsed the manifest and companion strings XML, resolved all 24 companion value-resource references, and inspected the existing Sync navigation route, unchanged min/target SDK and cleartext/backup restrictions.
+- Independent source review corrected bounded Linux socket/shutdown handling and Android callback returns, stale trust reads, cancellation cleanup and reset/forget completion races. Final focused rechecks confirmed the reported corrections in source. Trust loading waits for pairing completion; epoch guards reject stale results, and local deletion plus state publication complete inside a non-cancellable cleanup. Endpoint caches are bounded to 32 entries/90 seconds; transient HTTP errors retain reconnect backoff. No compilation or runtime success follows from these reviews.
+- Written but **not executed**: five Kotlin test methods covering payload/version/UUID/hex validation, RFC1918 addresses, capped backoff and asynchronous stale-read rejection during pairing/removal; twelve Python test methods covering one-use/expiry/approval/hash/revocation/persistence/shutdown/header/body bounds plus fake timer/socket/worker cleanup. The Kotlin epoch fixtures do not exercise the complete Android repository/Keystore/lifecycle or a real network.
+- No Gradle task, build, APK compilation/packaging, lint, static-analysis suite, JVM/instrumentation/UI/integration test, dependency installation, Python service/test/compile execution, certificate generation, ADB or emulator command occurred. Existing v0.3 build/test artifacts are historical and do not verify v0.4. All build, test and runtime verification execution belongs exclusively to Riko.
+
+Owner handoff:
+1. Use [V04_LAPTOP_COMPANION_SETUP.md](V04_LAPTOP_COMPANION_SETUP.md) for exact Linux startup, Android build, Kotlin/Python test commands, security limits and QA checklist.
+2. Build and test personally, then install with the existing signing identity while preserving app data. Verify Linux startup/stop, real DNS-SD, Android 9 discovery/lifecycle, initial pairing, invalid/expired/replayed key rejection and wrong-pin/protocol rejection.
+3. Verify heartbeat status, reconnect after laptop restart and Wi-Fi loss/restoration, permission denial, online/offline forget, laptop-side revocation, interrupted approval and persistence failures. Never record secret payloads/tokens in evidence.
+4. No v0.5 work started. v0.4 remains pending owner compilation, tests, network/security/device verification and acceptance.
+
+Known limitations:
+- One saved laptop on Android; eight phones on Linux; private IPv4/Wi-Fi only. No IPv6-only/VPN support, Windows implementation, background presence, QR scanner or automatic desktop network-interface migration. A changed laptop LAN address requires restarting with the correct bind address.
+- Pairing-key entry is intentionally longer than a PIN; obtain it directly from the local laptop terminal through an owner-controlled trusted method. No companion transfer feature is used to deliver it.
+- A pairing approved at the laptop but interrupted before Android saves the token can leave orphan trust; revoke the shown phone UUID on the laptop before retrying. Offline local forget cannot prove remote revocation.
+- Foreground timers, Android NSD/OEM behavior, TLS interoperability, Keystore/storage failure recovery, cancellation races, Linux socket shutdown and dependency behavior remain unverified by execution. Source review is not a security certification.
 
 ## v0.3 — Google Drive Materials Vault implementation — 2026-10-11
 
