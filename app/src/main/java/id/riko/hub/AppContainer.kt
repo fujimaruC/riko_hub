@@ -16,6 +16,7 @@ import id.riko.hub.data.remote.drive.DriveRepository
 import id.riko.hub.data.remote.drive.GoogleDriveAuthorization
 import id.riko.hub.data.remote.drive.MaterialsRepository
 import id.riko.hub.data.remote.device.CompanionRepository
+import id.riko.hub.data.remote.device.HandoffRepository
 
 class AppContainer(context: Context, val clock: Clock = SystemClock) {
     private val appContext = context.applicationContext
@@ -31,6 +32,7 @@ class AppContainer(context: Context, val clock: Clock = SystemClock) {
     val materials: MaterialsRepository by lazy { DriveRepository(appContext) }
     val driveAuthorization by lazy { GoogleDriveAuthorization(appContext) }
     val companion: CompanionRepository by lazy { CompanionRepository(appContext) }
+    val handoff: HandoffRepository by lazy { HandoffRepository(appContext, companion) }
     val backups by lazy { LocalBackupService(database, settings, clock) {
         try { reminders.requestReconciliationChecked() } finally { widgets.requestUpdate() }
     } }

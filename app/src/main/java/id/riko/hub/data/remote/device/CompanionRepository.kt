@@ -36,6 +36,24 @@ internal class CompanionTrustEpoch {
     fun isCurrent(snapshot: Int): Boolean = snapshot == value
 }
 
+internal class CompanionHandoffSession(
+    internal val peerId: String,
+    internal val pin: String,
+    internal val network: Network,
+    internal val laptop: Laptop,
+    internal val generation: Int,
+    internal val trustEpoch: Int,
+    private val phoneId: String,
+    private val bearerToken: String
+) {
+    internal fun matches(trust: TrustedLaptop): Boolean =
+        trust.id == peerId && trust.phoneId == phoneId && trust.pin == pin && trust.token == bearerToken
+
+    internal fun authorize(connection: HttpsURLConnection) {
+        connection.setRequestProperty("Authorization", "Bearer $bearerToken")
+    }
+}
+
 class CompanionRepository(context: Context) {
     private val app = context.applicationContext
     private val connectivity = app.getSystemService(ConnectivityManager::class.java)
@@ -45,11 +63,12 @@ class CompanionRepository(context: Context) {
     private val mutable = MutableStateFlow(CompanionSnapshot())
     val state = mutable.asStateFlow()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var active = false
-    private var generation = 0
+    @Volatile private var active = false
+    @Volatile private var generation = 0
     private val trustEpoch = CompanionTrustEpoch()
     private var scanEpoch = 0
-    private var network: Network? = null
+    @Volatile private var network: Network? = null
+    private val handoffConnections = java.util.concurrent.ConcurrentHashMap.newKeySet<HttpsURLConnection>()
     private var callback: ConnectivityManager.NetworkCallback? = null
     private var lock: WifiManager.MulticastLock? = null
     private var discovery: NsdManager.DiscoveryListener? = null
@@ -75,10 +94,10 @@ class CompanionRepository(context: Context) {
             val trust = withContext(Dispatchers.IO) { readTrust() }
             if (trustEpoch.isCurrent(epoch)) { storageBlocked = false; mutable.value = mutable.value.copy(trusted = trust, error = null); if (active && trust != null) startHeartbeat() }
         } catch (e: CancellationException) { throw e }
-        catch (_: Exception) { if (trustEpoch.isCurrent(epoch)) { storageBlocked = true; mutable.value = mutable.value.copy(trusted = null, connected = false, error = "Penyimpanan kepercayaan tidak dapat dibuka. Reset kepercayaan lokal untuk memasangkan ulang.") } }
+        catch (_: Exception) { if (trustEpoch.isCurrent(epoch)) { generation++; invalidateHandoffConnections(); storageBlocked = true; mutable.value = mutable.value.copy(trusted = null, connected = false, error = "Penyimpanan kepercayaan tidak dapat dibuka. Reset kepercayaan lokal untuk memasangkan ulang.") } }
     }
     suspend fun resetLocalTrust() {
-        generation++; trustEpoch.invalidate(); operation?.cancelAndJoin(); heartbeatJob?.cancelAndJoin()
+        generation++; trustEpoch.invalidate(); invalidateHandoffConnections(); operation?.cancelAndJoin(); heartbeatJob?.cancelAndJoin()
         mutable.value = mutable.value.copy(connected = false)
         withContext(NonCancellable) {
             val ok = withContext(Dispatchers.IO) { prefs.edit().remove("record").commit() }
@@ -90,18 +109,18 @@ class CompanionRepository(context: Context) {
 
     @Synchronized fun setActive(value: Boolean) {
         if (active == value) return
-        active = value; generation++
+        active = value; generation++; invalidateHandoffConnections()
         if (value) {
             try {
                 val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
                 val cb = object : ConnectivityManager.NetworkCallback() {
-                    override fun onAvailable(n: Network) { val owner = this; scope.launch { if (active && callback === owner) { generation++; operation?.cancel(); heartbeatJob?.cancel(); peerCache.clear(); network = n; mutable.value = mutable.value.copy(networkReady = true, connected = false, busy = false, pairing = false); startScan(); if (mutable.value.trusted != null) startHeartbeat() } } }
-                    override fun onLost(n: Network) { val owner = this; scope.launch { if (active && callback === owner && network == n) { generation++; operation?.cancel(); heartbeatJob?.cancel(); activeConnection?.disconnect(); activeConnection = null; network = null; peerCache.clear(); stopScan(); mutable.value = mutable.value.copy(networkReady = false, connected = false, busy = false, pairing = false) } } }
+                    override fun onAvailable(n: Network) { val owner = this; scope.launch { if (active && callback === owner) { generation++; invalidateHandoffConnections(); operation?.cancel(); heartbeatJob?.cancel(); peerCache.clear(); network = n; mutable.value = mutable.value.copy(networkReady = true, connected = false, busy = false, pairing = false); startScan(); if (mutable.value.trusted != null) startHeartbeat() } } }
+                    override fun onLost(n: Network) { val owner = this; scope.launch { if (active && callback === owner && network == n) { generation++; invalidateHandoffConnections(); operation?.cancel(); heartbeatJob?.cancel(); activeConnection?.disconnect(); activeConnection = null; network = null; peerCache.clear(); stopScan(); mutable.value = mutable.value.copy(networkReady = false, connected = false, busy = false, pairing = false) } } }
                 }
                 callback = cb; connectivity.registerNetworkCallback(request, cb)
             } catch (_: SecurityException) { active = false; mutable.value = mutable.value.copy(error = "Izinkan akses jaringan lokal dan Wi-Fi untuk menemukan laptop.") }
         } else {
-            generation++; stopScan(); heartbeatJob?.cancel(); operation?.cancel(); activeConnection?.disconnect(); activeConnection = null
+            generation++; invalidateHandoffConnections(); stopScan(); heartbeatJob?.cancel(); operation?.cancel(); activeConnection?.disconnect(); activeConnection = null
             callback?.let { runCatching { connectivity.unregisterNetworkCallback(it) } }; callback = null
             lock?.let { runCatching { if (it.isHeld) it.release() } }; lock = null
             val t = mutable.value.trusted; val n = network
@@ -111,6 +130,52 @@ class CompanionRepository(context: Context) {
     }
 
     fun refresh() { if (active) startScan() }
+
+    internal fun captureHandoffSession(): CompanionHandoffSession? {
+        val trust = mutable.value.trusted ?: return null
+        val net = network ?: return null
+        val laptop = peerCache[trust.id]?.takeIf { android.os.SystemClock.elapsedRealtime() - it.second < 90_000 }?.first ?: return null
+        if (!active || !mutable.value.connected || !isPrivateIpv4(laptop.address)) return null
+        return CompanionHandoffSession(trust.id, trust.pin, net, laptop, generation, trustEpoch.snapshot(), trust.phoneId, trust.token)
+    }
+
+    internal fun isCurrent(session: CompanionHandoffSession): Boolean =
+        active && generation == session.generation && network == session.network && trustEpoch.isCurrent(session.trustEpoch) &&
+            mutable.value.trusted?.let(session::matches) == true && mutable.value.connected
+
+    internal fun openHandoffConnection(session: CompanionHandoffSession, path: String, method: String): HttpsURLConnection {
+        check(isCurrent(session)) { "Laptop connection changed; reconnect and retry." }
+        require(path.startsWith("/v2/") && !path.contains("..") && !path.contains('#'))
+        val context = pinnedTlsContext(session.pin)
+        val conn = session.network.openConnection(
+            URL("https://${session.laptop.address.hostAddress}:${session.laptop.port}$path"), java.net.Proxy.NO_PROXY
+        ) as HttpsURLConnection
+        conn.connectTimeout = 8_000
+        conn.readTimeout = 20_000
+        conn.instanceFollowRedirects = false
+        conn.sslSocketFactory = context.socketFactory
+        conn.hostnameVerifier = HostnameVerifier { _, ssl ->
+            runCatching { matchesPin(ssl.peerCertificates.first() as java.security.cert.X509Certificate, session.pin) }.getOrDefault(false)
+        }
+        conn.requestMethod = method
+        conn.setRequestProperty("Accept", "application/json")
+        conn.setRequestProperty("X-Riko-Protocol", "2")
+        session.authorize(conn)
+        handoffConnections.add(conn)
+        if (!isCurrent(session)) { releaseHandoffConnection(conn); error("Laptop connection changed; reconnect and retry.") }
+        return conn
+    }
+
+    internal fun releaseHandoffConnection(connection: HttpsURLConnection) {
+        handoffConnections.remove(connection)
+        connection.disconnect()
+    }
+
+    internal fun cancelHandoffConnections() = invalidateHandoffConnections()
+
+    private fun invalidateHandoffConnections() {
+        handoffConnections.toList().forEach(::releaseHandoffConnection)
+    }
 
     private fun startScan() {
         stopScan(); if (!active || network == null) return
@@ -184,7 +249,7 @@ class CompanionRepository(context: Context) {
         val net = network ?: run { mutable.value = mutable.value.copy(error = "Sambungkan ponsel ke Wi-Fi yang sama dengan laptop."); return }
         if (mutable.value.trusted != null) { mutable.value = mutable.value.copy(error = "Lupakan laptop tersimpan sebelum memasangkan laptop lain."); return }
         val gen = ++generation
-        trustEpoch.invalidate()
+        trustEpoch.invalidate(); invalidateHandoffConnections()
         val previous = operation
         previous?.cancel(); mutable.value = mutable.value.copy(busy = true, pairing = true, error = null)
         operation = scope.launch {
@@ -212,7 +277,7 @@ class CompanionRepository(context: Context) {
                 try { withContext(Dispatchers.IO) { writeTrust(trust) } } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    trustEpoch.invalidate()
+                    trustEpoch.invalidate(); invalidateHandoffConnections()
                     val cleared = withContext(NonCancellable + Dispatchers.IO) { prefs.edit().remove("record").commit() }
                     if (!cleared) storageBlocked = true
                     val revoked = withContext(NonCancellable) { runCatching { request(trust, net, "DELETE", "/v1/trust", null, laptop, p.pin).also { verifyPeer(it, trust.id) } }.isSuccess }
@@ -222,7 +287,7 @@ class CompanionRepository(context: Context) {
                 }
                 if (gen != generation || !active || network != net) {
                     withContext(NonCancellable) { runCatching { request(trust, net, "DELETE", "/v1/trust", null, laptop, p.pin) } }
-                    trustEpoch.invalidate()
+                    trustEpoch.invalidate(); invalidateHandoffConnections()
                     withContext(Dispatchers.IO) { prefs.edit().remove("record").commit() }
                     mutable.value = mutable.value.copy(trusted = null, connected = false, busy = false, pairing = false)
                     return@launch
@@ -231,7 +296,7 @@ class CompanionRepository(context: Context) {
                 startHeartbeat()
             } catch (e: CancellationException) {
                 issuedTrust?.let { t -> withContext(NonCancellable) {
-                    trustEpoch.invalidate()
+                    trustEpoch.invalidate(); invalidateHandoffConnections()
                     val revoked = runCatching { request(t, net, "DELETE", "/v1/trust", null, laptop, p.pin).also { verifyPeer(it, t.id) } }.isSuccess
                     withContext(Dispatchers.IO) { prefs.edit().remove("record").commit() }
                     mutable.value = mutable.value.copy(trusted = null, connected = false, busy = false, pairing = false,
@@ -245,7 +310,7 @@ class CompanionRepository(context: Context) {
 
     fun connect() { startHeartbeat() }
     fun disconnect() {
-        heartbeatJob?.cancel(); mutable.value = mutable.value.copy(connected = false)
+        heartbeatJob?.cancel(); invalidateHandoffConnections(); mutable.value = mutable.value.copy(connected = false)
         val t = mutable.value.trusted; val n = network
         if (t != null && n != null) scope.launch { runCatching { request(t, n, "POST", "/v1/disconnect", JSONObject().put("protocol", 1)) } }
     }
@@ -274,7 +339,7 @@ class CompanionRepository(context: Context) {
 
     suspend fun forget() {
         val t = mutable.value.trusted ?: return
-        generation++; trustEpoch.invalidate(); operation?.cancelAndJoin(); heartbeatJob?.cancelAndJoin()
+        generation++; trustEpoch.invalidate(); invalidateHandoffConnections(); operation?.cancelAndJoin(); heartbeatJob?.cancelAndJoin()
         mutable.value = mutable.value.copy(busy = true, connected = false, error = null)
         var remote = false
         try { val net = network; if (net != null) { val r = request(t, net, "DELETE", "/v1/trust", null); verifyPeer(r, t.id); remote = true } }
@@ -284,7 +349,7 @@ class CompanionRepository(context: Context) {
             withContext(NonCancellable) {
                 heartbeatJob?.cancel()
                 val removed = withContext(Dispatchers.IO) { prefs.edit().remove("record").commit() }
-                trustEpoch.invalidate()
+                trustEpoch.invalidate(); invalidateHandoffConnections()
                 mutable.value = mutable.value.copy(trusted = if (removed) null else t, connected = false, busy = false,
                     error = when { !removed -> "Kepercayaan lokal gagal dihapus. Coba lagi."; remote -> null; else -> "Laptop belum mengonfirmasi pencabutan. Jalankan `revoke ${t.phoneId}` di laptop." })
             }
@@ -300,15 +365,7 @@ class CompanionRepository(context: Context) {
     private fun requestBlocking(trust: TrustedLaptop?, net: Network, method: String, path: String, body: JSONObject?, target: Laptop, pin: String?): JSONObject {
         if (!isPrivateIpv4(target.address)) error("Alamat laptop bukan IPv4 privat.")
         val expectedPin = pin ?: trust?.pin ?: error("Fingerprint sertifikat tidak tersedia")
-        val context = SSLContext.getInstance("TLSv1.2")
-        context.init(null, arrayOf(object : X509TrustManager {
-            override fun getAcceptedIssuers() = emptyArray<java.security.cert.X509Certificate>()
-            override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) = Unit
-            override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
-                val cert = chain.firstOrNull() ?: throw SSLPeerUnverifiedException("Sertifikat kosong")
-                if (!matchesPin(cert, expectedPin)) throw SSLPeerUnverifiedException("Fingerprint sertifikat berubah; pairing ulang diperlukan.")
-            }
-        }), java.security.SecureRandom())
+        val context = pinnedTlsContext(expectedPin)
         val conn = net.openConnection(URL("https://${target.address.hostAddress}:${target.port}$path"), java.net.Proxy.NO_PROXY) as HttpsURLConnection
         activeConnection = conn
         try {
@@ -352,6 +409,16 @@ class CompanionRepository(context: Context) {
         val actual = MessageDigest.getInstance("SHA-256").digest(cert.encoded)
         val expected = pin.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         return MessageDigest.isEqual(actual, expected)
+    }
+    private fun pinnedTlsContext(pin: String): SSLContext = SSLContext.getInstance("TLSv1.2").apply {
+        init(null, arrayOf(object : X509TrustManager {
+            override fun getAcceptedIssuers() = emptyArray<java.security.cert.X509Certificate>()
+            override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) = Unit
+            override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+                val cert = chain.firstOrNull() ?: throw SSLPeerUnverifiedException("Sertifikat kosong")
+                if (!matchesPin(cert, pin)) throw SSLPeerUnverifiedException("Fingerprint sertifikat berubah; pairing ulang diperlukan.")
+            }
+        }), java.security.SecureRandom())
     }
     private fun causeChain(error: Throwable): Sequence<Throwable> = sequence {
         var current: Throwable? = error
