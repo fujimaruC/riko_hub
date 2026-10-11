@@ -2,6 +2,7 @@
     <!-- shortcut: fixed light palette; add night resources when the widget becomes theme-aware. -->
     <color name="widget_ivory">#FBF6EC</color>
     <color name="widget_ink">#2B2630</color>
+    <color name="widget_muted">#6C6575</color>
     <color name="widget_lavender">#A793EA</color>
     <color name="widget_lavender_soft">#E9E3FB</color>
     <color name="widget_coral">#FF7F6E</color>

@@ -4,4 +4,5 @@
     <string name="widget_unavailable">Tugas belum bisa dimuat</string>
     <string name="widget_empty">Belum ada fokus. Semua aman.</string>
     <string name="widget_overdue">Terlambat</string>
+    <string name="widget_clock_period_24" translatable="false"></string>
 </resources>
