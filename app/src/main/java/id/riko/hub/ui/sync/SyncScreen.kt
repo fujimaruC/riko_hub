@@ -1,75 +1,130 @@
 package id.riko.hub.ui.sync
 
-import androidx.compose.foundation.Canvas
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import id.riko.hub.R
+import id.riko.hub.RikoHubApp
+import id.riko.hub.data.remote.device.Laptop
 import id.riko.hub.navigation.Destination
 import id.riko.hub.ui.components.ScreenFrame
-import id.riko.hub.ui.theme.*
+import id.riko.hub.ui.theme.RikoShapes
+
+private const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
 @Composable
 fun SyncScreen(onNavigate: (Destination) -> Unit) {
+    val app = LocalContext.current.applicationContext as RikoHubApp
+    val model: SyncViewModel = viewModel(factory = viewModelFactory { initializer { SyncViewModel(app.container.companion) } })
+    SyncRoute(model, onNavigate)
+}
+
+@Composable
+private fun SyncRoute(model: SyncViewModel, onNavigate: (Destination) -> Unit) {
+    val context = LocalContext.current
+    val state by model.state.collectAsStateWithLifecycle(SyncUiState())
+    var pairingTarget by remember { mutableStateOf<Laptop?>(null) }
+    var payload by remember { mutableStateOf("") }
+    var permissionAsked by remember { mutableStateOf(false) }
+    val localPermission = if (Build.VERSION.SDK_INT >= 37) LOCAL_NETWORK_PERMISSION else null
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) model.setActive(true)
+    }
+    DisposableEffect(lifecycle, model) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (localPermission == null || ContextCompat.checkSelfPermission(context, localPermission) == PackageManager.PERMISSION_GRANTED) model.setActive(true)
+                else if (!permissionAsked) { permissionAsked = true; permissionLauncher.launch(localPermission) }
+                model.load()
+            } else if (event == Lifecycle.Event.ON_PAUSE) { payload = ""; pairingTarget = null; model.setActive(false) }
+        }
+        lifecycle.addObserver(observer)
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            if (localPermission == null || ContextCompat.checkSelfPermission(context, localPermission) == PackageManager.PERMISSION_GRANTED) model.setActive(true)
+            else if (!permissionAsked) { permissionAsked = true; permissionLauncher.launch(localPermission) }
+            model.load()
+        }
+        onDispose { lifecycle.removeObserver(observer); model.setActive(false) }
+    }
     ScreenFrame(Destination.Sync, onNavigate) {
-        DeviceMap()
-        Surface(shape = RikoShapes.asymB, color = MaterialTheme.colorScheme.surfaceVariant) {
-            Text(stringResource(R.string.sync_placeholder), Modifier.padding(Spacing.space5), style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.companion_title), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.companion_intro), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (localPermission != null && ContextCompat.checkSelfPermission(context, localPermission) != PackageManager.PERMISSION_GRANTED) {
+            Text(stringResource(R.string.companion_permission_denied), color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = { permissionAsked = true; permissionLauncher.launch(localPermission) }) { Text(stringResource(R.string.companion_retry_permission)) }
         }
-        listOf(R.string.send_files, R.string.clipboard, R.string.transfer_history).forEach {
-            Column {
-                Text(stringResource(it), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.coming_soon), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        state.companion.trusted?.let { trusted ->
+            Card(Modifier.fillMaxWidth(), shape = RikoShapes.asymB) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(trusted.name, style = MaterialTheme.typography.titleMedium)
+                    Text(if (state.companion.connected) stringResource(R.string.companion_connected) else stringResource(R.string.companion_waiting),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (state.companion.connected) OutlinedButton(onClick = model::disconnect) { Text(stringResource(R.string.companion_disconnect)) }
+                        else Button(onClick = model::connect, enabled = !state.companion.busy) { Text(stringResource(R.string.companion_connect)) }
+                        TextButton(onClick = model::requestForget, enabled = !state.companion.busy) { Text(stringResource(R.string.companion_forget)) }
+                    }
+                }
             }
+        }
+        Text(stringResource(R.string.companion_nearby), style = MaterialTheme.typography.titleMedium)
+        OutlinedButton(onClick = model::refresh, enabled = state.companion.networkReady && !state.companion.busy) { Text(stringResource(R.string.companion_refresh)) }
+        if (state.companion.pairing) Text(stringResource(R.string.companion_pairing_progress), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (state.companion.laptops.isEmpty()) Text(
+            when { !state.companion.networkReady -> stringResource(R.string.companion_no_wifi); state.companion.scanning -> stringResource(R.string.companion_searching); else -> stringResource(R.string.companion_empty) },
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        state.companion.laptops.forEach { laptop ->
+            Card(Modifier.fillMaxWidth(), shape = RikoShapes.asymB) {
+                Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column(Modifier.weight(1f)) { Text(laptop.name, style = MaterialTheme.typography.titleSmall); Text(laptop.address.hostAddress.orEmpty(), style = MaterialTheme.typography.bodySmall) }
+                    TextButton(enabled = state.companion.trusted == null && !state.companion.busy,
+                        onClick = { payload = ""; pairingTarget = laptop }) { Text(stringResource(R.string.companion_pair)) }
+                }
+            }
+        }
+        state.companion.error?.let { message ->
+            Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            if (message.startsWith("Penyimpanan kepercayaan")) TextButton(onClick = model::requestResetTrust) { Text(stringResource(R.string.companion_reset_trust)) }
         }
     }
+    if (pairingTarget != null) AlertDialog(
+        onDismissRequest = { pairingTarget = null; payload = "" },
+        title = { Text(stringResource(R.string.companion_code_title)) },
+        text = { OutlinedTextField(value = payload, onValueChange = { payload = it.take(256) },
+            label = { Text(stringResource(R.string.companion_code_hint)) }, singleLine = true,
+            visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)) },
+        confirmButton = { TextButton(onClick = { pairingTarget?.let { model.pair(it, payload) }; pairingTarget = null; payload = "" }) { Text(stringResource(R.string.companion_pair)) } },
+        dismissButton = { TextButton(onClick = { pairingTarget = null; payload = "" }) { Text(stringResource(R.string.companion_cancel)) } })
+    if (state.forgetConfirmation) AlertDialog(
+        onDismissRequest = model::cancelForget,
+        title = { Text(stringResource(R.string.companion_forget)) },
+        text = { Text(stringResource(R.string.companion_forget_confirm)) },
+        confirmButton = { TextButton(onClick = model::forget) { Text(stringResource(R.string.companion_confirm)) } },
+        dismissButton = { TextButton(onClick = model::cancelForget) { Text(stringResource(R.string.companion_cancel)) } })
+    if (state.resetConfirmation) AlertDialog(
+        onDismissRequest = model::cancelResetTrust,
+        title = { Text(stringResource(R.string.companion_reset_trust)) },
+        text = { Text(stringResource(R.string.companion_reset_confirm)) },
+        confirmButton = { TextButton(onClick = model::resetLocalTrust) { Text(stringResource(R.string.companion_reset_confirm_button)) } },
+        dismissButton = { TextButton(onClick = model::cancelResetTrust) { Text(stringResource(R.string.companion_cancel)) } })
 }
-
-@Composable
-private fun DeviceMap() {
-    val line = MaterialTheme.colorScheme.outline
-    Box(Modifier.fillMaxWidth()) {
-        Canvas(Modifier.matchParentSize()) {
-            val top = Offset(size.width / 2, size.height * 0.25f)
-            val left = Offset(size.width * 0.22f, size.height * 0.78f)
-            val right = Offset(size.width * 0.78f, size.height * 0.78f)
-            val dash = PathEffect.dashPathEffect(floatArrayOf(Spacing.space2.toPx(), Spacing.space2.toPx()))
-            listOf(top to left, left to right, right to top).forEach { (a, b) ->
-                drawLine(line, a, b, Spacing.pathStroke.toPx(), pathEffect = dash)
-            }
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.space8)) {
-            DeviceNode(R.string.drive, R.string.not_ready, Modifier.fillMaxWidth(0.6f))
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.space6)) {
-                DeviceNode(R.string.phone, R.string.this_device, Modifier.weight(1f))
-                DeviceNode(R.string.laptop, R.string.not_ready, Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun DeviceNode(label: Int, status: Int, modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Surface(Modifier.size(Spacing.row), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(painterResource(when (label) {
-                    R.string.drive -> R.drawable.ic_cloud
-                    R.string.phone -> R.drawable.ic_smartphone
-                    else -> R.drawable.ic_laptop
-                }), contentDescription = null, modifier = Modifier.size(Spacing.space6))
-            }
-        }
-        Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
-        Text(stringResource(status), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-// TODO(v0.4): Add laptop pairing and real device presence.
-// TODO(v0.5): Add transfer, clipboard and sync history after pairing exists.

@@ -1,0 +1,26 @@
+<resources>
+    <string name="companion_title">Laptop</string>
+    <string name="companion_intro">Temukan laptop di Wi-Fi yang sama, lalu pasangkan dengan kode dari terminal laptop.</string>
+    <string name="companion_refresh">Cari laptop</string>
+    <string name="companion_searching">Mencari laptop di jaringan Wi-Fi…</string>
+    <string name="companion_no_wifi">Sambungkan ponsel ke Wi-Fi yang sama dengan laptop.</string>
+    <string name="companion_empty">Belum ada laptop ditemukan. Pastikan aplikasi pendamping berjalan di Wi-Fi yang sama.</string>
+    <string name="companion_pair">Pasangkan</string>
+    <string name="companion_code_title">Kode pairing laptop</string>
+    <string name="companion_code_hint">Tempel kode riko1 dari terminal laptop</string>
+    <string name="companion_cancel">Batal</string>
+    <string name="companion_connect">Hubungkan</string>
+    <string name="companion_connected">Terhubung · kehadiran terbaru</string>
+    <string name="companion_waiting">Belum terhubung</string>
+    <string name="companion_disconnect">Putuskan</string>
+    <string name="companion_forget">Lupakan laptop</string>
+    <string name="companion_forget_confirm">Hapus kepercayaan laptop ini dari ponsel? Jika laptop offline, pencabutan jarak jauh belum terkonfirmasi.</string>
+    <string name="companion_confirm">Lupakan</string>
+    <string name="companion_nearby">Laptop di jaringan</string>
+    <string name="companion_permission_denied">Akses jaringan lokal ditolak. Izinkan akses ini untuk mencari laptop.</string>
+    <string name="companion_retry_permission">Minta izin</string>
+    <string name="companion_pairing_progress">Setujui permintaan pairing di terminal laptop. Kode berlaku singkat.</string>
+    <string name="companion_reset_trust">Reset kepercayaan lokal</string>
+    <string name="companion_reset_confirm">Hapus catatan kepercayaan lokal yang rusak? Laptop mungkin masih menganggap ponsel dipasangkan; cabut izin dari terminal laptop sebelum pairing ulang.</string>
+    <string name="companion_reset_confirm_button">Reset</string>
+</resources>
