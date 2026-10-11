@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT
+import android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -26,6 +27,7 @@ import id.riko.hub.domain.logic.nextDateRefreshAt
 import id.riko.hub.domain.logic.nextWidgetRefreshAt
 import id.riko.hub.domain.logic.selectWidgetTasks
 import id.riko.hub.domain.logic.widgetTaskCapacity
+import id.riko.hub.domain.logic.widgetShowsMiyu
 import id.riko.hub.domain.model.Priority
 import id.riko.hub.domain.model.Task
 import id.riko.hub.work.TaskReminderWorker
@@ -130,11 +132,12 @@ private fun widgetIds(context: Context) = AppWidgetManager.getInstance(context)
     .getAppWidgetIds(ComponentName(context, TaskWidgetProvider::class.java))
 
 private fun renderTasks(context: Context, widgetId: Int, tasks: List<UrgencyInfo>, clock: Clock) {
-    val views = RemoteViews(context.packageName, R.layout.task_widget)
+    val rows = widgetRows(context, widgetId)
+    val views = RemoteViews(context.packageName, widgetLayout(context, widgetId))
     setHeaderIntent(context, views)
     setDate(views, clock)
     views.setImageViewResource(R.id.widget_miyu, MIYU_IMAGES.random())
-    val rows = widgetRows(context, widgetId)
+    setMiyuVisibility(views, context, widgetId)
     views.setTextViewText(R.id.widget_state, context.getString(R.string.widget_empty))
     views.setViewVisibility(R.id.widget_state, if (tasks.isEmpty()) View.VISIBLE else View.GONE)
     val now = clock.now()
@@ -143,7 +146,7 @@ private fun renderTasks(context: Context, widgetId: Int, tasks: List<UrgencyInfo
         views.setViewVisibility(ids.root, View.VISIBLE)
         views.setTextViewText(ids.title, info.task.title)
         views.setTextViewText(ids.meta, metadata(context, info, now, clock))
-        views.setViewVisibility(ids.meta, if (rows == 1) View.GONE else View.VISIBLE)
+        views.setViewVisibility(ids.meta, View.VISIBLE)
         views.setImageViewResource(ids.marker, if (info.isOverdue || info.task.priority == Priority.HIGH) R.drawable.widget_coral_dot else R.drawable.widget_lavender_dot)
         views.setOnClickPendingIntent(ids.root, taskPendingIntent(context, info.task.id))
     }
@@ -158,10 +161,11 @@ private fun renderTasks(context: Context, widgetId: Int, tasks: List<UrgencyInfo
 }
 
 private fun renderState(context: Context, widgetId: Int, state: WidgetState) {
-    val views = RemoteViews(context.packageName, R.layout.task_widget)
+    val views = RemoteViews(context.packageName, widgetLayout(context, widgetId))
     setHeaderIntent(context, views)
     setDate(views, (context.applicationContext as? RikoHubApp)?.container?.clock)
     views.setImageViewResource(R.id.widget_miyu, MIYU_IMAGES.first())
+    setMiyuVisibility(views, context, widgetId)
     views.setTextViewText(R.id.widget_state, context.getString(if (state == WidgetState.LOADING) R.string.widget_loading else R.string.widget_unavailable))
     views.setViewVisibility(R.id.widget_state, View.VISIBLE)
     ROW_IDS.forEach { row ->
@@ -179,9 +183,23 @@ private fun setDate(views: RemoteViews, clock: Clock?) {
 
 private fun widgetRows(context: Context, widgetId: Int): Int {
     val manager = AppWidgetManager.getInstance(context)
-    val height = manager.getAppWidgetOptions(widgetId).getInt(OPTION_APPWIDGET_MIN_HEIGHT, 272)
+    val options = manager.getAppWidgetOptions(widgetId)
+    val width = options.getInt(OPTION_APPWIDGET_MIN_WIDTH, 250)
+    val height = options.getInt(OPTION_APPWIDGET_MIN_HEIGHT, 272)
     val scale = context.resources.configuration.fontScale.coerceAtLeast(1f)
-    return widgetTaskCapacity(height, scale)
+    return widgetTaskCapacity(width, height, scale)
+}
+
+private fun widgetLayout(context: Context, widgetId: Int): Int =
+    if (AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)
+            .getInt(OPTION_APPWIDGET_MIN_WIDTH, 250) < 300) R.layout.task_widget_compact
+    else R.layout.task_widget
+
+private fun setMiyuVisibility(views: RemoteViews, context: Context, widgetId: Int) {
+    val width = AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)
+        .getInt(OPTION_APPWIDGET_MIN_WIDTH, 250)
+    val scale = context.resources.configuration.fontScale.coerceAtLeast(1f)
+    views.setViewVisibility(R.id.widget_miyu, if (widgetShowsMiyu(width, scale)) View.VISIBLE else View.GONE)
 }
 
 private fun setHeaderIntent(context: Context, views: RemoteViews) {
@@ -190,7 +208,7 @@ private fun setHeaderIntent(context: Context, views: RemoteViews) {
     val pendingIntent = PendingIntent.getActivity(
         context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
-    listOf(R.id.widget_header, R.id.widget_clock, R.id.widget_weekday, R.id.widget_date).forEach {
+    listOf(R.id.widget_header, R.id.widget_clock_region, R.id.widget_date_region).forEach {
         views.setOnClickPendingIntent(it, pendingIntent)
     }
 }
