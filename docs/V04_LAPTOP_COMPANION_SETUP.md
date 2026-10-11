@@ -6,18 +6,40 @@ This version provides discovery, explicit pairing and recent connection presence
 
 `companion/riko_companion/` is a foreground Python console service for Linux, with platform TLS and a small JSON HTTPS endpoint. `zeroconf` advertises DNS-SD and `cryptography` creates the persistent certificate; neither is an Android dependency. Android uses platform NSD, Wi-Fi network callbacks, HTTPS, Android Keystore and the existing Sync route/theme. No task database or Drive repository is exposed to the companion. See [protocol 1](V04_COMPANION_PROTOCOL.md) for exact messages and trust boundaries.
 
-## Linux setup (owner commands)
+## Linux setup and dashboard (owner commands)
 
-Use Python 3.11 or later. Select the laptop's private IPv4 address on the same Wi-Fi/LAN as the phone. No root privileges, Avahi daemon or automatic boot service is required. A firewall/router may need to permit UDP 5353 multicast and the selected TCP port on this private network only; do not disable the firewall or expose the port to the internet.
+Use Python 3.11 or later. Arch Linux marks system Python as externally managed, so install only into the project's virtual environment. No root privileges, Avahi daemon or automatic boot service is required.
 
 ```bash
 cd /home/riko/Projects/riko_hub/companion
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m riko_companion --bind 192.168.1.20 --port 8765 --name 'Riko Laptop'
+.venv/bin/python -m pip install -e .
+mkdir -p "$HOME/.local/bin"
+ln -s "$PWD/.venv/bin/rikohub" "$HOME/.local/bin/rikohub"
 ```
 
-Replace `192.168.1.20` with the actual laptop LAN address. The service binds only that address, not every interface. A DHCP address change requires stopping and restarting with the new address; the persistent certificate/identity is retained. Keep its default owner-only data directory in `~/.local/share/riko-hub-companion/`; a separate `--data-dir` can isolate disposable owner QA. Do not copy private keys or trust data into Git.
+The symlink command fails safely if that name already exists; inspect the existing file before replacing it. For Fish, add `~/.local/bin` using this separate Fish command:
+
+```fish
+fish_add_path -U ~/.local/bin
+```
+
+Open a new shell and check `rikohub --help`. The symlink targets this checkout's `.venv`, which must remain in place. To refresh the editable install after code changes, run `.venv/bin/python -m pip install -e .` from `companion/`.
+
+Run `ip -brief -4 address`, then select the actual private IPv4 address assigned to the laptop on the same Wi-Fi/LAN as the phone. Do not copy a sample address. The dashboard's Network Settings asks for confirmation before saving LAN exposure, and `start --bind ADDRESS` asks before starting. The server rejects wildcard and public addresses and binds only the selected private interface. A firewall/router may need to permit UDP 5353 multicast and the selected TCP port on that private network; do not disable the firewall or expose the port to the internet.
+
+Run `rikohub` for the interactive dashboard. Running status is detected through the lock in the selected Companion data directory, so it does not claim to find servers using another data directory. The standalone `rikohub status` checks local TCP reachability when a process is detected; phone/LAN end-to-end reachability remains unverified even when that TCP probe succeeds. Remote transport is not implemented. `rikohub status`, `rikohub devices`, and `rikohub doctor` provide direct views. Trusted-device output includes IDs and safe names only, never tokens or private keys.
+
+To start from the shell, run `rikohub start --bind ACTUAL_PRIVATE_IPV4` after replacing the placeholder with the address just inspected. The server remains in the foreground so pairing approvals and trusted-device revocation continue to work in the same terminal. There is no background `stop` command or arbitrary PID handling. Use the server prompt's `quit` or Ctrl+C to shut it down and return to the shell. If a DHCP change changes the address, restart with the new address; the persistent certificate/identity is retained. Keep the default owner-only data directory at `~/.local/share/riko-hub-companion/`; `--data-dir` can isolate disposable QA data. Do not copy private keys or trust data into Git.
+
+The legacy entry point is retained and still requires an explicit bind. Run it from `companion/`:
+
+```bash
+cd /home/riko/Projects/riko_hub/companion
+.venv/bin/python -m riko_companion --bind ACTUAL_PRIVATE_IPV4
+```
+
+When started from the dashboard, `quit` or Ctrl+C stops the foreground server and returns to the dashboard. When using `rikohub start` directly, it returns to the shell. There is no background process to stop.
 
 Use `help` for console commands, `status` for trust and recent presence, `pair` to display a fresh two-minute pairing payload, `approve <request id>` or `deny <request id>` for pending approval, `revoke <phone id>` to revoke a phone, and `quit`/Ctrl-C to stop. The module entry point also routes SIGTERM through shutdown cleanup. Do not record pairing payloads in logs, screenshots or shared terminals. The payload is intentionally long: it carries the full certificate fingerprint and a random 256-bit secret, avoiding an insecure short PIN. No QR scanner is included in this slice.
 
@@ -60,6 +82,10 @@ The build/test commands intentionally belong to the owner. The agent does not in
 - Confirm presence after pairing, laptop stop/start with the same identity, Wi-Fi loss/restoration and capped reconnect. Confirm Connected is not shown after failed authentication.
 - Test local forget while online and offline; confirm offline wording requests laptop revocation. Revoke on the laptop and verify the old phone token is rejected. Check simultaneous requests, pause/resume during pairing approval and trust persistence, and interrupted pairing/storage failures. A corrupt local trust record must fail closed and offer an explicit reset; laptop-side revocation may still be needed.
 - Verify console shutdown/EOF/Ctrl-C removes mDNS and closes the endpoint. Start a second instance with the same data directory and confirm it refuses the lock. Confirm no task/database content crosses the connection.
+
+### CLI acceptance checklist
+
+From any directory in a new shell, run `rikohub`, then check `rikohub --help`, `rikohub status`, `rikohub devices`, and `rikohub doctor`. Also verify `.venv/bin/python -m riko_companion --bind ACTUAL_PRIVATE_IPV4` from `companion/` retains the foreground flow. Resize the terminal to a narrow width and short height; repeat with `NO_COLOR=1 rikohub` and confirm the menu remains readable and exits cleanly. Pipe `rikohub` output in a non-interactive shell and confirm it prints a status summary without starting the service. While one foreground server is active, run `rikohub start --bind ACTUAL_PRIVATE_IPV4` in a second terminal and confirm it reports the existing process without launching another. Complete a pairing, restart using the same data directory, and confirm trusted metadata remains visible. Check that status, devices and diagnostics output contain no tokens or private keys; the `pair` command intentionally displays its temporary payload directly to the owner, which must not be captured or shared. Confirm Ctrl+C returns to the dashboard or shell cleanly. These are owner-run acceptance checks; no test, build, lint, install or runtime command was executed while preparing this change.
 
 ## Primary API references
 

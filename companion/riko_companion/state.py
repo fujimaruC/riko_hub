@@ -42,9 +42,10 @@ class PendingApproval:
 
 class CompanionState:
     def __init__(self, peer_id: str, name: str, cert_pin: str, trust: dict,
-                 persist, monotonic=time.monotonic):
+                 persist, monotonic=time.monotonic, handoff=None):
         self.peer_id, self.name, self.cert_pin = peer_id, name, cert_pin
         self.trust, self.persist, self.monotonic = trust, persist, monotonic
+        self.handoff = handoff
         self.lock = threading.RLock()
         self.pairing: PairingKey | None = None
         self.pending: PendingApproval | None = None
@@ -151,6 +152,11 @@ class CompanionState:
                 if seen is not None:
                     self.presence[device_id] = seen
                 raise
+            if self.handoff is not None:
+                try:
+                    self.handoff.revoke(device_id)
+                except Exception:
+                    pass
             return device_id
 
     def revoke_id(self, device_id: str) -> bool:
@@ -168,6 +174,11 @@ class CompanionState:
                 if seen is not None:
                     self.presence[device_id] = seen
                 raise
+            if self.handoff is not None:
+                try:
+                    self.handoff.revoke(device_id)
+                except Exception:
+                    pass
             return True
 
     def status(self) -> str:

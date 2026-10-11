@@ -7,12 +7,18 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | Item | Value |
 |------|-------|
 | Version in development | 0.4.0 (version code 400) |
-| Current phase | Laptop Companion source implementation on feature/v04-laptop-companion; all compilation, tests, network/device verification and acceptance belong to Riko and remain pending. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
+| Current phase | Laptop Companion and interactive `rikohub` CLI source implementation on feature/v04-laptop-companion; owner verification and acceptance remain pending. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
 | v0.4 execution evidence | None: no builds, lint/static-analysis suites, automated tests, service startup or device verification executed. Historical v0.3 evidence below does not verify v0.4. |
 | Last successful build | Owner-reported BUILD SUCCESSFUL in 7m 53s (2026-10-11), 44 tasks. Fresh v0.3 debug APK: 16,948,362 bytes, SHA-256 50ba882cdccae7b89073e86636b452e9c103c10e2c55d794de34cf5e7a8e7d5a. Not installed in this mission. Future builds are owner-controlled. |
 | Last test run | Fresh reports: 11 focused Vault UI/state JVM tests passed, 0 failures/errors/skips. Ten Drive API tests compiled but have no execution report. Historical v0.2 evidence is retained below. |
 | Release status | Unsigned local build; not a public release |
 | Owner acceptance | v0.2 approved and closed. v0.3 implementation checkpointed at 44d6c67, with live Google QA separately pending. v0.4 requires owner verification and acceptance. |
+
+## v0.4 CLI dashboard — 2026-10-12
+
+- Added the user-level `rikohub` command source, interactive terminal dashboard, foreground start flow, status/devices/doctor views, and editable-install packaging entry point. Read-only views avoid creating or changing the Companion data directory; listener configuration accepts private IPv4 only and requires explicit LAN confirmation.
+- Added CLI/storage test source and Arch Linux installation plus owner acceptance steps. Riko must run installation, tests, and runtime checks; none were executed for this phase. Existing Android pairing remains in the foreground Companion flow.
+- Remote transport and background stop are not implemented. `rikohub start` keeps the server console in the foreground so approvals and revocation remain usable; an active process is detected through its data-directory lock.
 
 ## v0.4 — Laptop Companion implementation — 2026-10-11
 
