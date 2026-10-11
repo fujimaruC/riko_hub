@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+identity-key.pem
+identity-cert.pem
+trusted-phones.json
+laptop-id
+companion.lock
+.write-*
