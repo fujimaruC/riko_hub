@@ -46,6 +46,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
     private var currentPrepared: HandoffPreparedFile? = restoredPrepared?.second
     private val mutable = MutableStateFlow(HandoffSnapshot(
         preparedFile = currentPrepared,
+        pendingOutgoingTransferId = lastOutgoingTransferId?.takeIf { lastOutgoingPeerId == companion.state.value.trusted?.id },
         history = (readHistory(companion.state.value.trusted?.id) + pendingTransfer(companion.state.value.trusted?.id)).distinctBy { it.transferId }
     ))
     val state = mutable.asStateFlow()
@@ -63,10 +64,16 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
                 if (peerId != previousPeerId) {
                     previousPeerId = peerId
                     mutable.value = mutable.value.copy(history = (readHistory(peerId) + pendingTransfer(peerId)).distinctBy { it.transferId },
-                        offers = emptyList(), textOffers = emptyList(), workspaces = emptyList())
+                        pendingOutgoingTransferId = lastOutgoingTransferId?.takeIf { lastOutgoingPeerId == peerId },
+                        supported = false, handoffAllowed = false, offers = emptyList(), textOffers = emptyList(),
+                        textPreview = null, workspaces = emptyList(), listsTruncated = false)
+                    previewExpiry?.cancel(); previewExpiry = null
                 }
                 mutable.value = mutable.value.copy(connected = companionState.connected)
                 if (!companionState.connected) {
+                    mutable.value = mutable.value.copy(supported = false, handoffAllowed = false,
+                        offers = emptyList(), textOffers = emptyList(), textPreview = null, workspaces = emptyList(), listsTruncated = false)
+                    previewExpiry?.cancel(); previewExpiry = null
                     activeJob?.cancel(CancellationException("Companion connection changed"))
                     companion.cancelHandoffConnections()
                 }
@@ -88,7 +95,8 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
 
     suspend fun refresh() = exclusive {
         val session = sessionOrThrow()
-        mutable.value = mutable.value.copy(connected = true, supported = false, handoffAllowed = false, error = null)
+        mutable.value = mutable.value.copy(connected = true, supported = false, handoffAllowed = false,
+            offers = emptyList(), textOffers = emptyList(), textPreview = null, workspaces = emptyList(), listsTruncated = false, error = null)
         try {
             val hello = transport.hello(session)
             verifyHello(hello, session)
@@ -100,14 +108,21 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
             val texts = transport.json(session, "GET", "/v2/texts")
             val workspaces = transport.json(session, "GET", "/v2/workspaces")
             transport.checkCurrent(session)
-            val serverTransfers = parseTransferList(transfers.optJSONArray("transfers"))
+            val saved = (readHistory(session.peerId) + pendingTransfer(session.peerId)).associateBy { it.transferId }
+            val serverTransfers = parseTransferList(transfers.optJSONArray("transfers")).map { transfer ->
+                if (transfer.transferId == mutable.value.pendingOutgoingTransferId && transfer.direction == "phone_to_laptop" && transfer.state in setOf("cancelled", "failed"))
+                    transfer.copy(error = transfer.error ?: "Upload stopped; retry to request laptop approval again.", interrupted = true)
+                else if (saved[transfer.transferId]?.interrupted == true)
+                    transfer.copy(interrupted = true)
+                else transfer
+            }
             val parsedOffers = parseTransferList(offers.optJSONArray("offers")).map { HandoffOffer(it) }
             val parsedTexts = parseTextOffers(texts.optJSONArray("texts"))
             val parsedWorkspaces = parseWorkspaces(workspaces.optJSONArray("workspaces"))
             val truncated = transfers.optBoolean("truncated") || offers.optBoolean("truncated") ||
                 texts.optBoolean("truncated") || workspaces.optBoolean("truncated")
             mutable.value = mutable.value.copy(
-                history = (serverTransfers + readHistory(session.peerId) + pendingTransfer(session.peerId)).distinctBy { it.transferId }.take(50),
+                history = (serverTransfers + saved.values + pendingTransfer(session.peerId)).distinctBy { it.transferId }.take(50),
                 offers = parsedOffers, textOffers = parsedTexts, workspaces = parsedWorkspaces,
                 listsTruncated = truncated, error = null
             )
@@ -166,6 +181,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
         lastOutgoingTransferId = null
         lastOutgoingPeerId = null
         mutable.value = mutable.value.copy(preparedFile = prepared, error = null,
+            pendingOutgoingTransferId = null,
             history = (readHistory(companion.state.value.trusted?.id) + pendingTransfer(companion.state.value.trusted?.id)).distinctBy { it.transferId })
         prepared
     }
@@ -192,20 +208,23 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
 
     /** `destination` must be a fresh URI returned by SAF CreateDocument so an incomplete copy can be removed safely. */
     suspend fun receive(offer: HandoffOffer, destination: Uri): HandoffTransfer = exclusive {
-        val session = sessionOrThrow(); requireAllowed(session)
-        val advertised = offer.transfer
-        requireUuid(advertised.transferId)
-        require(advertised.direction == "laptop_to_phone" && advertised.available) { "This laptop offer is not available to receive." }
-        val remote = transferFrom(transport.json(session, "GET", "/v2/transfers/${advertised.transferId}")).also {
-            require(it.transferId == advertised.transferId && it.direction == "laptop_to_phone" && it.state in setOf("offered", "ready", "transferring"))
-            require(it.sizeBytes <= HandoffTransport.FILE_LIMIT && it.available)
+        receiveWithCleanup(destination) { verified ->
+            val session = sessionOrThrow(); requireAllowed(session)
+            val advertised = offer.transfer
+            requireUuid(advertised.transferId)
+            require(advertised.direction == "laptop_to_phone" && advertised.available) { "This laptop offer is not available to receive." }
+            val remote = transferFrom(transport.json(session, "GET", "/v2/transfers/${advertised.transferId}")).also {
+                require(it.transferId == advertised.transferId && it.direction == "laptop_to_phone" && it.state in setOf("offered", "ready", "transferring"))
+                require(it.sizeBytes <= HandoffTransport.FILE_LIMIT && it.available)
+            }
+            receiveTransfer(session, remote, destination, verified)
         }
-        receiveTransfer(session, remote, destination)
     }
 
     suspend fun sendText(text: String) = exclusive {
         val bytes = text.toByteArray(Charsets.UTF_8)
         require(bytes.size <= HandoffTransport.TEXT_LIMIT) { "Text must be 2 KiB or smaller." }
+        require(text.isNotEmpty() && text.codePoints().allMatch { cp -> cp == '\n'.code || cp == '\t'.code || isPrintableHandoffCodePoint(cp) }) { "Text contains unsupported characters." }
         val session = sessionOrThrow(); requireAllowed(session)
         transport.json(session, "POST", "/v2/text", JSONObject().put("protocol", 2).put("text", text))
         transport.checkCurrent(session)
@@ -261,23 +280,40 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
         companion.cancelHandoffConnections()
     }
 
-    suspend fun retry(): HandoffTransfer = exclusive {
-        val id = lastOutgoingTransferId ?: error("There is no resumable upload in this session.")
+    suspend fun retry(transferId: String): HandoffTransfer = exclusive {
+        require(transferId == mutable.value.pendingOutgoingTransferId) { "This upload is no longer the pending staged transfer." }
+        var id = lastOutgoingTransferId ?: error("There is no resumable upload in this session.")
+        require(id == transferId)
         val prepared = mutable.value.preparedFile ?: error("The original staged file is unavailable; choose it again.")
         val file = preparedFile?.takeIf { it.isFile } ?: error("The staged source was removed; choose it again.")
         require(file.length() == prepared.sizeBytes && sha256(file) == prepared.sha256) { "Staged source changed; choose it again." }
         val session = sessionOrThrow(); requireAllowed(session)
         require(lastOutgoingPeerId == session.peerId) { "This upload belongs to a different paired laptop; start a new transfer." }
         remoteTransferId = id
-        val remote = try { transferFrom(transport.json(session, "GET", "/v2/transfers/$id")) }
+        var remote = try { transferFrom(transport.json(session, "GET", "/v2/transfers/$id")) }
         catch (e: HandoffHttpException) {
             if (e.statusCode != 404) throw e
+            id = UUID.randomUUID().toString()
+            persistOutgoing(id, session.peerId)
+            remoteTransferId = id
+            val manifest = transferManifest(id, prepared)
+            remember(manifest)
             createTransfer(session, id, prepared)
         }
         require(remote.transferId == id && remote.direction == "phone_to_laptop" && remote.sha256 == prepared.sha256 && remote.sizeBytes == prepared.sizeBytes)
         if (remote.state == "completed") {
             require(remote.sha256 == prepared.sha256 && remote.sizeBytes == prepared.sizeBytes)
             remember(remote); clearOutgoing(); mutable.value = mutable.value.copy(progress = null); return@exclusive remote
+        }
+        if (remote.state in setOf("cancelled", "failed")) {
+            remember(remote.copy(interrupted = true))
+            id = UUID.randomUUID().toString()
+            persistOutgoing(id, session.peerId)
+            remoteTransferId = id
+            remote = transferManifest(id, prepared)
+            remember(remote)
+            remote = createTransfer(session, id, prepared)
+            require(remote.transferId == id && remote.direction == "phone_to_laptop" && remote.sha256 == prepared.sha256 && remote.sizeBytes == prepared.sizeBytes)
         }
         require(remote.state in setOf("awaiting_approval", "offered", "ready", "transferring")) {
             "Laptop transfer is ${remote.state}; start a new transfer if needed."
@@ -288,16 +324,29 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
     /** Re-downloads an interrupted incoming transfer into a fresh SAF CreateDocument destination. */
     suspend fun retryReceive(transferId: String, destination: Uri): HandoffTransfer = exclusive {
         requireUuid(transferId)
-        val session = sessionOrThrow(); requireAllowed(session)
-        val remote = transferFrom(transport.json(session, "GET", "/v2/transfers/$transferId"))
-        require(remote.transferId == transferId && remote.direction == "laptop_to_phone" &&
-            remote.state in setOf("offered", "ready", "transferring") && remote.available)
-        receiveTransfer(session, remote, destination)
+        receiveWithCleanup(destination) { verified ->
+            val session = sessionOrThrow(); requireAllowed(session)
+            val remote = transferFrom(transport.json(session, "GET", "/v2/transfers/$transferId"))
+            require(remote.transferId == transferId && remote.direction == "laptop_to_phone" &&
+                remote.state in setOf("offered", "ready", "transferring") && remote.available)
+            receiveTransfer(session, remote, destination, verified)
+        }
     }
 
     fun clearHistory() {
         prefs.edit().remove("items").apply()
         mutable.value = mutable.value.copy(history = emptyList())
+    }
+
+    suspend fun clearLocalStorage() {
+        discardPrepared()
+        withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+            check(!staging.exists() || (staging.isDirectory && staging.canonicalFile.parentFile == app.filesDir.canonicalFile))
+            staging.listFiles()?.filter { it.name.matches(Regex("[0-9a-fA-F-]{36}\\.part")) && it.isFile }?.forEach {
+                check(it.delete()) { "Could not remove a staged handoff file." }
+            }
+        }
+        clearHistory()
     }
 
     suspend fun discardPrepared() {
@@ -307,13 +356,13 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
         val session = withContext(Dispatchers.Main.immediate) { companion.captureHandoffSession() }
         if (id != null && session != null && session.peerId == lastOutgoingPeerId) bestEffortCancel(session, id)
         val file = preparedFile
-        withContext(Dispatchers.IO) {
+        withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
             file?.delete()
             check(prefs.edit().remove("prepared").remove("outgoing_id").remove("outgoing_peer").commit())
         }
         preparedFile = null; lastOutgoingTransferId = null; lastOutgoingPeerId = null
         currentPrepared = null
-        mutable.value = mutable.value.copy(preparedFile = null, progress = null)
+        mutable.value = mutable.value.copy(preparedFile = null, pendingOutgoingTransferId = null, progress = null)
     }
 
     private suspend fun sendChunks(
@@ -347,7 +396,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
                     offset = ack.offset; remote = ack
                     mutable.value = mutable.value.copy(progress = HandoffProgress(remote.transferId, prepared.displayName, offset, prepared.sizeBytes))
                 }
-            } finally { withContext(Dispatchers.IO) { source.close() } }
+            } finally { withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { source.close() } }
             transport.checkCurrent(session)
             val committed = transport.json(session, "POST", "/v2/transfers/${remote.transferId}/commit", JSONObject()
                 .put("protocol", 2).put("sha256", prepared.sha256).put("size_bytes", prepared.sizeBytes))
@@ -387,6 +436,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
             check(prefs.edit().putString("outgoing_id", id).putString("outgoing_peer", peerId).commit())
         }
         lastOutgoingTransferId = id; lastOutgoingPeerId = peerId
+        mutable.value = mutable.value.copy(pendingOutgoingTransferId = id)
     }
 
     private suspend fun clearOutgoing() {
@@ -394,10 +444,11 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
             check(prefs.edit().remove("outgoing_id").remove("outgoing_peer").commit())
         }
         lastOutgoingTransferId = null; lastOutgoingPeerId = null
+        mutable.value = mutable.value.copy(pendingOutgoingTransferId = null)
     }
 
     private suspend fun receiveTransfer(
-        session: CompanionHandoffSession, transfer: HandoffTransfer, destination: Uri
+        session: CompanionHandoffSession, transfer: HandoffTransfer, destination: Uri, onVerified: () -> Unit
     ): HandoffTransfer {
         remoteTransferId = transfer.transferId
         if (transfer.state == "offered")
@@ -407,6 +458,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
         try {
             transport.checkCurrent(session)
             copyToSafAndVerify(session, file, destination, transfer)
+            onVerified()
             transport.checkCurrent(session)
             val committed = transport.json(session, "POST", "/v2/transfers/${transfer.transferId}/commit", JSONObject()
                 .put("protocol", 2).put("sha256", transfer.sha256).put("size_bytes", transfer.sizeBytes))
@@ -414,7 +466,33 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
             val result = transferFrom(committed)
             require(result.state == "completed" && result.sha256 == transfer.sha256 && result.sizeBytes == transfer.sizeBytes)
             remember(result); mutable.value = mutable.value.copy(progress = null, error = null); return result
-        } finally { withContext(Dispatchers.IO) { file.delete() } }
+        } catch (e: CancellationException) {
+            remember(transfer.copy(interrupted = true, available = false))
+            throw e
+        } catch (e: Exception) {
+            remember(transfer.copy(interrupted = true, available = transfer.available))
+            throw e
+        } finally { withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) { file.delete() } }
+    }
+
+    private suspend fun receiveWithCleanup(
+        destination: Uri, block: suspend (() -> Unit) -> HandoffTransfer
+    ): HandoffTransfer {
+        var destinationVerified = false
+        try {
+            return block { destinationVerified = true }
+        } catch (e: CancellationException) {
+            if (destinationVerified) throw CancellationException("File saved and verified; laptop completion is uncertain. Refresh before retrying.")
+            if (!discardFreshDestination(destination))
+                throw CancellationException("Receive cancelled; the incomplete destination could not be removed. Remove it before retrying.")
+            throw e
+        } catch (e: Exception) {
+            if (destinationVerified)
+                throw HandoffOperationException("File saved and verified; laptop completion is uncertain. Refresh before retrying.")
+            if (!discardFreshDestination(destination))
+                throw HandoffOperationException("Receive failed; the incomplete destination could not be removed. Remove it before retrying.")
+            throw e
+        }
     }
 
     private suspend fun receiveToStaging(session: CompanionHandoffSession, transfer: HandoffTransfer): File = withContext(Dispatchers.IO) {
@@ -446,10 +524,8 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
     }
 
     private suspend fun copyToSafAndVerify(session: CompanionHandoffSession, file: File, uri: Uri, transfer: HandoffTransfer) = withContext(Dispatchers.IO) {
-        var destinationTouched = false
         try {
             val output = app.contentResolver.openOutputStream(uri, "w") ?: error("The selected destination cannot be written.")
-            destinationTouched = true
             output.use { target -> FileInputStream(file).use { source ->
                 val buffer = ByteArray(32 * 1024)
                 while (true) {
@@ -475,24 +551,17 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
             require(count == transfer.sizeBytes && digest.digest().hex() == transfer.sha256) {
                 "Destination could not be verified; it may contain a partial file. Choose a new destination and retry."
             }
-        } catch (e: CancellationException) {
-            if (destinationTouched) {
-                val removed = removeCreatedDestination(uri)
-                throw CancellationException(if (removed) "Transfer cancelled; incomplete destination removed."
-                    else "Transfer cancelled; destination may contain partial data. Remove it before retrying.")
-            }
-            throw e
-        }
-        catch (e: Exception) {
-            val removed = if (destinationTouched) removeCreatedDestination(uri) else true
-            throw HandoffOperationException(if (removed) "Destination verification failed; the new destination was removed. Choose a new destination and retry."
-                else "Destination verification failed and it may contain partial data. Remove it before retrying.")
-        }
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) { throw HandoffOperationException("Destination verification failed; choose a new destination and retry.") }
     }
 
     private fun removeCreatedDestination(uri: Uri): Boolean = runCatching {
         DocumentsContract.deleteDocument(app.contentResolver, uri)
     }.getOrDefault(false)
+
+    suspend fun discardFreshDestination(uri: Uri): Boolean = withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+        removeCreatedDestination(uri)
+    }
 
     private suspend fun bestEffortCancel(session: CompanionHandoffSession, id: String) {
         if (!companion.isCurrent(session)) return
@@ -520,7 +589,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
             val session = currentSession
             val id = remoteTransferId
             if (session != null && id != null) bestEffortCancel(session, id)
-            mutable.value = mutable.value.copy(progress = null, error = e.message?.takeIf { it.contains("partial file") }
+            mutable.value = mutable.value.copy(progress = null, error = e.message?.takeIf { it.contains("partial file", true) || it.contains("destination", true) || it.contains("saved and verified", true) }
                 ?: "Transfer cancelled or interrupted. Refresh laptop status before retrying.")
             throw e
         }
@@ -537,7 +606,11 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
 
     private suspend fun requireAllowed(session: CompanionHandoffSession) {
         val hello = transport.hello(session); verifyHello(hello, session)
-        check(hello.getBoolean("handoff_allowed")) { "Enable handoff for this paired phone in the laptop Companion first." }
+        val allowed = hello.getBoolean("handoff_allowed")
+        mutable.value = mutable.value.copy(supported = true, handoffAllowed = allowed)
+        if (!allowed) mutable.value = mutable.value.copy(offers = emptyList(), textOffers = emptyList(),
+            textPreview = null, workspaces = emptyList(), listsTruncated = false)
+        check(allowed) { "Enable handoff for this paired phone in the laptop Companion first." }
     }
 
     private fun verifyHello(json: JSONObject, session: CompanionHandoffSession) {
@@ -631,17 +704,16 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
     }
 
     private fun requireLabel(value: String, limit: Int) {
-        require(value.isNotBlank() && value.length <= limit && value.none { it.code < 32 || it.code == 127 })
+        require(value.isNotBlank() && value.toByteArray(Charsets.UTF_8).size <= limit && value.codePoints().allMatch { cp -> isPrintableHandoffCodePoint(cp) })
     }
 
     private fun safeReference(value: String): String {
-        require(value.isNotBlank() && value.length <= 512 && value.none { it.code < 32 || it.code == 127 })
+        require(value.isNotBlank() && value.toByteArray(Charsets.UTF_8).size <= 512 && value.codePoints().allMatch { cp -> isPrintableHandoffCodePoint(cp) })
         if (value.startsWith("https://", ignoreCase = true)) {
             val uri = runCatching { java.net.URI(value) }.getOrNull()
             require(uri?.scheme.equals("https", ignoreCase = true) && uri?.host != null && uri.userInfo == null)
         } else {
-            require(!value.startsWith('/') && !value.startsWith('~') && !value.contains('\\') &&
-                !value.split('/').contains("..") && !Regex("^[A-Za-z][A-Za-z0-9+.-]*:").containsMatchIn(value))
+            require(value.matches(Regex("[A-Za-z0-9._:-]{1,512}")))
         }
         return value
     }
@@ -675,7 +747,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
         val array = JSONArray().also { out -> items.forEach { t -> out.put(JSONObject().put("transfer_id", t.transferId).put("direction", t.direction)
             .put("state", t.state).put("display_name", t.displayName).put("mime_type", t.mimeType).put("size_bytes", t.sizeBytes)
             .put("sha256", t.sha256).put("offset", t.offset).put("created_at", t.createdAt).put("error", t.error ?: JSONObject.NULL)
-            .put("available", t.available).put("peer_id", peerId)) } }
+            .put("available", t.available).put("interrupted", t.interrupted).put("peer_id", peerId)) } }
         prefs.edit().putString("items", array.toString()).apply()
         mutable.value = mutable.value.copy(history = items)
     }
@@ -688,8 +760,9 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
                 val item = array.getJSONObject(index)
                 if (item.optString("peer_id") != peerId) return@mapNotNull null
                 parseTransfer(item).let { transfer ->
-                if (transfer.state in setOf("awaiting_approval", "offered", "ready", "transferring"))
-                        transfer.copy(error = "Interrupted; refresh status with the paired laptop.", available = false, interrupted = true)
+                if (item.optBoolean("interrupted") || transfer.state in setOf("awaiting_approval", "offered", "ready", "transferring"))
+                        transfer.copy(error = "Interrupted; refresh status with the paired laptop.",
+                            available = transfer.direction == "laptop_to_phone" && transfer.available, interrupted = true)
                     else transfer
                 }
             }
@@ -732,10 +805,7 @@ class HandoffRepository(context: Context, private val companion: CompanionReposi
         ))
     }
 
-    private fun safeName(input: String): String {
-        val value = input.map { if (it.code < 32 || it.code == 127 || it == '/' || it == '\\') '_' else it }.joinToString("").trim().take(128)
-        return value.ifBlank { "Shared file" }
-    }
+    private fun safeName(input: String) = handoffSafeName(input)
 
     private fun requireUuid(value: String) = require(isUuid(value)) { "Invalid handoff identifier." }
 
