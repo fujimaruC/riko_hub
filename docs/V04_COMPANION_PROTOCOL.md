@@ -2,6 +2,8 @@
 
 Implementation contract for v0.4. All network/runtime verification belongs to the owner.
 
+Protocol 1 remains presence-only. Additive authenticated v2 file/text/workspace routes are documented in [V05_HANDOFF_PROTOCOL.md](V05_HANDOFF_PROTOCOL.md), with **IMPLEMENTED / UNVERIFIED** status; statements below about absent transfer apply to v1.
+
 ## Discovery and transport
 
 - DNS-SD: `_rikohub._tcp.local.` (Android service type `_rikohub._tcp.`).

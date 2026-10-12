@@ -1,6 +1,6 @@
 # 05 — v0.5 Sync and Handoff
 
-**Status:** Proposed direction only. No file transfer, clipboard transfer, record sync, or remote companion endpoint is implemented. The current v0.4 source protocol is presence-only and caps JSON bodies at 8 KiB; end-to-end acceptance remains unconfirmed. See [V04 protocol 1](../V04_COMPANION_PROTOCOL.md) and [remote access proposal](04_V04_REMOTE_COMPANION.md).
+**Status:** The bounded LAN file/text handoff and workspace metadata implementation is **IMPLEMENTED / UNVERIFIED**. See the [actual v2 implementation contract](../V05_HANDOFF_PROTOCOL.md) for current limits and surfaces. The broader design below remains a roadmap; structured record sync and remote transport are not implemented. Protocol 1 remains presence-only. See [V04 protocol 1](../V04_COMPANION_PROTOCOL.md) and [remote access proposal](04_V04_REMOTE_COMPANION.md).
 
 ## Product boundary
 

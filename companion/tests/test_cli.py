@@ -120,7 +120,7 @@ class DashboardTests(unittest.TestCase):
             return next(self.keys)
 
     def test_menu_navigation_reaches_exit(self):
-        screen = self.Screen((12, 48), [dashboard.curses.KEY_DOWN] * 5 + [10])
+        screen = self.Screen((12, 48), [dashboard.curses.KEY_DOWN] * 6 + [10])
         with (mock.patch.object(dashboard, "_init_colors"),
               mock.patch.object(dashboard.curses, "has_colors", return_value=False),
               mock.patch.object(dashboard.curses, "curs_set")):
@@ -128,7 +128,7 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(result, "exit")
 
     def test_menu_navigation_handles_two_line_terminal(self):
-        screen = self.Screen((2, 8), [dashboard.curses.KEY_DOWN] * 5 + [10])
+        screen = self.Screen((2, 8), [dashboard.curses.KEY_DOWN] * 6 + [10])
         with (mock.patch.object(dashboard, "_init_colors"),
               mock.patch.object(dashboard.curses, "has_colors", return_value=False),
               mock.patch.object(dashboard.curses, "curs_set")):

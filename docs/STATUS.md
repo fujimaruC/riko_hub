@@ -7,12 +7,30 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | Item | Value |
 |------|-------|
 | Version in development | 0.4.0 (version code 400) |
-| Current phase | Laptop Companion and interactive `rikohub` CLI source implementation on feature/v04-laptop-companion; owner verification and acceptance remain pending. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
+| Current phase | v0.5 bounded LAN Universal Handoff source continuation from 55193d0 on feature/v04-laptop-companion; IMPLEMENTED / UNVERIFIED. Owner verification and acceptance remain pending. Broader v0.5 roadmap remains partial. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
 | v0.4 execution evidence | None: no builds, lint/static-analysis suites, automated tests, service startup or device verification executed. Historical v0.3 evidence below does not verify v0.4. |
 | Last successful build | Owner-reported BUILD SUCCESSFUL in 7m 53s (2026-10-11), 44 tasks. Fresh v0.3 debug APK: 16,948,362 bytes, SHA-256 50ba882cdccae7b89073e86636b452e9c103c10e2c55d794de34cf5e7a8e7d5a. Not installed in this mission. Future builds are owner-controlled. |
 | Last test run | Fresh reports: 11 focused Vault UI/state JVM tests passed, 0 failures/errors/skips. Ten Drive API tests compiled but have no execution report. Historical v0.2 evidence is retained below. |
 | Release status | Unsigned local build; not a public release |
 | Owner acceptance | v0.2 approved and closed. v0.3 implementation checkpointed at 44d6c67, with live Google QA separately pending. v0.4 requires owner verification and acceptance. |
+
+## v0.5 Universal Handoff recovery — 2026-10-12
+
+- Restored context from clean branch `feature/v04-laptop-companion` at `55193d0`. Preserved the existing v2 backend, certificate pinning, token authentication, per-phone grants, approval and storage boundaries. No branch switch, reset, commit or push performed.
+- **IMPLEMENTED / UNVERIFIED:** Android Sync handoff controls use the existing repository: SAF file preview/send, explicit offer acceptance to a fresh destination, progress/cancel/retry, history/staging controls, explicit text review and workspace metadata. Uses the existing single trusted laptop; no broad storage permission or clipboard monitoring.
+- **IMPLEMENTED / UNVERIFIED:** bounded protocol recovery and Linux management additions cover terminal upload retry with fresh approval, peer/grant state clearing, Unicode label bounds, console cancellation, workspace inspection and dashboard guidance. Existing limits remain 64 MiB files, 256 KiB chunks and 2 KiB text.
+- Added focused handoff test source for owner execution. No build, test, lint, syntax-check suite, installation, server start, Android launch or ADB command was executed. Source review cannot establish runtime compatibility or acceptance.
+- The bounded requested LAN MVP is **source-complete / UNVERIFIED** following targeted source review and correction. This is not build success or owner acceptance. Broader v0.5 remains **PARTIAL**: remote/Tailscale connectivity, multiple trusted laptops, background transfer, full structured/Room sync and task/material workspace composition are deferred. Workspace metadata viewing is included; database mutation is not.
+- Source review corrected compilation defects, retry selection of the wrong historical file, picker recreation loss, hidden reconnect timeouts, fresh-retry cancellation targeting, and cancellation cleanup. Verified SAF downloads are retained when the final laptop acknowledgement is uncertain; refresh remote status before retrying. The final focused review found no remaining blocker in that cleanup path; device timing remains unverified.
+- See [implementation contract](V05_HANDOFF_PROTOCOL.md) and [owner setup/verification](V04_LAPTOP_COMPANION_SETUP.md). Version metadata remains 0.4.0/code 400 pending owner release decisions. Historical statements below describe earlier checkpoints, not current v2 capability.
+
+Recovery file inventory:
+- Modified Android: `data/remote/device/HandoffModels.kt`, `HandoffRepository.kt`; `ui/sync/SyncScreen.kt`, `SyncUiState.kt`, `SyncViewModel.kt` (under `app/src/main/java/id/riko/hub/`).
+- Created Android test source: `app/src/test/java/id/riko/hub/data/remote/device/HandoffModelsTest.kt`.
+- Modified Linux: `companion/riko_companion/{cli,dashboard,handoff,lifecycle}.py`, `companion/tests/test_cli.py`; created `companion/tests/test_handoff.py`.
+- Created `docs/V05_HANDOFF_PROTOCOL.md`; modified this status, `V04_COMPANION_PROTOCOL.md`, `V04_LAPTOP_COMPANION_SETUP.md`, and `renaissance/05_V05_SYNC_AND_HANDOFF.md`.
+
+Remaining owner integration risks: Android compilation/Compose rendering, SAF provider and lifecycle behavior, connection/revocation races, uncertain commit acknowledgements, filesystem failure handling, Unicode-version differences and Linux CLI/server runtime. Source regression tests cover retry identity, UTF-8 filename bounds, storage lifecycle, consent, peer isolation, chunk limits, text expiry and console controls; they have not been executed and do not replace cross-device acceptance.
 
 ## v0.4 CLI dashboard — 2026-10-12
 

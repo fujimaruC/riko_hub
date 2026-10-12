@@ -1,6 +1,42 @@
 # v0.4 Laptop Companion
 
-This version provides discovery, explicit pairing and recent connection presence. The owner performs every build, test, lint and device/network check. No successful runtime verification is claimed.
+Protocol 1 provides discovery, explicit pairing and recent connection presence. The v0.5 source adds authenticated LAN handoff as described below and in [the v2 contract](V05_HANDOFF_PROTOCOL.md). Status: **IMPLEMENTED / UNVERIFIED**. The owner performs every build, test, lint and device/network check. No successful runtime verification is claimed.
+
+## v0.5 handoff setup and use (owner commands)
+
+Configure a dedicated empty private transfer directory while the Companion is stopped. Do not use a folder containing personal files. Configuration is explicit and does not grant any phone access:
+
+```bash
+rikohub handoff configure --directory "$HOME/.local/share/riko-hub-handoff" --retention-days 7
+rikohub start --bind ACTUAL_PRIVATE_IPV4
+```
+
+Replace the address placeholder with the laptop's actual private LAN address. Pair normally, then use these commands in the **running server console**, not a second shell:
+
+```text
+status
+handoff allow PHONE_UUID
+handoff list
+handoff approve TRANSFER_UUID
+handoff deny TRANSFER_UUID
+handoff offer PHONE_UUID /absolute/path/to/selected-file
+handoff cancel TRANSFER_UUID
+handoff text PHONE_UUID
+handoff texts
+handoff show TEXT_UUID
+handoff workspaces
+handoff workspace SESSION_UUID
+handoff deny-peer PHONE_UUID
+handoff cleanup
+```
+
+Replace UUID placeholders with IDs displayed by the console. `allow` confirms a separate grant; each phone upload still needs approval. `offer` stages only the selected file. `list` reports generated received-file locations and transfer status. `cancel` removes incomplete generated data, not original source files or completed results. `text` prompts for and confirms content; `show` explicitly displays/consumes received text. Workspace inspection displays metadata only. Cleanup removes expired/retained generated data according to retention; copy any received result you need to retain elsewhere first. Keep the same data-directory option across configure/start when using a custom directory.
+
+On Android, connect to the trusted laptop in Sync and choose **Refresh handoff**. Choose a file, review it, send, then approve on the laptop. For laptop offers, choose a fresh SAF destination to accept. Keep the screen foreground while transferring; refresh after interruption. Retry uploads explicitly; cancelled downloads need a new laptop offer. Text requires a deliberate send or preview/consume action. Workspace snapshots are view-only in this UI. Local storage cleanup does not delete documents already saved through SAF.
+
+Current limits are 64 MiB per file and 2 KiB UTF-8 text. Text expires after five minutes. One active transfer per phone is supported. Android has one trusted-laptop slot. Tailscale and other separate-network connectivity remain deferred; this is not remote transport acceptance.
+
+Owner verification should include both directions, approval/denial, Unicode/empty files, cancellation/retry, revocation, rotation and leaving the screen, SAF cancellation/provider errors, hash mismatch, full storage, restart recovery, text expiry and workspace metadata. All commands below are suggestions for Riko; agents did not execute them.
 
 ## Architecture
 
