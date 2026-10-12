@@ -905,6 +905,12 @@ class Handoff:
         result.sort(key=lambda x: x["created_at"], reverse=True)
         return result[:7]
 
+    def workspace_for_console(self, session_id):
+        item = self.workspaces.get(_uuid(session_id))
+        if not item or item["peer_id"] not in self.grants:
+            raise StateError("not_found")
+        return dict(item)
+
     def cleanup(self):
         now = int(self.clock() * 1000)
         cutoff = now - self.retention_days * 86400000

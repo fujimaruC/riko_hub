@@ -9,7 +9,7 @@ import curses
 
 
 MENU = ("Start Companion", "Connection Status", "Trusted Devices",
-        "Network Settings", "Diagnostics", "Exit")
+        "Network Settings", "Handoff Help", "Diagnostics", "Exit")
 _COLOR = False
 
 

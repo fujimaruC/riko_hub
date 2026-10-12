@@ -107,6 +107,13 @@ def configure_handoff(data_dir, directory, retention_days=7):
     return root
 
 
+def handoff_status(data_dir=DEFAULT_DATA_DIR):
+    config = Storage(data_dir, read_only=True).read_json("handoff.json", _handoff_config_valid)
+    if not config:
+        return "Not configured"
+    return f"Configured at {config['directory']} · {config['retention_days']}-day retention"
+
+
 def _is_handoff_session(name, path):
     try:
         return (str(uuid.UUID(name)) == name and stat.S_ISDIR(path.lstat().st_mode) and
@@ -261,7 +268,7 @@ def _console_handoff(state, args):
     from .server import safe_terminal
     handoff = state.handoff
     if not args or args[0] == "help":
-        print("handoff allow <phoneUUID> | deny-peer <phoneUUID> | list | approve <transferUUID> | deny <transferUUID> | offer <phoneUUID> <path> | text <phoneUUID> | texts | show <textUUID> | workspaces | cleanup")
+        print("handoff allow <phoneUUID> | deny-peer <phoneUUID> | list | approve <transferUUID> | deny <transferUUID> | cancel <transferUUID> | offer <phoneUUID> <path> | text <phoneUUID> | texts | show <textUUID> | workspaces | workspace <sessionUUID> | cleanup")
         return
     if handoff is None:
         print("Handoff is not configured. Run rikohub handoff configure.")
@@ -303,6 +310,14 @@ def _console_handoff(state, args):
             with state.lock:
                 result = handoff.decide(args[1], action == "approve")
             print("updated" if result else "no pending transfer")
+        elif action == "cancel" and len(args) == 2:
+            transfer_id = str(uuid.UUID(args[1]))
+            with state.lock:
+                item = handoff.sessions.get(transfer_id)
+                if item is None:
+                    raise StateError("not_found")
+                handoff._cancel_generated(item)
+            print("cancelled" if item["state"] == "cancelled" else "completed files are retained")
         elif action == "offer" and len(args) >= 3:
             peer = str(uuid.UUID(args[1]))
             with state.lock:
@@ -351,6 +366,18 @@ def _console_handoff(state, args):
                 print(f"{item['session_id']}  {safe_terminal(item['title'])}  available={item['available']}")
             if not items:
                 print("no workspace handoffs")
+        elif action == "workspace" and len(args) == 2:
+            session_id = str(uuid.UUID(args[1]))
+            with state.lock:
+                item = handoff.workspace_for_console(session_id)
+            print(f"{item['session_id']}  {_terminal_text(item['title'])}  created={item['created_at']}")
+            if item["task"]:
+                task = item["task"]
+                deadline = task["deadline"] if task["deadline"] is not None else "none"
+                print(f"  task: {_terminal_text(task['title'])}  sync_id={task['sync_id']}  deadline={deadline}  updated={task['updated_at']}  fingerprint={task['fingerprint']}")
+            for material in item["materials"]:
+                print(f"  material: {_terminal_text(material['title'])}  reference={_terminal_text(material['reference'])}  transfer={material['transfer_id'] or 'none'}")
+            print("  transfers: " + (", ".join(item["transfer_ids"]) if item["transfer_ids"] else "none"))
         elif action == "cleanup" and len(args) == 1:
             if input("Remove expired and retained generated handoff data? Type yes: ").strip() != "yes":
                 print("cleanup cancelled")
