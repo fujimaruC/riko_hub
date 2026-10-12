@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 MENU_ITEMS = ("Start Companion", "Connection Status", "Trusted Devices",
-              "Network Settings", "Diagnostics", "Exit")
+              "Network Settings", "Handoff Help", "Diagnostics", "Exit")
 
 
 def _parser():
@@ -195,6 +195,9 @@ def _dashboard(data_dir):
             elif item == "Trusted Devices":
                 print("\n".join(_device_lines(data_dir)))
                 result = 0
+            elif item == "Handoff Help":
+                print("\n".join(_handoff_help_lines(data_dir)))
+                result = 0
             else:
                 print("\n".join(_diagnostic_lines(data_dir)))
                 result = 0
@@ -214,6 +217,7 @@ def _dashboard(data_dir):
             action = dashboard.run(snapshot, {
                 "Connection Status": lambda: _status_lines(_status(data_dir, probe=True)),
                 "Trusted Devices": lambda: _device_lines(data_dir),
+                "Handoff Help": lambda: _handoff_help_lines(data_dir),
                 "Diagnostics": lambda: _diagnostic_lines(data_dir),
             })
         except KeyboardInterrupt:
@@ -250,6 +254,19 @@ def _device_lines(data_dir):
         return [f"{_safe(name)} · {_safe(device_id)}" for device_id, name in devices] or ["No trusted devices"]
     except Exception:
         return ["Trusted device metadata could not be read safely"]
+
+
+def _handoff_help_lines(data_dir):
+    try:
+        status = _safe(_backend().handoff_status(data_dir))
+    except Exception:
+        status = "Status could not be read safely"
+    return [f"Handoff: {status}", "Configure: rikohub handoff configure --directory ~/Riko-Handoff",
+            "Start the Companion, then allow this phone with: handoff allow <phoneUUID>",
+            "Live console: handoff list | approve <transferUUID> | deny <transferUUID> | cancel <transferUUID>",
+            "Live console: handoff offer <phoneUUID> <path> | text <phoneUUID> | texts | show <textUUID>",
+            "Workspaces: handoff workspaces | workspace <sessionUUID>",
+            "Received files stay in the configured directory; cancel leaves completed files in place."]
 
 
 def _diagnostic_lines(data_dir):
