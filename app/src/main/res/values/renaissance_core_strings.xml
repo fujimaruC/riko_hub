@@ -1,0 +1,10 @@
+<resources>
+    <string name="renaissance_checklist_progress">%1$d dari %2$d langkah selesai</string>
+    <string name="renaissance_done_today">Selesai hari ini · %1$d</string>
+    <string name="renaissance_more_room">Perluas ruang kerja</string>
+    <string name="renaissance_less_room">Kembalikan header lengkap</string>
+    <string name="renaissance_day_stops">%1$d agenda</string>
+    <string name="renaissance_day_empty">Kosong</string>
+    <string name="renaissance_attention">Perlu perhatian</string>
+    <string name="renaissance_all_tasks">Lihat semua tugas</string>
+</resources>

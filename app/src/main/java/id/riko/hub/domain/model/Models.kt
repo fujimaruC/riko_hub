@@ -16,7 +16,6 @@ data class ChecklistItem(
 )
 
 typealias ThemeMode = id.riko.hub.ui.theme.ThemeMode
-enum class NavigationStyle { SPATIAL_COMPASS, COMPASS_ONLY }
 
 data class Task(
     val id: Long = 0,
@@ -57,9 +56,8 @@ data class Event(
 )
 
 data class AppSettings(
-    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themeMode: ThemeMode = ThemeMode.DARK,
     val displayName: String = "Riko",
-    val navStyle: NavigationStyle = NavigationStyle.SPATIAL_COMPASS,
     val hintsShownCount: Int = 0,
     val pinnedFocusTaskId: Long? = null,
     val pinnedFocusDate: LocalDate? = null,

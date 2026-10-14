@@ -11,14 +11,11 @@ object Spacing {
     val space6 = 24.dp
     val space8 = 32.dp
     val space12 = 48.dp
+    val screenGutter = 16.dp
+    val sectionGap = 24.dp
     val touch = 48.dp
     val row = 56.dp
-    val edgeExclusion = 24.dp
-    val swipeThreshold = 64.dp
-    val returnHandle = 96.dp
-    val compassDrag = 28.dp
-    val compass = 40.dp
-    val compassDot = 3.dp
+    val bubbleMinWidth = 96.dp
     val pathStroke = 3.dp
     val illustration = 144.dp
     val field = 200.dp

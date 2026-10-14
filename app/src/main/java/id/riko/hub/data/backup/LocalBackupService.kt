@@ -8,7 +8,17 @@ import id.riko.hub.core.time.Clock
 import id.riko.hub.data.local.RikoDatabase
 import id.riko.hub.data.local.entity.EventEntity
 import id.riko.hub.data.local.entity.TaskEntity
+import id.riko.hub.data.local.entity.CourseWithWeeklySlots
+import id.riko.hub.data.local.entity.CourseWeeklySlotEntity
+import id.riko.hub.data.local.entity.AcademicAssignmentEntity
+import id.riko.hub.data.local.entity.AcademicDeadlineChangeEntity
+import id.riko.hub.data.local.entity.SpaceNoteEntity
+import id.riko.hub.data.local.entity.toDomain as courseToDomain
+import id.riko.hub.data.local.entity.toEntity as courseToEntity
 import id.riko.hub.data.prefs.SettingsDataStore
+import id.riko.hub.domain.model.Course
+import id.riko.hub.domain.model.CourseWeeklySlot
+import id.riko.hub.domain.model.normalizeAndValidateCourse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
@@ -27,10 +37,14 @@ import java.time.LocalDate
 
 enum class BackupFailure { INVALID, TOO_LARGE, UNSUPPORTED_VERSION, STALE_PREVIEW }
 class BackupException(val reason: BackupFailure, cause: Throwable? = null) : Exception("Backup ${reason.name.lowercase()}", cause)
-class BackupPreview internal constructor(val totalTasks: Int, val totalEvents: Int, val newTasks: Int, val newEvents: Int, val duplicates: Int, val conflicts: Int, internal val document: Document, internal val fingerprint: List<Any>)
-data class BackupImportResult(val insertedTasks: Int, val insertedEvents: Int, val preferencesFailed: Boolean, val remindersFailed: Boolean)
+class BackupPreview internal constructor(val totalTasks: Int, val totalEvents: Int, val newTasks: Int, val newEvents: Int, val duplicates: Int, val conflicts: Int, internal val document: Document, internal val fingerprint: List<Any>, val totalCourses: Int, val newCourses: Int, val totalWeeklySlots: Int, val newWeeklySlots: Int, val totalAssignments: Int, val newAssignments: Int, val totalDeadlineChanges: Int, val newDeadlineChanges: Int, internal val acceptedAssignments: List<AssignmentRecord>, val totalNotes: Int, val newNotes: Int)
+data class BackupImportResult(val insertedTasks: Int, val insertedEvents: Int, val preferencesFailed: Boolean, val remindersFailed: Boolean, val insertedCourses: Int = 0, val insertedWeeklySlots: Int = 0, val insertedAssignments: Int = 0, val insertedDeadlineChanges: Int = 0, val insertedNotes: Int = 0)
 
-internal data class Document(val tasks: List<TaskRecord>, val events: List<EventRecord>, val settings: SettingsDataStore.BackupValues, val createdAt: Long)
+internal data class Document(val tasks: List<TaskRecord>, val events: List<EventRecord>, val courses: List<CourseRecord>, val assignments: List<AssignmentRecord>, val notes: List<SpaceNoteRecord>, val settings: SettingsDataStore.BackupValues, val createdAt: Long)
+internal data class SpaceNoteRecord(val syncId: String, val kind: String, val body: String, val journalDate: String?, val projectTaskSyncId: String?, val createdAt: Long, val updatedAt: Long, val deletedAt: Long?)
+internal data class AssignmentRecord(val syncId: String, val taskSyncId: String, val courseSyncId: String?, val state: String, val submittedAt: Long?, val submissionReference: String?, val originalDeadlineAt: Long?, val originalHasDeadlineTime: Boolean, val createdAt: Long, val updatedAt: Long, val deadlineChanges: List<DeadlineChangeRecord>)
+internal data class DeadlineChangeRecord(val syncId: String, val previousDeadlineAt: Long?, val previousHasDeadlineTime: Boolean, val newDeadlineAt: Long?, val newHasDeadlineTime: Boolean, val changedAt: Long)
+private data class Snapshot(val tasks: List<TaskEntity>, val events: List<EventEntity>, val courses: List<CourseWithWeeklySlots>, val assignments: List<AcademicAssignmentEntity>, val changes: List<AcademicDeadlineChangeEntity>, val notes: List<SpaceNoteEntity>)
 internal data class TaskRecord(
     val syncId: String, val title: String, val notes: String?, val category: String, val priority: String, val status: String,
     val deadlineAt: Long?, val hasDeadlineTime: Boolean, val createdAt: Long, val updatedAt: Long, val completedAt: Long?, val deletedAt: Long?,
@@ -38,6 +52,8 @@ internal data class TaskRecord(
     val generationPristine: Boolean, val recurrenceAnchorAt: Long?
 )
 internal data class EventRecord(val syncId: String, val title: String, val notes: String?, val kind: String, val category: String, val startAt: Long, val endAt: Long?, val location: String?, val createdAt: Long, val updatedAt: Long, val deletedAt: Long?)
+internal data class CourseRecord(val syncId: String, val title: String, val code: String?, val instructor: String?, val academicPeriod: String?, val color: String?, val icon: String?, val sortOrder: Long, val archivedAt: Long?, val createdAt: Long, val updatedAt: Long, val weeklySlots: List<CourseSlotRecord>)
+internal data class CourseSlotRecord(val dayOfWeek: Int, val startMinute: Int, val endMinute: Int, val location: String?)
 
 class LocalBackupService(
     private val database: RikoDatabase,
@@ -45,15 +61,27 @@ class LocalBackupService(
     private val clock: Clock,
     private val reconcileReminders: suspend () -> Unit,
 ) {
+    private suspend fun snapshot(): Snapshot = database.withTransaction { loadSnapshot() }
+
+    private suspend fun loadSnapshot() =
+        Snapshot(
+            database.tasks().backupSnapshot(), database.events().backupSnapshot(), database.courses().backupSnapshot(),
+            database.assignments().backupSnapshot(), database.assignments().backupDeadlineChanges(),
+            database.spaceNotes().backupSnapshot(),
+        )
+
     suspend fun export(): ByteArray {
-        val (tasks, events) = database.withTransaction { database.tasks().backupSnapshot() to database.events().backupSnapshot() }
-        if (tasks.size + events.size > MAX_RECORDS) throw BackupException(BackupFailure.TOO_LARGE)
+        val local = snapshot()
+        val (tasks, events, courses) = Triple(local.tasks, local.events, local.courses)
+        val courseRecords = courses.toCourseRecords()
+        val assignments = local.toAssignmentRecords()
+        if (tasks.size + events.size + courseRecords.size + courseRecords.sumOf { it.weeklySlots.size } + assignments.size + assignments.sumOf { it.deadlineChanges.size } + local.notes.size > MAX_RECORDS) throw BackupException(BackupFailure.TOO_LARGE)
         val taskRecords = tasks.toRecords()
         val prefs = settings.backupValues(tasks.associate { it.id to it.syncId }).let { p ->
-            if (p.theme !in setOf("SYSTEM", "LIGHT", "DARK") || p.navigation !in setOf("SPATIAL_COMPASS", "COMPASS_ONLY") || p.hints < 0 || p.displayName.isBlank()) throw BackupException(BackupFailure.INVALID)
+            if (p.theme !in setOf("SYSTEM", "LIGHT", "DARK") || p.navigation !in setOf("SPATIAL_COMPASS", "COMPASS_ONLY", "RENAISSANCE_DOCK") || p.hints < 0 || p.displayName.isBlank()) throw BackupException(BackupFailure.INVALID)
             if (p.pinnedFocusSyncId == null || p.pinnedFocusDate == null || runCatching { LocalDate.parse(p.pinnedFocusDate) }.isFailure) p.copy(pinnedFocusSyncId = null, pinnedFocusDate = null) else p
         }
-        val bytes = encode(Document(taskRecords, events.map { it.toRecord() }, prefs, clock.now()))
+        val bytes = encode(Document(taskRecords, events.map { it.toRecord() }, courseRecords, assignments, local.notes.map { it.toRecord() }, prefs, clock.now()))
         if (bytes.size > MAX_BYTES) throw BackupException(BackupFailure.TOO_LARGE)
         try { decode(bytes) } catch (e: Exception) { throw BackupException(BackupFailure.INVALID, e) }
         return bytes
@@ -62,7 +90,8 @@ class LocalBackupService(
     suspend fun preview(input: InputStream): BackupPreview {
         val bytes = try { readLimited(input) } catch (e: BackupException) { throw e } catch (e: Exception) { throw BackupException(BackupFailure.INVALID, e) }
         val doc = try { decode(bytes) } catch (e: BackupException) { throw e } catch (e: Exception) { throw BackupException(BackupFailure.INVALID, e) }
-        val (tasks, events) = database.withTransaction { database.tasks().backupSnapshot() to database.events().backupSnapshot() }
+        val local = snapshot()
+        val (tasks, events, courses) = Triple(local.tasks, local.events, local.courses)
         val existingT = tasks.associateBy { it.syncId }; val existingE = events.associateBy { it.syncId }
         val entityRecords = tasks.toRecords().associateBy { it.syncId }
         val dupT = doc.tasks.count { entityRecords[it.syncId] == it }
@@ -70,13 +99,32 @@ class LocalBackupService(
         val eventRecords = events.associate { it.syncId to it.toRecord() }
         val dupE = doc.events.count { eventRecords[it.syncId] == it }
         val confE = doc.events.count { eventRecords[it.syncId]?.let { old -> old != it } == true }
+        val courseRecords = courses.toCourseRecords().associateBy { it.syncId }
+        val dupC = doc.courses.count { courseRecords[it.syncId] == it }
+        val confC = doc.courses.count { courseRecords[it.syncId]?.let { old -> old != it } == true }
         val syncById = tasks.associate { it.id to it.syncId }
         val owners = tasks.mapNotNull { child -> child.generatedFromTaskId?.let { id -> syncById[id]?.let { it to child.syncId } } }.toMap().toMutableMap()
         val incomingTasks = doc.tasks.filter { it.syncId !in existingT }
         val accepted = acceptedTasks(incomingTasks, existingT.keys, owners)
         val blocked = incomingTasks.size - accepted.size
         val newEvents = doc.events.count { it.syncId !in existingE }
-        return BackupPreview(doc.tasks.size, doc.events.size, accepted.size, newEvents, dupT + dupE, confT + confE + blocked, doc, (tasks.sortedBy { it.syncId } + events.map { it.toRecord() }.sortedBy { it.syncId }))
+        val newCourses = doc.courses.filter { it.syncId !in courseRecords }
+        val localAssignments = local.toAssignmentRecords()
+        val localByAssignment = localAssignments.associateBy { it.syncId }
+        val acceptedAssignments = acceptedAssignments(doc, accepted, existingT.keys, entityRecords,
+            localByAssignment, localAssignments.associateBy { it.taskSyncId },
+            localAssignments.flatMap { it.deadlineChanges }.mapTo(mutableSetOf()) { it.syncId })
+        val duplicateA = doc.assignments.count { localByAssignment[it.syncId] == it }
+        val conflictA = doc.assignments.size - duplicateA - acceptedAssignments.size
+        val localNotes = local.notes.associate { it.syncId to it.toRecord() }
+        val duplicateNotes = doc.notes.count { localNotes[it.syncId] == it }
+        val acceptedNotes = doc.notes.count { it.syncId !in localNotes }
+        val conflictNotes = doc.notes.size - duplicateNotes - acceptedNotes
+        return BackupPreview(doc.tasks.size, doc.events.size, accepted.size, newEvents, dupT + dupE + dupC + duplicateA + duplicateNotes,
+            confT + confE + confC + blocked + conflictA + conflictNotes, doc, snapshotFingerprint(local),
+            doc.courses.size, newCourses.size, doc.courses.sumOf { it.weeklySlots.size }, newCourses.sumOf { it.weeklySlots.size },
+            doc.assignments.size, acceptedAssignments.size, doc.assignments.sumOf { it.deadlineChanges.size },
+            acceptedAssignments.sumOf { it.deadlineChanges.size }, acceptedAssignments, doc.notes.size, acceptedNotes)
     }
 
     suspend fun importBackup(preview: BackupPreview, restoreSettings: Boolean): BackupImportResult {
@@ -84,10 +132,11 @@ class LocalBackupService(
         // Once confirmed, finish the bounded transaction and reconciliation even if the screen closes.
         return withContext(NonCancellable + Dispatchers.IO) {
             val doc = preview.document
-            var insertedT = 0; var insertedE = 0
+            var insertedT = 0; var insertedE = 0; var insertedC = 0; var insertedSlots = 0; var insertedA = 0; var insertedChanges = 0; var insertedNotes = 0
             database.withTransaction {
-                val existingTasks = database.tasks().backupSnapshot(); val existingEvents = database.events().backupSnapshot()
-                val fingerprint = existingTasks.sortedBy { it.syncId } + existingEvents.map { it.toRecord() }.sortedBy { it.syncId }
+                val local = loadSnapshot()
+                val existingTasks = local.tasks; val existingEvents = local.events; val existingCourses = local.courses
+                val fingerprint = snapshotFingerprint(local)
                 if (fingerprint != preview.fingerprint) throw BackupException(BackupFailure.STALE_PREVIEW)
                 val ids = existingTasks.associate { it.syncId to it.id }.toMutableMap()
                 val localParentOwners = existingTasks.mapNotNull { t -> t.generatedFromTaskId?.let { it to t.syncId } }.toMap().toMutableMap()
@@ -102,6 +151,32 @@ class LocalBackupService(
                 }
                 val existingEventIds = existingEvents.mapTo(mutableSetOf()) { it.syncId }
                 doc.events.filter { it.syncId !in existingEventIds }.forEach { database.events().insert(it.toEntity()); insertedE++ }
+                val existingCourseIds = existingCourses.mapTo(mutableSetOf()) { it.course.syncId }
+                doc.courses.filter { it.syncId !in existingCourseIds }.forEach { course ->
+                    val courseId = database.courses().insert(course.toCourseEntity())
+                    if (course.weeklySlots.isNotEmpty()) database.courses().insertSlots(course.weeklySlots.map {
+                        CourseWeeklySlotEntity(courseId = courseId, dayOfWeek = it.dayOfWeek, startMinute = it.startMinute, endMinute = it.endMinute, location = it.location)
+                    })
+                    insertedC++
+                    insertedSlots += course.weeklySlots.size
+                }
+                val taskIds = database.tasks().backupSnapshot().associate { it.syncId to it.id }
+                val courseIds = database.courses().backupSnapshot().associate { it.course.syncId to it.course.id }
+                preview.acceptedAssignments.forEach { assignment ->
+                    val taskId = taskIds[assignment.taskSyncId] ?: throw BackupException(BackupFailure.INVALID)
+                    val courseId = assignment.courseSyncId?.let { courseIds[it] ?: throw BackupException(BackupFailure.INVALID) }
+                    val id = database.assignments().insert(assignment.toEntity(taskId, courseId))
+                    assignment.deadlineChanges.forEach { change ->
+                        database.assignments().insertDeadlineChange(change.toEntity(id))
+                        insertedChanges++
+                    }
+                    insertedA++
+                }
+                val existingNoteIds = local.notes.mapTo(mutableSetOf()) { it.syncId }
+                doc.notes.filter { it.syncId !in existingNoteIds }.forEach { note ->
+                    database.spaceNotes().insert(note.toEntity())
+                    insertedNotes++
+                }
             }
             var preferencesFailed = false
             var remindersFailed = false
@@ -112,10 +187,71 @@ class LocalBackupService(
                 else settings.restoreBackup(doc.settings, pinId)
             } catch (_: Exception) { preferencesFailed = true }
             try { reconcileReminders() } catch (_: Exception) { remindersFailed = true }
-            BackupImportResult(insertedT, insertedE, preferencesFailed, remindersFailed)
+            BackupImportResult(insertedT, insertedE, preferencesFailed, remindersFailed, insertedC, insertedSlots, insertedA, insertedChanges, insertedNotes)
         }
     }
 }
+
+private fun Snapshot.toAssignmentRecords(): List<AssignmentRecord> {
+    val taskSync = tasks.associate { it.id to it.syncId }
+    val courseSync = courses.associate { it.course.id to it.course.syncId }
+    val changesByAssignment = changes.groupBy { it.assignmentId }
+    return assignments.map { row ->
+        val task = taskSync[row.taskId] ?: throw BackupException(BackupFailure.INVALID)
+        val course = row.courseId?.let { courseSync[it] ?: throw BackupException(BackupFailure.INVALID) }
+        AssignmentRecord(
+            row.syncId, task, course, row.state, row.submittedAt, row.submissionReference, row.originalDeadlineAt,
+            row.originalHasDeadlineTime, row.createdAt, row.updatedAt,
+            changesByAssignment[row.id].orEmpty().sortedBy { it.id }.map { change ->
+                DeadlineChangeRecord(change.syncId, change.previousDeadlineAt, change.previousHasDeadlineTime,
+                    change.newDeadlineAt, change.newHasDeadlineTime, change.changedAt)
+            },
+        )
+    }.sortedBy { it.syncId }
+}
+
+private fun snapshotFingerprint(snapshot: Snapshot): List<Any> =
+    snapshot.tasks.sortedBy { it.syncId } + snapshot.events.map { it.toRecord() }.sortedBy { it.syncId } +
+        snapshot.courses.toCourseRecords().sortedBy { it.syncId } + snapshot.toAssignmentRecords() + snapshot.notes.map { it.toRecord() }.sortedBy { it.syncId }
+
+private fun SpaceNoteEntity.toRecord() = SpaceNoteRecord(syncId, kind, body, journalDate, projectTaskSyncId, createdAt, updatedAt, deletedAt)
+private fun SpaceNoteRecord.toEntity() = SpaceNoteEntity(syncId = syncId, kind = kind, body = body, journalDate = journalDate,
+    projectTaskSyncId = projectTaskSyncId, createdAt = createdAt, updatedAt = updatedAt, deletedAt = deletedAt)
+
+private fun acceptedAssignments(
+    doc: Document,
+    acceptedTasks: List<TaskRecord>,
+    existingTaskIds: Set<String>,
+    localTaskRecords: Map<String, TaskRecord>,
+    localAssignments: Map<String, AssignmentRecord>,
+    localTaskOwners: Map<String, AssignmentRecord>,
+    localChangeIds: Set<String>,
+): List<AssignmentRecord> {
+    val incomingTasks = doc.tasks.associateBy { it.syncId }
+    val acceptedTaskIds = acceptedTasks.mapTo(mutableSetOf()) { it.syncId }
+    return doc.assignments.filter { assignment ->
+        if (assignment.syncId in localAssignments) return@filter false
+        val incomingTask = incomingTasks[assignment.taskSyncId] ?: return@filter false
+        val localTask = localTaskRecords[assignment.taskSyncId]
+        val taskMatches = if (localTask != null) localTask == incomingTask else assignment.taskSyncId in acceptedTaskIds
+        if (!taskMatches || assignment.taskSyncId !in existingTaskIds && assignment.taskSyncId !in acceptedTaskIds) return@filter false
+        if (assignment.taskSyncId in localTaskOwners) return@filter false
+        if (assignment.deadlineChanges.any { it.syncId in localChangeIds }) return@filter false
+        true
+    }
+}
+
+private fun AssignmentRecord.toEntity(taskId: Long, courseId: Long?) = AcademicAssignmentEntity(
+    syncId = syncId, taskId = taskId, courseId = courseId, state = state, submittedAt = submittedAt,
+    submissionReference = submissionReference, originalDeadlineAt = originalDeadlineAt,
+    originalHasDeadlineTime = originalHasDeadlineTime, createdAt = createdAt, updatedAt = updatedAt,
+)
+
+private fun DeadlineChangeRecord.toEntity(assignmentId: Long) = AcademicDeadlineChangeEntity(
+    syncId = syncId, assignmentId = assignmentId, previousDeadlineAt = previousDeadlineAt,
+    previousHasDeadlineTime = previousHasDeadlineTime, newDeadlineAt = newDeadlineAt,
+    newHasDeadlineTime = newHasDeadlineTime, changedAt = changedAt,
+)
 
 private fun List<TaskEntity>.toRecords(): List<TaskRecord> {
     val syncById = associate { it.id to it.syncId }
@@ -137,6 +273,31 @@ private fun TaskEntity.toRecord(syncById: Map<Long, String>) = TaskRecord(
 private fun EventEntity.toRecord() = EventRecord(
     syncId, title, notes, kind, category, startAt, endAt, location, createdAt, updatedAt, deletedAt,
 )
+
+private fun List<CourseWithWeeklySlots>.toCourseRecords() = map { row ->
+    val course = row.courseToDomain()
+    CourseRecord(course.syncId, course.title, course.code, course.instructor, course.academicPeriod, course.color,
+        course.icon, course.sortOrder, course.archivedAt, course.createdAt, course.updatedAt,
+        course.weeklySlots.map { CourseSlotRecord(it.dayOfWeek, it.startMinute, it.endMinute, it.location) }.sortedWith(COURSE_SLOT_ORDER))
+}
+
+private fun CourseRecord.toCourseEntity() = normalizeAndValidateCourse(Course(
+    syncId = syncId,
+    title = title,
+    code = code,
+    instructor = instructor,
+    academicPeriod = academicPeriod,
+    color = color,
+    icon = icon,
+    sortOrder = sortOrder,
+    archivedAt = archivedAt,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    weeklySlots = weeklySlots.map { CourseWeeklySlot(it.dayOfWeek, it.startMinute, it.endMinute, it.location) },
+)).courseToEntity()
+
+private val COURSE_SLOT_ORDER = compareBy<CourseSlotRecord> { it.dayOfWeek }.thenBy { it.startMinute }
+    .thenBy { it.endMinute }.thenBy { it.location.orEmpty() }
 
 private fun TaskRecord.toEntity(parentId: Long?) = TaskEntity(
     syncId = syncId,
@@ -248,7 +409,7 @@ private fun encode(doc: Document): ByteArray {
     val out = BoundedOutput()
     JsonWriter(OutputStreamWriter(out, Charsets.UTF_8)).use { writer ->
         writer.beginObject()
-            .name("formatVersion").value(1)
+            .name("formatVersion").value(4)
             .name("metadata").beginObject()
                 .name("createdAt").value(doc.createdAt)
                 .name("app").value("Riko Hub")
@@ -258,6 +419,20 @@ private fun encode(doc: Document): ByteArray {
         doc.tasks.forEach { task -> writeTask(writer, task) }
         writer.endArray().name("events").beginArray()
         doc.events.forEach { event -> writeEvent(writer, event) }
+        writer.endArray()
+        writer.name("courses").beginArray()
+        doc.courses.forEach { course -> writeCourse(writer, course) }
+        writer.endArray()
+        writer.name("assignments").beginArray()
+        doc.assignments.forEach { writeAssignment(writer, it) }
+        writer.endArray()
+        writer.name("spaceNotes").beginArray()
+        doc.notes.forEach { note ->
+            writer.beginObject().name("syncId").value(note.syncId).name("kind").value(note.kind)
+                .name("body").value(note.body).name("journalDate").nullOr(note.journalDate)
+                .name("projectTaskSyncId").nullOr(note.projectTaskSyncId).name("createdAt").value(note.createdAt)
+                .name("updatedAt").value(note.updatedAt).name("deletedAt").nullOr(note.deletedAt).endObject()
+        }
         writer.endArray()
         writeSettings(writer, doc.settings)
         writer.endObject()
@@ -317,6 +492,57 @@ private fun writeEvent(writer: JsonWriter, event: EventRecord) {
         .endObject()
 }
 
+private fun writeCourse(writer: JsonWriter, course: CourseRecord) {
+    writer.beginObject()
+        .name("syncId").value(course.syncId)
+        .name("title").value(course.title)
+        .name("code").nullOr(course.code)
+        .name("instructor").nullOr(course.instructor)
+        .name("academicPeriod").nullOr(course.academicPeriod)
+        .name("color").nullOr(course.color)
+        .name("icon").nullOr(course.icon)
+        .name("sortOrder").value(course.sortOrder)
+        .name("archivedAt").nullOr(course.archivedAt)
+        .name("createdAt").value(course.createdAt)
+        .name("updatedAt").value(course.updatedAt)
+        .name("weeklySlots").beginArray()
+    course.weeklySlots.forEach { slot ->
+        writer.beginObject()
+            .name("dayOfWeek").value(slot.dayOfWeek)
+            .name("startMinute").value(slot.startMinute)
+            .name("endMinute").value(slot.endMinute)
+            .name("location").nullOr(slot.location)
+            .endObject()
+    }
+    writer.endArray().endObject()
+}
+
+private fun writeAssignment(writer: JsonWriter, assignment: AssignmentRecord) {
+    writer.beginObject()
+        .name("syncId").value(assignment.syncId)
+        .name("taskSyncId").value(assignment.taskSyncId)
+        .name("courseSyncId").nullOr(assignment.courseSyncId)
+        .name("state").value(assignment.state)
+        .name("submittedAt").nullOr(assignment.submittedAt)
+        .name("submissionReference").nullOr(assignment.submissionReference)
+        .name("originalDeadlineAt").nullOr(assignment.originalDeadlineAt)
+        .name("originalHasDeadlineTime").value(assignment.originalHasDeadlineTime)
+        .name("createdAt").value(assignment.createdAt)
+        .name("updatedAt").value(assignment.updatedAt)
+        .name("deadlineChanges").beginArray()
+    assignment.deadlineChanges.forEach { change ->
+        writer.beginObject()
+            .name("syncId").value(change.syncId)
+            .name("previousDeadlineAt").nullOr(change.previousDeadlineAt)
+            .name("previousHasDeadlineTime").value(change.previousHasDeadlineTime)
+            .name("newDeadlineAt").nullOr(change.newDeadlineAt)
+            .name("newHasDeadlineTime").value(change.newHasDeadlineTime)
+            .name("changedAt").value(change.changedAt)
+            .endObject()
+    }
+    writer.endArray().endObject()
+}
+
 private fun writeSettings(writer: JsonWriter, settings: SettingsDataStore.BackupValues) {
     writer.name("settings").beginObject()
         .name("theme").value(settings.theme)
@@ -346,34 +572,68 @@ private fun decode(bytes: ByteArray): Document {
     val root = readValue(reader, 0, ParserBudget()) as? Map<*, *> ?: error("root")
     validateUnicode(root)
     if (reader.peek() != JsonToken.END_DOCUMENT) error("trailing")
-    root.only(ROOT_KEYS)
-
     val version = root["formatVersion"] as? Long ?: error("format version")
-    if (version != 1L) throw BackupException(BackupFailure.UNSUPPORTED_VERSION)
+    if (version !in 1L..4L) throw BackupException(BackupFailure.UNSUPPORTED_VERSION)
+    root.only(when (version) { 1L -> ROOT_V1_KEYS; 2L -> ROOT_V2_KEYS; 3L -> ROOT_V3_KEYS; else -> ROOT_KEYS })
     val metadata = root.obj("metadata", setOf("createdAt", "app"))
     if (metadata.str("app") != "Riko Hub") error("app")
     val createdAt = metadata.long("createdAt").also(::validTime)
 
     val tasks = root.arr("tasks").map(::parseTask)
     val events = root.arr("events").map(::parseEvent)
-    if (tasks.size + events.size > MAX_RECORDS) error("record count")
+    val courses = if (version == 1L) emptyList() else root.arr("courses").map(::parseCourse)
+    val assignments = if (version < 3L) emptyList() else root.arr("assignments").map(::parseAssignment)
+    val notes = if (version < 4L) emptyList() else root.arr("spaceNotes").map(::parseSpaceNote)
+    if (tasks.size + events.size + courses.size + courses.sumOf { it.weeklySlots.size } + assignments.size + assignments.sumOf { it.deadlineChanges.size } + notes.size > MAX_RECORDS) error("record count")
     if (tasks.map { it.syncId }.toSet().size != tasks.size) error("duplicate task syncId")
     if (events.map { it.syncId }.toSet().size != events.size) error("duplicate event syncId")
+    if (courses.map { it.syncId }.toSet().size != courses.size) error("duplicate course syncId")
+    if (assignments.map { it.syncId }.toSet().size != assignments.size) error("duplicate assignment syncId")
+    if (notes.map { it.syncId }.toSet().size != notes.size) error("duplicate note syncId")
+    val changeIds = assignments.flatMap { it.deadlineChanges }.map { it.syncId }
+    if (changeIds.toSet().size != changeIds.size) error("duplicate deadline change syncId")
 
     validateTaskRelationships(tasks)
+    validateAssignmentRelationships(assignments, tasks, courses)
     val settings = parseSettings(root.obj("settings", SETTINGS_KEYS), tasks.associateBy { it.syncId })
-    return Document(tasks, events, settings, createdAt)
+    return Document(tasks, events, courses, assignments, notes, settings, createdAt)
 }
 
-private val ROOT_KEYS = setOf("formatVersion", "metadata", "tasks", "events", "settings")
+private val ROOT_V1_KEYS = setOf("formatVersion", "metadata", "tasks", "events", "settings")
+private val ROOT_V2_KEYS = ROOT_V1_KEYS + "courses"
+private val ROOT_V3_KEYS = ROOT_V2_KEYS + "assignments"
+private val ROOT_KEYS = ROOT_V3_KEYS + "spaceNotes"
 private val TASK_KEYS = setOf(
     "syncId", "title", "notes", "category", "priority", "status", "deadlineAt", "hasDeadlineTime",
     "createdAt", "updatedAt", "completedAt", "deletedAt", "estimatedMinutes", "recurrence", "checklist",
     "reminderMinutesBefore", "generatedFromSyncId", "generationPristine", "recurrenceAnchorAt",
 )
 private val EVENT_KEYS = setOf("syncId", "title", "notes", "kind", "category", "startAt", "endAt", "location", "createdAt", "updatedAt", "deletedAt")
+private val COURSE_KEYS = setOf("syncId", "title", "code", "instructor", "academicPeriod", "color", "icon", "sortOrder", "archivedAt", "createdAt", "updatedAt", "weeklySlots")
+private val COURSE_SLOT_KEYS = setOf("dayOfWeek", "startMinute", "endMinute", "location")
+private val ASSIGNMENT_KEYS = setOf("syncId", "taskSyncId", "courseSyncId", "state", "submittedAt", "submissionReference", "originalDeadlineAt", "originalHasDeadlineTime", "createdAt", "updatedAt", "deadlineChanges")
+private val DEADLINE_CHANGE_KEYS = setOf("syncId", "previousDeadlineAt", "previousHasDeadlineTime", "newDeadlineAt", "newHasDeadlineTime", "changedAt")
 private val CHECKLIST_KEYS = setOf("id", "title", "done")
 private val SETTINGS_KEYS = setOf("theme", "displayName", "navigation", "hints", "pinnedFocusSyncId", "pinnedFocusDate")
+private val SPACE_NOTE_KEYS = setOf("syncId", "kind", "body", "journalDate", "projectTaskSyncId", "createdAt", "updatedAt", "deletedAt")
+
+private fun parseSpaceNote(value: Any?): SpaceNoteRecord {
+    val fields = value as? Map<*, *> ?: error("space note")
+    fields.only(SPACE_NOTE_KEYS)
+    val note = SpaceNoteRecord(fields.str("syncId"), fields.str("kind"), fields.str("body"), fields.nullStr("journalDate"),
+        fields.nullStr("projectTaskSyncId"), fields.long("createdAt"), fields.long("updatedAt"), fields.nullLong("deletedAt"))
+    if (note.syncId.isBlank() || note.syncId.length > 120 || note.kind !in setOf("JOURNAL", "IDEA") ||
+        note.body.isBlank() || note.body.length > 10_000 || note.updatedAt < note.createdAt ||
+        note.projectTaskSyncId?.let { it.isBlank() || it.length > 120 } == true ||
+        note.deletedAt?.let { it < note.createdAt || it > note.updatedAt } == true ||
+        (note.kind == "JOURNAL" && (note.journalDate == null || note.projectTaskSyncId != null)) ||
+        (note.kind == "IDEA" && note.journalDate != null)) error("space note value")
+    note.journalDate?.let { date ->
+        if (LocalDate.parse(date).toString() != date) error("space note date")
+    }
+    validTime(note.createdAt); validTime(note.updatedAt); note.deletedAt?.let(::validTime)
+    return note
+}
 
 private fun parseTask(value: Any?): TaskRecord {
     val fields = value as? Map<*, *> ?: error("task")
@@ -434,6 +694,87 @@ private fun parseEvent(value: Any?): EventRecord {
     ).also(::validate)
 }
 
+private fun parseCourse(value: Any?): CourseRecord {
+    val fields = value as? Map<*, *> ?: error("course")
+    fields.only(COURSE_KEYS)
+    val course = normalizeAndValidateCourse(Course(
+        syncId = fields.str("syncId"),
+        title = fields.str("title"),
+        code = fields.nullStr("code"),
+        instructor = fields.nullStr("instructor"),
+        academicPeriod = fields.nullStr("academicPeriod"),
+        color = fields.nullStr("color"),
+        icon = fields.nullStr("icon"),
+        sortOrder = fields.long("sortOrder"),
+        archivedAt = fields.nullLong("archivedAt"),
+        createdAt = fields.long("createdAt").also(::validTime),
+        updatedAt = fields.long("updatedAt").also(::validTime),
+        weeklySlots = fields.arr("weeklySlots").map(::parseCourseSlot),
+    ))
+    return CourseRecord(course.syncId, course.title, course.code, course.instructor, course.academicPeriod,
+        course.color, course.icon, course.sortOrder, course.archivedAt, course.createdAt, course.updatedAt,
+        course.weeklySlots.map { CourseSlotRecord(it.dayOfWeek, it.startMinute, it.endMinute, it.location) }.sortedWith(COURSE_SLOT_ORDER))
+}
+
+private fun parseCourseSlot(value: Any?): CourseWeeklySlot {
+    val fields = value as? Map<*, *> ?: error("course slot")
+    fields.only(COURSE_SLOT_KEYS)
+    return CourseWeeklySlot(fields.int("dayOfWeek"), fields.int("startMinute"), fields.int("endMinute"), fields.nullStr("location"))
+}
+
+private fun parseAssignment(value: Any?): AssignmentRecord {
+    val fields = value as? Map<*, *> ?: error("assignment")
+    fields.only(ASSIGNMENT_KEYS)
+    val changes = fields.arr("deadlineChanges").map { raw ->
+        val row = raw as? Map<*, *> ?: error("deadline change")
+        row.only(DEADLINE_CHANGE_KEYS)
+        DeadlineChangeRecord(row.str("syncId"), row.nullLong("previousDeadlineAt"), row.bool("previousHasDeadlineTime"),
+            row.nullLong("newDeadlineAt"), row.bool("newHasDeadlineTime"), row.long("changedAt"))
+    }
+    val result = AssignmentRecord(
+        fields.str("syncId"), fields.str("taskSyncId"), fields.nullStr("courseSyncId"), fields.str("state"),
+        fields.nullLong("submittedAt"), fields.nullStr("submissionReference"), fields.nullLong("originalDeadlineAt"),
+        fields.bool("originalHasDeadlineTime"), fields.long("createdAt"), fields.long("updatedAt"), changes,
+    )
+    if (result.syncId.isBlank() || result.syncId.length > 120 || result.taskSyncId.isBlank() || result.taskSyncId.length > 120 ||
+        result.courseSyncId?.let { it.isBlank() || it.length > 120 } == true ||
+        result.state !in setOf("RECEIVED", "PLANNED", "IN_PROGRESS", "REVIEW", "SUBMITTED", "COMPLETED") ||
+        result.submissionReference?.length?.let { it > 2000 } == true || result.updatedAt < result.createdAt ||
+        (result.submittedAt != null && (result.submittedAt < result.createdAt || result.submittedAt > result.updatedAt)) ||
+        (result.state == "SUBMITTED" && (result.submittedAt == null || result.submittedAt > result.updatedAt)) ||
+        (result.originalHasDeadlineTime && result.originalDeadlineAt == null)
+    ) error("assignment value")
+    listOfNotNull(result.submittedAt, result.originalDeadlineAt).forEach(::validTime)
+    validTime(result.createdAt); validTime(result.updatedAt)
+    result.deadlineChanges.forEach { change ->
+        if (change.syncId.isBlank() || change.syncId.length > 120 || change.changedAt < result.createdAt || change.changedAt > result.updatedAt ||
+            (change.previousHasDeadlineTime && change.previousDeadlineAt == null) ||
+            (change.newHasDeadlineTime && change.newDeadlineAt == null) ||
+            (change.previousDeadlineAt == change.newDeadlineAt && change.previousHasDeadlineTime == change.newHasDeadlineTime)) error("deadline change value")
+        listOfNotNull(change.previousDeadlineAt, change.newDeadlineAt).forEach(::validTime)
+        validTime(change.changedAt)
+    }
+    return result
+}
+
+private fun validateAssignmentRelationships(assignments: List<AssignmentRecord>, tasks: List<TaskRecord>, courses: List<CourseRecord>) {
+    val taskById = tasks.associateBy { it.syncId }
+    val courseIds = courses.mapTo(mutableSetOf()) { it.syncId }
+    if (assignments.map { it.taskSyncId }.toSet().size != assignments.size) error("duplicate assignment task")
+    assignments.forEach { assignment ->
+        val task = taskById[assignment.taskSyncId] ?: error("assignment task")
+        if (assignment.courseSyncId != null && assignment.courseSyncId !in courseIds) error("assignment course")
+        var deadline = assignment.originalDeadlineAt to assignment.originalHasDeadlineTime
+        var previousTime = assignment.createdAt
+        assignment.deadlineChanges.forEach { change ->
+            if ((change.previousDeadlineAt to change.previousHasDeadlineTime) != deadline || change.changedAt < previousTime) error("deadline history chain")
+            deadline = change.newDeadlineAt to change.newHasDeadlineTime
+            previousTime = change.changedAt
+        }
+        if (deadline != (task.deadlineAt to task.hasDeadlineTime)) error("deadline history final value")
+    }
+}
+
 private fun parseSettings(fields: Map<*, *>, tasks: Map<String, TaskRecord>): SettingsDataStore.BackupValues {
     val pin = fields.nullStr("pinnedFocusSyncId")
     val date = fields.nullStr("pinnedFocusDate")
@@ -449,7 +790,7 @@ private fun parseSettings(fields: Map<*, *>, tasks: Map<String, TaskRecord>): Se
         pinnedFocusDate = date,
     ).also { settings ->
         if (settings.theme !in setOf("SYSTEM", "LIGHT", "DARK") ||
-            settings.navigation !in setOf("SPATIAL_COMPASS", "COMPASS_ONLY") ||
+            settings.navigation !in setOf("SPATIAL_COMPASS", "COMPASS_ONLY", "RENAISSANCE_DOCK") ||
             settings.hints < 0 || settings.displayName.isBlank()
         ) error("settings")
     }

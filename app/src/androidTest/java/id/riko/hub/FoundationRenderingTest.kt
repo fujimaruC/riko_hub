@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.TextLayoutResult
@@ -25,7 +24,7 @@ import java.io.File
 class FoundationRenderingTest {
     @get:Rule val rule = createComposeRule()
 
-    @Test fun both_themes_keep_text_readable_and_compass_accessible_at_all_font_scales() {
+    @Test fun both_themes_keep_text_readable_at_all_font_scales() {
         val fontScale = mutableFloatStateOf(1f)
         rule.setContent {
             val density = LocalDensity.current.density
@@ -40,20 +39,15 @@ class FoundationRenderingTest {
                 rule.onNodeWithText(theme).performClick().assertIsSelected()
                 assertNoTextOverflow()
                 snapshot("$scale-$theme-Settings")
-                rule.onNodeWithText("Kembali ke Hari Ini").performClick()
+                rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
                 assertNoTextOverflow()
                 snapshot("$scale-$theme-Home")
-                listOf("Tugas", "Timeline", "Vault", "Sync").forEach { label ->
-                    val compass = rule.onNodeWithTag("compass-ball")
-                    compass.assertHasClickAction().assert(
-                        SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription),
-                    )
-                    compass.performClick()
-                    assertNoTextOverflow()
-                    rule.onNodeWithText(label).performClick()
+                listOf("Timeline", "Capture", "Vault", "Spaces").forEach { label ->
+                    rule.onNodeWithTag("dock-$label").assertHasClickAction()
+                    rule.onNodeWithTag("dock-$label").performClick()
                     assertNoTextOverflow()
                     snapshot("$scale-$theme-$label")
-                    rule.onNodeWithText("Kembali ke Hari Ini").performClick()
+                    rule.onNodeWithTag("dock-Home").performClick()
                 }
             }
         }

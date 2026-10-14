@@ -126,18 +126,19 @@ class HomeTest {
         assertEquals(LocalDate.of(2026,10,7), model.state.value.snapshot!!.today)
     }
 
-    @Test fun peek_pin_and_large_text_overflow_are_operable_in_both_themes() {
+    @Test fun workspace_and_large_text_overflow_are_operable_in_both_themes() {
         val ids = seed(8)
         waitFor { model.state.value.snapshot?.ranked?.size == 8 }
         rule.runOnIdle { scale.floatValue = 2f }
         listOf(false, true).forEach { night ->
             rule.runOnIdle { dark.value = night }
             rule.onNodeWithTag("bubble-${ids[0]}").performScrollTo().performClick()
-            rule.onNodeWithText("Edit", substring = false).performScrollTo().assertIsEnabled()
+            rule.onNodeWithTag("task-editor-organic-header").assertIsDisplayed()
+            rule.onNodeWithTag("task-title").assertTextContains("Tugas")
             assertTextBounds()
-            rule.onNodeWithText("Jadikan fokus hari ini").performScrollTo().performClick()
+            rule.onNodeWithTag("task-workspace-pin").performScrollTo().performClick()
             waitFor { model.state.value.snapshot?.validPin == ids[0] }
-            rule.onNodeWithText("Lepas fokus manual").performScrollTo().performClick()
+            rule.onNodeWithTag("task-workspace-pin").performScrollTo().performClick()
             waitFor { model.state.value.snapshot?.validPin == null }
             rule.onNodeWithText("Tutup").performScrollTo().performClick()
         }

@@ -7,12 +7,23 @@ Maintained by the implementing agent (Astra). Update at the end of every phase. 
 | Item | Value |
 |------|-------|
 | Version in development | 0.4.0 (version code 400) |
-| Current phase | v0.5 bounded LAN Universal Handoff source continuation from 55193d0 on feature/v04-laptop-companion; IMPLEMENTED / UNVERIFIED. Owner verification and acceptance remain pending. Broader v0.5 roadmap remains partial. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
+| Current phase | v0.6 Phase 1 Course Spaces; SOURCE COMPLETE / UNVERIFIED. Owner verification and Phase 2 approval remain pending. v0.5 LAN source remains unverified; broader v0.5 is partial. v0.2 is closed; v0.3 live Drive QA is separately tracked. |
 | v0.4 execution evidence | None: no builds, lint/static-analysis suites, automated tests, service startup or device verification executed. Historical v0.3 evidence below does not verify v0.4. |
 | Last successful build | Owner-reported BUILD SUCCESSFUL in 7m 53s (2026-10-11), 44 tasks. Fresh v0.3 debug APK: 16,948,362 bytes, SHA-256 50ba882cdccae7b89073e86636b452e9c103c10e2c55d794de34cf5e7a8e7d5a. Not installed in this mission. Future builds are owner-controlled. |
 | Last test run | Fresh reports: 11 focused Vault UI/state JVM tests passed, 0 failures/errors/skips. Ten Drive API tests compiled but have no execution report. Historical v0.2 evidence is retained below. |
 | Release status | Unsigned local build; not a public release |
 | Owner acceptance | v0.2 approved and closed. v0.3 implementation checkpointed at 44d6c67, with live Google QA separately pending. v0.4 requires owner verification and acceptance. |
+
+## v0.6 Phase 1 — Course Spaces — 2026-10-12
+
+- **SOURCE COMPLETE / UNVERIFIED:** local course creation, editing, archive/restore, metadata, persistent ordering, and weekly timetable references. Course list/detail is reached from Tasks without changing compass destinations or adding a Home summary. Existing task and event storage, recurrence, completion semantics, reminders, widgets, Timeline/Daily Studio, Vault, and Companion/Handoff source remain intact.
+- Started from clean `feature/v04-laptop-companion` at `947b057f230c8083512e7553ce9a5aab7de89507`. After an interrupted session, tracked integration edits were absent while new files remained; the required wiring was restored against the same branch and HEAD. No branch switch, reset, clean, commit, push, or merge was performed by agents.
+- Room advances from actual version **2 to 3** through additive `MIGRATION_2_3`, registered alongside `MIGRATION_1_2`. New `courses` and `course_weekly_slots` tables preserve all existing task/event rows. Slots belong to courses through an indexed cascading foreign key; archive preserves them. No course deletion is exposed and no destructive fallback is used.
+- Backup format **2** includes course identity, metadata, archive/order, and weekly slots. Format **1** imports remain supported and leave local courses untouched. Existing local-wins conflict handling remains; a changed course or schedule invalidates a preview. Backup UI reports course/slot counts and warns that old app versions cannot import the new format.
+- Added focused repository, migration, backup, timetable parser, and Compose test source. Static review corrected navigation/type imports, archive direction, invalid time handling, draft removal, loading state, backup method erasure, and save retry validation. Test files are not execution evidence.
+- Authentic Room schema `3.json` must be generated and reviewed by the owner's next build; it was not fabricated. Compilation, migration execution, backup round trips, Compose behavior, accessibility/device rendering, and regression acceptance remain unverified. Version metadata remains 0.4.0/code 400 pending the owner's release decision.
+- No builds, Gradle tasks, lint, tests, ADB, application launches, runtime services, dependency installation, or commits were executed by agents. Static reads and whitespace diff checks only. Phase 2 has not started; wait for Riko's approval.
+- See [phase contract, complete file inventory, and owner checks](V06_COURSE_SPACES.md). Course task/material associations are explicitly deferred to Phases 2/3; lifecycle, lab templates, Deadline Radar, and the academic dashboard are outside this phase.
 
 ## v0.5 Universal Handoff recovery — 2026-10-12
 

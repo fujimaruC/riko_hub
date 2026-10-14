@@ -57,7 +57,7 @@ class TimelineTest {
         store.put("timeline", model)
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale.floatValue)) {
-                RikoHubTheme { Surface { TimelineRoute(model) {} } }
+                RikoHubTheme { Surface { TimelineRoute(model) } }
             }
         }
         rule.waitForIdle()
@@ -151,6 +151,13 @@ class TimelineTest {
         waitFor { model.state.value.selectedDay == LocalDate.of(2026, 10, 11) }
         rule.onNodeWithTag("timeline-mode-week").performClick()
         waitFor { !model.state.value.dayMode && model.state.value.days.size == 7 && model.state.value.weekStart == week }
+    }
+
+    @Test fun day_strip_selects_absolute_date_after_paging_to_next_week() {
+        rule.onNodeWithTag("timeline-next").performClick()
+        waitFor { model.state.value.weekStart == week.plusWeeks(1) && !model.state.value.loading }
+        rule.onNodeWithTag("timeline-day-2026-10-14").performClick()
+        waitFor { model.state.value.dayMode && model.state.value.selectedDay == LocalDate.of(2026, 10, 14) }
     }
 
     private fun waitFor(condition: () -> Boolean) = rule.waitUntil(10_000, condition)

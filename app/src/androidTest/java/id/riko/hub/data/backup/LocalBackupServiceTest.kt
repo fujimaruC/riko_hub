@@ -89,7 +89,7 @@ class LocalBackupServiceTest {
                 val failure = runCatching { service.preview(ByteArrayInputStream(malformed.toByteArray())) }.exceptionOrNull() as BackupException
                 assertEquals(BackupFailure.INVALID, failure.reason)
             }
-            val future = valid.replace("\"formatVersion\":1", "\"formatVersion\":99")
+            val future = valid.replace("\"formatVersion\":4", "\"formatVersion\":99")
             val e = runCatching { service.preview(ByteArrayInputStream(future.toByteArray())) }.exceptionOrNull() as BackupException
             assertEquals(BackupFailure.UNSUPPORTED_VERSION, e.reason)
             val oversized = ByteArray(8 * 1024 * 1024 + 1)

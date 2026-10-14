@@ -14,29 +14,28 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import id.riko.hub.R
 import id.riko.hub.RikoHubApp
-import id.riko.hub.navigation.Destination
 import id.riko.hub.ui.components.*
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun TimelineScreen(onNavigate: (Destination) -> Unit) {
+fun TimelineScreen() {
     val app = LocalContext.current.applicationContext as RikoHubApp
     val model: TimelineViewModel = viewModel(factory = viewModelFactory {
         initializer { TimelineViewModel(app.container.tasks, app.container.events, app.container.clock) }
     })
-    TimelineRoute(model, onNavigate)
+    TimelineRoute(model)
 }
 
 @Composable
-fun TimelineRoute(model: TimelineViewModel, onNavigate: (Destination) -> Unit) {
+fun TimelineRoute(model: TimelineViewModel) {
     val state by model.state.collectAsStateWithLifecycle()
     LifecycleStartEffect(model) { model.setActive(true); onStopOrDispose { model.setActive(false) } }
     val snackbar = remember { SnackbarHostState() }
     TimelineMessages(model, snackbar)
     Box(Modifier.fillMaxSize()) {
-        TimelineContent(state, onNavigate, model::moveWeek, model::currentWeek, model::toggleDayMode,
-            model::open, model::addEvent, model::retryRead)
+        TimelineContent(state, model::moveWeek, model::currentWeek, model::toggleDayMode,
+            model::open, model::addEvent, model::retryRead, model::selectDay)
         if (state.eventEditor == null && state.taskEditor == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
     state.eventEditor?.let { event ->

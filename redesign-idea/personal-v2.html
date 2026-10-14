@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal v2 — The Quiet Garden</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --tangerine: #E8742A;
+      --tangerine-dim: #C25F18;
+      --graphite-900: #0F0E0D;
+      --graphite-800: #1A1816;
+      --graphite-700: #252220;
+      --graphite-600: #312E2B;
+      --graphite-500: #403C38;
+      --text-primary: #F0EDE8;
+      --text-secondary: #B5AFA8;
+      --text-muted: #7A7470;
+      --jade: #2FA37A;
+      --warm-cream: #C8B89A;
+      --sage: #6A8A6E;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--graphite-900);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .phone-frame {
+      width: 390px;
+      min-height: 844px;
+      background: var(--graphite-900);
+      border-radius: 44px;
+      border: 2px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 0 8px #0A0908, 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .scroll-area {
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: 844px;
+      scroll-behavior: smooth;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    .statusbar {
+      padding: 14px 28px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 10;
+    }
+    .status-icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+
+    /* Garden header illustration zone */
+    .garden-header {
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .garden-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        160deg,
+        #1A1008 0%,
+        #221508 30%,
+        #0F1A12 70%,
+        #0A100A 100%
+      );
+    }
+
+    /* Organic blob shapes */
+    .blob-1 {
+      position: absolute;
+      width: 200px; height: 150px;
+      background: radial-gradient(ellipse, rgba(106,138,110,0.25) 0%, transparent 70%);
+      bottom: -30px; left: -20px;
+      border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
+      filter: blur(20px);
+    }
+
+    .blob-2 {
+      position: absolute;
+      width: 180px; height: 120px;
+      background: radial-gradient(ellipse, rgba(232,116,42,0.18) 0%, transparent 70%);
+      top: 20px; right: -20px;
+      border-radius: 40% 60% 30% 70% / 60% 40% 60% 40%;
+      filter: blur(25px);
+    }
+
+    .blob-3 {
+      position: absolute;
+      width: 120px; height: 80px;
+      background: radial-gradient(ellipse, rgba(200,184,154,0.12) 0%, transparent 70%);
+      top: 60px; left: 40px;
+      filter: blur(15px);
+    }
+
+    /* Moon illustration */
+    .moon {
+      position: absolute;
+      top: 30px; right: 50px;
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, #D4A030, #8A6018);
+      box-shadow: 0 0 30px rgba(212,160,48,0.3);
+      opacity: 0.5;
+    }
+
+    /* Plant silhouettes */
+    .plant-left {
+      position: absolute;
+      bottom: 0; left: 20px;
+      font-size: 48px;
+      filter: brightness(0.5) saturate(0.4);
+      line-height: 1;
+    }
+
+    .plant-right {
+      position: absolute;
+      bottom: 10px; right: 30px;
+      font-size: 36px;
+      filter: brightness(0.4) saturate(0.3);
+      line-height: 1;
+    }
+
+    /* Lamp light glow */
+    .lamp-glow {
+      position: absolute;
+      bottom: 20px;
+      right: 80px;
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle, rgba(232,116,42,0.4) 0%, transparent 70%);
+      filter: blur(10px);
+    }
+
+    /* Stars */
+    .stars {
+      position: absolute;
+      inset: 0;
+    }
+
+    .star {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* Header text overlay */
+    .garden-text {
+      position: absolute;
+      bottom: 20px;
+      left: 22px;
+      z-index: 2;
+    }
+
+    .page-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--warm-cream);
+      opacity: 0.7;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    .garden-menu-btn {
+      position: absolute;
+      top: 52px;
+      right: 20px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(15,14,13,0.5);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    /* Content area */
+    .content {
+      background: var(--graphite-900);
+      padding-top: 16px;
+      position: relative;
+    }
+
+    /* Soft welcoming greeting */
+    .greeting-strip {
+      margin: 0 20px 16px;
+      padding: 12px 16px;
+      background: rgba(200,184,154,0.06);
+      border: 1px solid rgba(200,184,154,0.1);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .greeting-icon { font-size: 22px; }
+    .greeting-text { font-size: 13px; color: var(--warm-cream); opacity: 0.85; line-height: 1.4; }
+    .greeting-chevron { margin-left: auto; font-size: 16px; color: var(--text-muted); }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 10px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .see-all {
+      font-size: 12px;
+      color: var(--tangerine);
+      cursor: pointer;
+    }
+
+    /* Task list */
+    .task-list {
+      padding: 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .task-row:hover { background: var(--graphite-600); }
+    .task-row.done { opacity: 0.55; }
+
+    .task-check {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 11px;
+      transition: all 0.2s;
+    }
+
+    .task-check.checked {
+      background: var(--jade);
+      border-color: var(--jade);
+      color: white;
+    }
+
+    .task-check-orange { border-color: rgba(232,116,42,0.4); }
+    .task-check-sage { border-color: rgba(106,138,110,0.4); }
+
+    .task-text { flex: 1; }
+    .task-name { font-size: 14px; }
+    .task-name.done-text { text-decoration: line-through; color: var(--text-muted); }
+    .task-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .task-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Journal surface */
+    .journal-surface {
+      margin: 0 20px 20px;
+      background: linear-gradient(135deg, rgba(200,184,154,0.08) 0%, rgba(232,116,42,0.04) 100%);
+      border: 1px solid rgba(200,184,154,0.12);
+      border-radius: 20px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .journal-surface::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg,
+        rgba(200,184,154,0.05) 0px,
+        transparent 1px,
+        transparent 22px
+      );
+      border-radius: 20px;
+    }
+
+    .journal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .journal-icon { font-size: 18px; }
+    .journal-title { font-size: 14px; font-weight: 700; }
+    .journal-date { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+
+    .journal-prompt {
+      font-size: 14px;
+      color: var(--warm-cream);
+      opacity: 0.75;
+      font-style: italic;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+      line-height: 1.5;
+    }
+
+    .journal-input {
+      width: 100%;
+      background: rgba(0,0,0,0.15);
+      border: 1px solid rgba(200,184,154,0.1);
+      border-radius: 12px;
+      padding: 10px 40px 10px 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: inherit;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .journal-send {
+      width: 30px; height: 30px;
+      background: var(--tangerine);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* Reminders */
+    .reminder-list {
+      padding: 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .reminder-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+    }
+
+    .reminder-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .reminder-text { flex: 1; }
+    .reminder-name { font-size: 13px; }
+    .reminder-time { font-size: 11px; color: var(--text-muted); }
+
+    .reminder-status {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .rs-done { background: rgba(47,163,122,0.2); color: var(--jade); }
+    .rs-pending { border: 1.5px solid rgba(255,255,255,0.15); }
+
+    /* Notes */
+    .notes-grid {
+      padding: 0 20px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .note-card {
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .note-card:hover { transform: scale(1.02); }
+
+    .nc-1 { background: linear-gradient(135deg, #1A1A12, #0F0F0A); }
+    .nc-2 { background: linear-gradient(135deg, #12181A, #0A0F10); }
+    .nc-3 {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #1A1210, #100A08);
+      display: flex;
+      gap: 12px;
+    }
+
+    .note-icon { font-size: 20px; margin-bottom: 8px; }
+    .note-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .note-preview { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+    .note-time { font-size: 10px; color: var(--text-muted); margin-top: 8px; }
+
+    .note-wide-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    .note-wide-content { flex: 1; }
+
+    /* Routine row */
+    .routine-section {
+      margin: 0 20px 20px;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .routine-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .routine-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .routine-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .routine-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .routine-chip.done {
+      background: rgba(47,163,122,0.1);
+      border-color: rgba(47,163,122,0.25);
+      color: var(--jade);
+    }
+
+    .routine-chip-icon { font-size: 16px; }
+    .routine-chip-name { font-size: 12px; }
+    .routine-check { font-size: 10px; }
+
+    /* Divider */
+    .divider { height: 1px; background: rgba(255,255,255,0.04); margin: 0 20px 16px; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: sticky;
+      bottom: 0;
+      background: rgba(15,14,13,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 10px 0 24px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .nav-item {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      font-size: 10px; color: var(--text-muted);
+      cursor: pointer; padding: 4px 8px;
+      border-radius: 12px; min-width: 56px;
+    }
+    .nav-item.active { color: var(--tangerine); }
+    .nav-item .nav-icon { font-size: 20px; }
+    .nav-item.active .nav-indicator {
+      width: 4px; height: 4px;
+      background: var(--tangerine);
+      border-radius: 50%; margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="scroll-area">
+
+    <!-- Status Bar (overlaid on illustration) -->
+    <div class="statusbar" style="position:absolute; top:0; left:0; right:0; z-index:10;">
+      <span>09:41</span>
+      <div class="status-icons"><span>▐▌▌</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+
+    <!-- Garden Header Illustration -->
+    <div class="garden-header">
+      <div class="garden-bg"></div>
+      <div class="blob-1"></div>
+      <div class="blob-2"></div>
+      <div class="blob-3"></div>
+      <div class="moon"></div>
+      <div class="lamp-glow"></div>
+
+      <!-- Stars -->
+      <div class="stars">
+        <div class="star" style="top:25%; left:20%; animation-delay:0s;"></div>
+        <div class="star" style="top:15%; left:50%; animation-delay:0.7s;"></div>
+        <div class="star" style="top:35%; left:70%; animation-delay:1.4s;"></div>
+        <div class="star" style="top:20%; left:85%; animation-delay:0.3s;"></div>
+        <div class="star" style="top:45%; left:35%; animation-delay:2s;"></div>
+        <div class="star" style="top:10%; left:60%; animation-delay:1s;"></div>
+      </div>
+
+      <div class="plant-left">🌿</div>
+      <div class="plant-right">🪴</div>
+
+      <div class="garden-menu-btn">•••</div>
+
+      <div class="garden-text">
+        <div class="page-title">Personal</div>
+        <div class="page-subtitle">Ruangmu, caramu.</div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Greeting strip -->
+      <div class="greeting-strip">
+        <div class="greeting-icon">✨</div>
+        <div class="greeting-text">"Langkah kecil tetap langkah ke depan.<br>Nikmati harimu, Riko."</div>
+        <div class="greeting-chevron">›</div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="section-header">
+        <div class="section-title">🌱 Niatku Hari Ini</div>
+        <div class="see-all">Lihat semua ›</div>
+      </div>
+      <div class="task-list">
+        <div class="task-row done">
+          <div class="task-check checked">✓</div>
+          <div class="task-text">
+            <div class="task-name done-text">Minum vitamin pagi</div>
+            <div class="task-time">08:00 · Selesai</div>
+          </div>
+          <div class="task-dot" style="background:var(--jade);"></div>
+        </div>
+        <div class="task-row">
+          <div class="task-check task-check-orange"></div>
+          <div class="task-text">
+            <div class="task-name">Telepon orang tua</div>
+            <div class="task-time">19:00 · Pengingat aktif</div>
+          </div>
+          <div class="task-dot" style="background:var(--tangerine);"></div>
+        </div>
+        <div class="task-row">
+          <div class="task-check task-check-sage"></div>
+          <div class="task-text">
+            <div class="task-name">Beresin meja belajar</div>
+            <div class="task-time">Kapan pun</div>
+          </div>
+          <div class="task-dot" style="background:var(--sage);"></div>
+        </div>
+        <div class="task-row">
+          <div class="task-check task-check-orange"></div>
+          <div class="task-text">
+            <div class="task-name">Baca buku 30 menit</div>
+            <div class="task-time">Malam ini</div>
+          </div>
+          <div class="task-dot" style="background:rgba(255,255,255,0.15);"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Journal -->
+      <div class="section-header">
+        <div class="section-title">🪶 Jurnal Cepat</div>
+        <span style="font-size:11px; color:var(--text-muted);">13 Okt</span>
+      </div>
+      <div class="journal-surface">
+        <div class="journal-header">
+          <span class="journal-icon">🌙</span>
+          <span class="journal-title">Momen hari ini</span>
+          <span class="journal-date">Senin malam</span>
+        </div>
+        <div class="journal-prompt">"Apa yang kamu syukuri hari ini?"</div>
+        <div class="journal-input">
+          <span>Tulis beberapa hal...</span>
+          <div class="journal-send">→</div>
+        </div>
+      </div>
+
+      <!-- Reminders -->
+      <div class="section-header">
+        <div class="section-title">🔔 Pengingat</div>
+        <div class="see-all">Tambah ›</div>
+      </div>
+      <div class="reminder-list">
+        <div class="reminder-item">
+          <div class="reminder-icon">💊</div>
+          <div class="reminder-text">
+            <div class="reminder-name">Minum vitamin</div>
+            <div class="reminder-time">08:00 · Setiap hari</div>
+          </div>
+          <div class="reminder-status rs-done">✓</div>
+        </div>
+        <div class="reminder-item">
+          <div class="reminder-icon">📞</div>
+          <div class="reminder-text">
+            <div class="reminder-name">Call orang tua</div>
+            <div class="reminder-time">19:00 · Hari ini</div>
+          </div>
+          <div class="reminder-status rs-pending"></div>
+        </div>
+        <div class="reminder-item">
+          <div class="reminder-icon">🧹</div>
+          <div class="reminder-text">
+            <div class="reminder-name">Rapihin kamar</div>
+            <div class="reminder-time">20:00 · Hari ini</div>
+          </div>
+          <div class="reminder-status rs-pending"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Routine (optional) -->
+      <div class="routine-section">
+        <div class="routine-header">
+          <div class="routine-title">🌿 Kebiasaan Opsional</div>
+          <div class="see-all">Atur ›</div>
+        </div>
+        <div class="routine-chips">
+          <div class="routine-chip done">
+            <span class="routine-chip-icon">💧</span>
+            <span class="routine-chip-name">Minum air</span>
+            <span class="routine-check">✓</span>
+          </div>
+          <div class="routine-chip">
+            <span class="routine-chip-icon">🏃</span>
+            <span class="routine-chip-name">Olahraga</span>
+          </div>
+          <div class="routine-chip done">
+            <span class="routine-chip-icon">📖</span>
+            <span class="routine-chip-name">Baca</span>
+            <span class="routine-check">✓</span>
+          </div>
+          <div class="routine-chip">
+            <span class="routine-chip-icon">🧘</span>
+            <span class="routine-chip-name">Meditasi</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Notes -->
+      <div class="section-header">
+        <div class="section-title">📒 Catatan Pribadi</div>
+        <div class="see-all">Lihat semua ›</div>
+      </div>
+      <div class="notes-grid">
+        <div class="note-card nc-1">
+          <div class="note-icon">🎵</div>
+          <div class="note-title">Playlist belajar</div>
+          <div class="note-preview">Lo-fi, jazz café, dan soundtrack ghibli...</div>
+          <div class="note-time">2 hari lalu</div>
+        </div>
+        <div class="note-card nc-2">
+          <div class="note-icon">🌄</div>
+          <div class="note-title">Tujuan bulan ini</div>
+          <div class="note-preview">Selesaikan 1 proyek kecil...</div>
+          <div class="note-time">Minggu lalu</div>
+        </div>
+        <div class="note-card nc-3">
+          <div class="note-wide-icon">📝</div>
+          <div class="note-wide-content">
+            <div class="note-title">Catatan bebas</div>
+            <div class="note-preview">Ide untuk akhir pekan: ke pantai atau taman kota? Ajak Raka dan Dinda juga...</div>
+            <div class="note-time">Hari ini</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 90px;"></div>
+
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <div class="nav-icon">🏠</div><span>Today</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">📅</div><span>Plan</span>
+      </div>
+      <div class="nav-item active">
+        <div class="nav-icon">⬡</div><span>Spaces</span>
+        <div class="nav-indicator"></div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">+</div><span>Capture</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">🗄</div><span>Vault</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

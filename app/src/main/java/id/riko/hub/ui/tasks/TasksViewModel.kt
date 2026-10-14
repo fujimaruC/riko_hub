@@ -37,7 +37,8 @@ private data class TaskLoad(val tasks: List<Task> = emptyList(), val loading: Bo
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TasksViewModel(private val repository: TaskRepository, private val clock: Clock) : ViewModel() {
-    private val controls = MutableStateFlow(TasksUiState())
+    private val initial = TasksUiState(now = clock.now(), zone = clock.zone())
+    private val controls = MutableStateFlow(initial)
     private val reload = MutableStateFlow(0)
     private val messages = Channel<TaskEffect>(Channel.BUFFERED)
     val effects = messages.receiveAsFlow()
@@ -65,7 +66,7 @@ class TasksViewModel(private val repository: TaskRepository, private val clock: 
             todayCount = loaded.tasks.count { task -> task.deadlineAt?.let {
                 Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == today
             } == true })
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TasksUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)
 
     fun retryRead() { reload.value++ }
     fun filter(category: Category?) { controls.update { it.copy(filter = category) } }

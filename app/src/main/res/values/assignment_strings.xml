@@ -1,0 +1,32 @@
+<resources>
+    <string name="assignment_open">Alur akademik</string>
+    <string name="assignment_save_task_first">Simpan tugas terlebih dahulu untuk mengatur alur akademik.</string>
+    <string name="assignment_title">Alur akademik</string>
+    <string name="assignment_create_hint">Pengaturan alur akademik disimpan terpisah dari perubahan tugas.</string>
+    <string name="assignment_saved_separately">Perubahan alur akademik disimpan terpisah dari kolom tugas yang belum disimpan.</string>
+    <string name="assignment_course">Mata kuliah</string>
+    <string name="assignment_no_course">Tanpa mata kuliah</string>
+    <string name="assignment_lifecycle">Status akademik</string>
+    <string name="assignment_state_received">Diterima</string>
+    <string name="assignment_state_planned">Direncanakan</string>
+    <string name="assignment_state_in_progress">Sedang dikerjakan</string>
+    <string name="assignment_state_review">Ditinjau</string>
+    <string name="assignment_state_submitted">Dikumpulkan</string>
+    <string name="assignment_state_completed">Selesai</string>
+    <string name="assignment_reopen">Buka kembali</string>
+    <string name="assignment_submission_reference">Referensi pengumpulan (opsional)</string>
+    <string name="assignment_task_status_note">Status tugas: %1$s. Status ini terpisah dari status akademik.</string>
+    <string name="assignment_deadline">Tenggat tugas</string>
+    <string name="assignment_original_deadline">Tenggat awal: %1$s</string>
+    <string name="assignment_current_deadline">Tenggat saat ini: %1$s</string>
+    <string name="assignment_deadline_history">Riwayat perubahan tenggat</string>
+    <string name="assignment_deadline_change">%1$s → %2$s (%3$s)</string>
+    <string name="assignment_save">Simpan alur akademik</string>
+    <string name="assignment_read_failed">Alur akademik gagal dimuat.</string>
+    <string name="assignment_task_unavailable">Tugas ini sudah tidak tersedia.</string>
+    <string name="assignment_write_failed">Perubahan alur akademik gagal disimpan.</string>
+    <string name="assignment_saved">Perubahan alur akademik tersimpan.</string>
+    <string name="assignment_submission_recorded">Terakhir dikumpulkan: %1$s</string>
+    <string name="course_assignments">Tugas mata kuliah</string>
+    <string name="course_assignments_empty">Belum ada tugas yang ditautkan ke mata kuliah ini.</string>
+</resources>

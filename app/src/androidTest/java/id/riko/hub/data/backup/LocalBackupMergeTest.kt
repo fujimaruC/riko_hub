@@ -235,7 +235,7 @@ class LocalBackupMergeTest {
             }.toString()
             val cases = listOf(
                 taskOnly,
-                valid.replace("\"formatVersion\":1", "\"formatVersion\":1,\"formatVersion\":1"),
+                valid.replace("\"formatVersion\":4", "\"formatVersion\":4,\"formatVersion\":4"),
                 JSONObject(valid).apply { getJSONObject("settings").put("hints", "wrong") }.toString(),
                 valid.replace("\"createdAt\":10", "\"createdAt\":9223372036854775808"),
                 duplicate,

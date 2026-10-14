@@ -56,6 +56,8 @@ class TimelineLayoutTest {
         }
         rule.waitForIdle()
         rule.onNodeWithTag("day-$today").assertIsDisplayed()
+        rule.onNodeWithTag("timeline-day-$today").assertIsSelected()
+        rule.onNodeWithText("Perpustakaan kampus").assertExists()
         inspect("normal-dark")
         rule.runOnIdle { content.value = state(7); dark.value = false; scale.floatValue = 2f }
         rule.onNodeWithTag("timeline-add").assertIsDisplayed().assertHasClickAction()

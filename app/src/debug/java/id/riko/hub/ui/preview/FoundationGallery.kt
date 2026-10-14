@@ -8,7 +8,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import id.riko.hub.R
 import id.riko.hub.navigation.Destination
-import id.riko.hub.ui.compass.CompassChip
+import id.riko.hub.ui.navigation.RenaissanceDock
 import id.riko.hub.ui.home.HomePreview
 import id.riko.hub.ui.theme.*
 
@@ -25,7 +25,7 @@ private fun HomeDarkPreview() { RikoHubTheme(true) { Surface { HomePreview() } }
 @Preview(name = "Components / large type", widthDp = 360, fontScale = 2f)
 @Composable
 private fun ComponentGallery() {
-    RikoHubTheme {
+    RikoHubTheme(androidx.compose.foundation.isSystemInDarkTheme()) {
         Surface {
             Column(Modifier.padding(Spacing.space5), verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displayMedium)
@@ -34,7 +34,7 @@ private fun ComponentGallery() {
                         Text(stringResource(R.string.academic), Modifier.padding(Spacing.space4))
                     }
                 }
-                CompassChip(Destination.Home, reducedMotion = false) {}
+                RenaissanceDock(Destination.Home, reducedMotion = false, onNavigate = {})
             }
         }
     }
@@ -44,5 +44,5 @@ private fun ComponentGallery() {
 @Preview(name = "Tasks / dark", widthDp = 393, heightDp = 852, uiMode = 0x20)
 @Composable
 private fun TasksPreview() {
-    RikoHubTheme { Surface { id.riko.hub.ui.tasks.TasksScreen(onNavigate = {}) } }
+    RikoHubTheme(androidx.compose.foundation.isSystemInDarkTheme()) { Surface { id.riko.hub.ui.tasks.TasksScreen(onNavigate = {}) } }
 }
