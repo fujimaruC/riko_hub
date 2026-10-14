@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import id.riko.hub.R
 import id.riko.hub.ui.components.eventKindLabel
 import id.riko.hub.domain.logic.*
@@ -25,55 +26,79 @@ fun TimelineStopRow(stop: TimelineStop, index: Int, dense: Boolean, now: Long, z
                     enabled: Boolean, onOpen: () -> Unit) {
     val category = stop.event?.category ?: requireNotNull(stop.task).category
     val palette = LocalRikoColors.current
-    val accent = when (category) {
+    val categoryAccent = when (category) {
         Category.ACADEMIC -> palette.academic; Category.ORGANIZATION -> palette.organization
         Category.PERSONAL -> palette.personal; Category.PROJECTS -> palette.projects
     }
-    val straight = dense || LocalDensity.current.fontScale >= 1.3f
+    val accent = when (stop.kind) {
+        TimelineStopKind.DEADLINE -> palette.urgent
+        TimelineStopKind.COMPLETED -> palette.personal
+        TimelineStopKind.EVENT -> categoryAccent
+    }
+    val largeText = LocalDensity.current.fontScale >= 1.3f
     val past = (stop.endAt ?: stop.at) < now
-    val today = Instant.ofEpochMilli(stop.at).atZone(zone).toLocalDate() == Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-    val tonal = today && !past
+    val currentEvent = stop.isCurrentEvent(now)
+    val riverColor = categoryAccent.color
+    val ink = MaterialTheme.colorScheme.onSurface
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    val time = stopTime(stop, zone)
+    val inlineTime = largeText || time.length > 13
+    val gutter = if (largeText) 32.dp else 76.dp
+    val riverX = if (largeText) 12.dp else 60.dp
     Box(Modifier.fillMaxWidth()) {
         Canvas(Modifier.matchParentSize()) {
-            val center = Spacing.space3.toPx()
-            val nodeX = center + if (straight) 0f else if (index % 2 == 0) Spacing.space1.toPx() else -Spacing.space1.toPx()
-            val middle = size.height * .5f
-            val path = Path().apply {
-                moveTo(center, 0f)
-                if (straight) lineTo(center, size.height) else {
-                    cubicTo(center, middle*.5f, nodeX, middle*.5f, nodeX, middle)
-                    cubicTo(nodeX, middle*1.5f, center, middle*1.5f, center, size.height)
-                }
-            }
-            drawPath(path, accent.color, style = Stroke(Spacing.pathStroke.toPx()))
-            if (stop.kind == TimelineStopKind.COMPLETED) {
+            val x = riverX.toPx()
+            drawTimeRiver(listOf(riverColor), x, if (dense || largeText) 2.dp.toPx() else 8.dp.toPx())
+            val node = Offset(x + if (dense || largeText) 2.dp.toPx() else 8.dp.toPx(), size.height * .5f)
+            drawLine(accent.color.copy(alpha = .5f), node, Offset(gutter.toPx() + 4.dp.toPx(), node.y), 1.dp.toPx())
+            drawCircle(accent.color.copy(alpha = .14f), if (currentEvent) 12.dp.toPx() else 8.dp.toPx(), node)
+            if (stop.kind == TimelineStopKind.DEADLINE) {
+                val radius = 4.dp.toPx()
                 drawPath(Path().apply {
-                    moveTo(nodeX-Spacing.space1.toPx(), middle)
-                    lineTo(nodeX, middle+Spacing.space1.toPx())
-                    lineTo(nodeX+Spacing.space2.toPx(), middle-Spacing.space1.toPx())
-                }, accent.color, style = Stroke(Spacing.pathStroke.toPx()))
-            } else drawCircle(accent.color, Spacing.space1.toPx(), Offset(nodeX,middle))
+                    moveTo(node.x, node.y - radius); lineTo(node.x + radius, node.y)
+                    lineTo(node.x, node.y + radius); lineTo(node.x - radius, node.y); close()
+                }, accent.color)
+            } else {
+                drawCircle(accent.color, 4.dp.toPx(), node)
+                if (stop.kind == TimelineStopKind.COMPLETED) drawPath(Path().apply {
+                    moveTo(node.x - 3.dp.toPx(), node.y)
+                    lineTo(node.x, node.y + 3.dp.toPx()); lineTo(node.x + 5.dp.toPx(), node.y - 4.dp.toPx())
+                }, ink, style = Stroke(1.5.dp.toPx()))
+            }
         }
-        Surface(onClick = onOpen, enabled = enabled, shape = RikoShapes.wide,
-            color = if (tonal) accent.container else MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.fillMaxWidth()
-                .padding(start = Spacing.space8 + if (!straight && index % 2 == 0) Spacing.space2 else Spacing.space1,
-                    end = if (!straight && index % 2 != 0) Spacing.space2 else Spacing.space1,
-                    top = Spacing.space1, bottom = Spacing.space2)
-                .heightIn(min = Spacing.touch).testTag("timeline-stop-${stop.key}")) {
-            Column(Modifier.padding(Spacing.space4), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-                val ink = if (past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                val secondary = if (tonal) ink else MaterialTheme.colorScheme.onSurfaceVariant
-                Text(stop.event?.title ?: requireNotNull(stop.task).title, style = MaterialTheme.typography.titleMedium, color = ink)
-                Text(stopTime(stop, zone), style = MaterialTheme.typography.bodyMedium, color = secondary)
-                val kind = stringResource(when (stop.kind) {
-                    TimelineStopKind.EVENT -> requireNotNull(stop.event).kind.eventKindLabel()
-                    TimelineStopKind.DEADLINE -> R.string.timeline_deadline_stop
-                    TimelineStopKind.COMPLETED -> R.string.timeline_completed_stop
-                })
-                Text(stringResource(R.string.timeline_stop_metadata, kind, stringResource(category.label())),
-                    style = MaterialTheme.typography.labelMedium, color = secondary)
-                stop.event?.location?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = secondary) }
+        if (!inlineTime) Text(time, style = MaterialTheme.typography.labelMedium, color = secondary,
+            modifier = Modifier.width(48.dp).padding(top = 20.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+        Surface(onClick = onOpen, enabled = enabled,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 8.dp, topEnd = 24.dp, bottomEnd = 8.dp, bottomStart = 24.dp),
+            color = if (currentEvent) accent.container else MaterialTheme.colorScheme.surfaceVariant,
+            border = androidx.compose.foundation.BorderStroke(if (currentEvent) 1.5.dp else 1.dp,
+                if (currentEvent) accent.color else MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxWidth().padding(start = gutter,
+                end = if (!dense && !largeText && index % 2 == 1) 8.dp else 0.dp,
+                top = 4.dp, bottom = 8.dp).heightIn(min = Spacing.touch).testTag("timeline-stop-${stop.key}")) {
+            Row(Modifier.padding(horizontal = 12.dp, vertical = if (dense) 8.dp else 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Canvas(Modifier.width(3.dp).height(32.dp)) {
+                    drawLine(categoryAccent.color.copy(alpha = if (past) .6f else 1f), Offset(size.width / 2, 0f),
+                        Offset(size.width / 2, size.height), size.width, androidx.compose.ui.graphics.StrokeCap.Round)
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (inlineTime) Text(time, style = MaterialTheme.typography.labelLarge, color = secondary)
+                    Text(stop.event?.title ?: requireNotNull(stop.task).title,
+                        style = MaterialTheme.typography.titleSmall, color = ink)
+                    val kind = stringResource(when (stop.kind) {
+                        TimelineStopKind.EVENT -> requireNotNull(stop.event).kind.eventKindLabel()
+                        TimelineStopKind.DEADLINE -> R.string.timeline_deadline_stop
+                        TimelineStopKind.COMPLETED -> R.string.timeline_completed_stop
+                    })
+                    Text(stringResource(R.string.timeline_stop_metadata, kind, stringResource(category.label())),
+                        style = MaterialTheme.typography.bodySmall, color = secondary)
+                    if (currentEvent) Text(stringResource(R.string.timeline_now),
+                        style = MaterialTheme.typography.labelMedium, color = ink)
+                    stop.event?.location?.takeIf { it.isNotBlank() }?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = secondary)
+                    }
+                }
             }
         }
     }

@@ -7,3 +7,17 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+
+# Local visual audits and temporary files
+/audit/
+/file.txt
+
+# Locally installed agent tooling
+/.agents/skills/impeccable/
+
+# Local visual audits and temporary files
+/audit/
+/file.txt
+
+# Locally installed agent tooling
+/.agents/skills/impeccable/

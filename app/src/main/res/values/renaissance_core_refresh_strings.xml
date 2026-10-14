@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="renaissance_core_refresh_focus">Fokus hari ini</string>
+    <string name="renaissance_core_refresh_focus_pinned">Fokus hari ini, disematkan</string>
+</resources>

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projects v2 — The Workshop</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --tangerine: #E8742A;
+      --tangerine-dim: #C25F18;
+      --graphite-900: #0F0E0D;
+      --graphite-800: #1A1816;
+      --graphite-700: #252220;
+      --graphite-600: #312E2B;
+      --graphite-500: #403C38;
+      --text-primary: #F0EDE8;
+      --text-secondary: #B5AFA8;
+      --text-muted: #7A7470;
+      --jade: #2FA37A;
+      --ultramarine: #4A5FD0;
+      --magenta: #B84580;
+      --amber: #D4A030;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--graphite-900);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .phone-frame {
+      width: 390px;
+      min-height: 844px;
+      background: var(--graphite-900);
+      border-radius: 44px;
+      border: 2px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 0 8px #0A0908, 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .scroll-area {
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: 844px;
+      scroll-behavior: smooth;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    .statusbar {
+      padding: 14px 28px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      position: sticky;
+      top: 0;
+      background: linear-gradient(to bottom, var(--graphite-900) 80%, transparent);
+      z-index: 10;
+    }
+
+    .status-icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+
+    /* Header */
+    .header {
+      padding: 4px 20px 0;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: var(--graphite-600); }
+
+    .add-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--tangerine);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; cursor: pointer; font-weight: 300;
+      transition: transform 0.15s;
+    }
+    .add-btn:hover { transform: scale(1.08); }
+
+    .page-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 2px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 16px;
+    }
+
+    /* Active Project Hero */
+    .active-project-hero {
+      margin: 0 20px 20px;
+      border-radius: 22px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1.5px solid rgba(232,116,42,0.3);
+      background: linear-gradient(135deg, #1C1008 0%, #0F0E0D 60%);
+      min-height: 180px;
+      transition: border-color 0.2s;
+    }
+
+    .active-project-hero:hover { border-color: rgba(232,116,42,0.55); }
+
+    /* Textured surface lines */
+    .hero-texture {
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,0.015) 0px,
+          transparent 1px,
+          transparent 24px
+        ),
+        repeating-linear-gradient(
+          0deg,
+          rgba(255,255,255,0.012) 0px,
+          transparent 1px,
+          transparent 24px
+        );
+      border-radius: 20px;
+    }
+
+    .hero-ambient {
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(232,116,42,0.3) 0%, transparent 70%);
+      filter: blur(40px);
+    }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--tangerine);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-label::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--tangerine);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero-top-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .hero-project-icon {
+      width: 50px; height: 50px;
+      border-radius: 15px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      background: linear-gradient(135deg, var(--tangerine) 0%, var(--tangerine-dim) 100%);
+      flex-shrink: 0;
+    }
+
+    .hero-project-info { flex: 1; }
+
+    .hero-project-name {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .hero-project-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .hero-chevron {
+      width: 30px; height: 30px;
+      background: rgba(232,116,42,0.15);
+      border: 1px solid rgba(232,116,42,0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    /* Tags */
+    .tag-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Progress section */
+    .hero-progress-section {
+      background: rgba(0,0,0,0.2);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .progress-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+    .progress-pct { font-size: 13px; font-weight: 800; color: var(--tangerine); }
+
+    .progress-bar-bg {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--tangerine-dim), var(--tangerine), #F4A050);
+    }
+
+    /* Milestone track */
+    .milestone-track {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .milestone-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .ms-check {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+
+    .ms-done { background: var(--jade); color: white; }
+    .ms-active { background: rgba(232,116,42,0.2); border: 1.5px solid var(--tangerine); }
+    .ms-pending { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); }
+
+    .ms-label { color: var(--text-secondary); }
+    .ms-done-label { color: var(--text-muted); text-decoration: line-through; }
+    .ms-active-label { color: var(--text-primary); font-weight: 600; }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 10px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .see-all {
+      font-size: 12px;
+      color: var(--tangerine);
+      cursor: pointer;
+    }
+
+    /* Section filter chips */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      padding: 0 20px 12px;
+      overflow-x: auto;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+
+    .filter-chip {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--graphite-700);
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-chip.active {
+      background: rgba(232,116,42,0.15);
+      border-color: rgba(232,116,42,0.4);
+      color: var(--tangerine);
+      font-weight: 600;
+    }
+
+    /* Project list */
+    .project-list {
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .project-card {
+      border-radius: 18px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .project-card:hover { border-color: rgba(255,255,255,0.15); }
+
+    .project-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 100%;
+      border-radius: 2px 0 0 2px;
+    }
+
+    .pc-jade { background: linear-gradient(135deg, #0D1F18, #080F0C); }
+    .pc-jade::before { background: var(--jade); }
+    .pc-blue { background: linear-gradient(135deg, #0E1325, #080B14); }
+    .pc-blue::before { background: var(--ultramarine); }
+    .pc-amber { background: linear-gradient(135deg, #1A1208, #0E0A04); }
+    .pc-amber::before { background: var(--amber); }
+
+    .project-icon {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .project-main { flex: 1; min-width: 0; }
+    .project-name { font-size: 15px; font-weight: 700; }
+    .project-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .project-stats {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .mini-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .mini-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+    }
+
+    .mini-pct { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+    .project-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .project-chevron {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* Sprint strip */
+    .sprint-section {
+      margin: 0 20px 20px;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .sprint-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .sprint-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sprint-title { font-size: 14px; font-weight: 700; }
+    .sprint-range { font-size: 11px; color: var(--text-muted); }
+
+    .sprint-days {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .sprint-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sprint-day-name { font-size: 10px; color: var(--text-muted); }
+
+    .sprint-day-num {
+      width: 30px; height: 30px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .day-today { background: var(--tangerine); color: white; font-weight: 800; }
+    .day-has-work { background: var(--graphite-600); color: var(--text-primary); }
+    .day-future { background: transparent; color: var(--text-muted); }
+
+    .sprint-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+    }
+
+    /* Idea board */
+    .idea-section {
+      margin: 0 20px 20px;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .idea-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .idea-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .idea-stickies {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+    }
+    .idea-stickies::-webkit-scrollbar { display: none; }
+
+    .sticky-note {
+      flex-shrink: 0;
+      width: 110px;
+      min-height: 80px;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: rgba(0,0,0,0.75);
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s;
+      position: relative;
+    }
+
+    .sticky-note:hover { transform: rotate(0deg) scale(1.04); }
+
+    .sticky-orange { background: #E8742A; transform: rotate(-1.5deg); }
+    .sticky-yellow { background: #D4A030; transform: rotate(1deg); }
+    .sticky-green { background: #2FA37A; transform: rotate(-0.5deg); color: rgba(0,0,0,0.7); }
+    .sticky-add {
+      flex-shrink: 0;
+      width: 80px;
+      min-height: 80px;
+      border-radius: 12px;
+      border: 1.5px dashed rgba(255,255,255,0.1);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 22px;
+      color: var(--text-muted);
+      transition: border-color 0.2s;
+    }
+    .sticky-add:hover { border-color: rgba(232,116,42,0.4); color: var(--tangerine); }
+    .sticky-add-label { font-size: 10px; color: var(--text-muted); }
+
+    /* Divider */
+    .divider { height: 1px; background: rgba(255,255,255,0.04); margin: 0 20px 16px; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: sticky;
+      bottom: 0;
+      background: rgba(15,14,13,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 10px 0 24px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .nav-item {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      font-size: 10px; color: var(--text-muted);
+      cursor: pointer; padding: 4px 8px;
+      border-radius: 12px; min-width: 56px;
+    }
+    .nav-item.active { color: var(--tangerine); }
+    .nav-item .nav-icon { font-size: 20px; }
+    .nav-item.active .nav-indicator {
+      width: 4px; height: 4px;
+      background: var(--tangerine);
+      border-radius: 50%; margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="scroll-area">
+
+    <!-- Status Bar -->
+    <div class="statusbar">
+      <span>09:41</span>
+      <div class="status-icons"><span>▐▌▌</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-top">
+        <div class="breadcrumb">
+          <span style="font-size:16px;">⬡</span>
+          <span>Spaces</span>
+        </div>
+        <div class="header-actions">
+          <div class="icon-btn">🔍</div>
+          <div class="icon-btn">⋮⋮</div>
+          <div class="add-btn">+</div>
+        </div>
+      </div>
+      <div class="page-title">Workshop</div>
+      <div class="page-subtitle">Hal-hal yang sedang kamu bangun.</div>
+    </div>
+
+    <!-- Active Project Hero -->
+    <div class="active-project-hero">
+      <div class="hero-texture"></div>
+      <div class="hero-ambient"></div>
+      <div class="hero-content">
+        <div class="hero-label">Fokus Sekarang</div>
+        <div class="hero-top-row">
+          <div class="hero-project-icon">☀️</div>
+          <div class="hero-project-info">
+            <div class="hero-project-name">Riko Hub</div>
+            <div class="hero-project-desc">Menyelesaikan sistem Spaces v2</div>
+          </div>
+          <div class="hero-chevron">›</div>
+        </div>
+        <div class="tag-row">
+          <span class="tag">Mobile App</span>
+          <span class="tag">UI/UX</span>
+          <span class="tag">Pribadi</span>
+        </div>
+        <div class="hero-progress-section">
+          <div class="progress-header">
+            <span class="progress-label">Kemajuan keseluruhan</span>
+            <span class="progress-pct">70%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: 70%;"></div>
+          </div>
+          <div class="milestone-track">
+            <div class="milestone-item">
+              <div class="ms-check ms-done">✓</div>
+              <span class="ms-label ms-done-label">Navigasi Spaces</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-done">✓</div>
+              <span class="ms-label ms-done-label">Modul Projects (UI + logika)</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-active"></div>
+              <span class="ms-label ms-active-label">Sinkronisasi ke laptop ← sekarang</span>
+            </div>
+            <div class="milestone-item">
+              <div class="ms-check ms-pending"></div>
+              <span class="ms-label">Pengujian & umpan balik</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Projects -->
+    <div class="section-header">
+      <div class="section-title">📦 Semua Proyek</div>
+      <div class="see-all">Lihat semua ›</div>
+    </div>
+    <div class="filter-row">
+      <div class="filter-chip active">Aktif</div>
+      <div class="filter-chip">Semua</div>
+      <div class="filter-chip">Selesai</div>
+      <div class="filter-chip">Arsip</div>
+    </div>
+    <div class="project-list">
+      <div class="project-card pc-jade">
+        <div class="project-icon" style="background:rgba(47,163,122,0.15);">🚩</div>
+        <div class="project-main">
+          <div class="project-name">FlagForge</div>
+          <div class="project-desc">Tangkap ide, bangun apa pun</div>
+          <div class="project-stats">
+            <div class="mini-bar-bg">
+              <div class="mini-bar-fill" style="width:45%; background:var(--jade);"></div>
+            </div>
+            <div class="mini-pct" style="color:var(--jade);">45%</div>
+          </div>
+          <div class="project-meta"><span>☑ 8 tugas</span><span>⏱ 5 hari lagi</span></div>
+        </div>
+        <div class="project-chevron">›</div>
+      </div>
+      <div class="project-card pc-blue">
+        <div class="project-icon" style="background:rgba(74,95,208,0.15);">🎮</div>
+        <div class="project-main">
+          <div class="project-name">Game ITK</div>
+          <div class="project-desc">Game edukasi interaktif</div>
+          <div class="project-stats">
+            <div class="mini-bar-bg">
+              <div class="mini-bar-fill" style="width:30%; background:var(--ultramarine);"></div>
+            </div>
+            <div class="mini-pct" style="color:var(--ultramarine);">30%</div>
+          </div>
+          <div class="project-meta"><span>☑ 5 tugas</span><span>⏱ 1 minggu</span></div>
+        </div>
+        <div class="project-chevron">›</div>
+      </div>
+      <div class="project-card pc-amber">
+        <div class="project-icon" style="background:rgba(212,160,48,0.15);">📷</div>
+        <div class="project-main">
+          <div class="project-name">Portofolio Foto</div>
+          <div class="project-desc">Koleksi & cerita lewat lensa</div>
+          <div class="project-stats">
+            <div class="mini-bar-bg">
+              <div class="mini-bar-fill" style="width:20%; background:var(--amber);"></div>
+            </div>
+            <div class="mini-pct" style="color:var(--amber);">20%</div>
+          </div>
+          <div class="project-meta"><span>☑ 3 tugas</span><span>⏱ Santai</span></div>
+        </div>
+        <div class="project-chevron">›</div>
+      </div>
+    </div>
+
+    <!-- Sprint Week -->
+    <div class="sprint-section">
+      <div class="sprint-header">
+        <div class="sprint-title-row">
+          <span style="font-size:16px;">⏱</span>
+          <div>
+            <div class="sprint-title">Minggu Ini</div>
+            <div class="sprint-range">13 – 19 Okt 2024</div>
+          </div>
+        </div>
+        <div class="see-all">Lihat semua ›</div>
+      </div>
+      <div class="sprint-days">
+        <div class="sprint-day">
+          <span class="sprint-day-name">Sen</span>
+          <div class="sprint-day-num day-today">13</div>
+          <div class="sprint-dot" style="background:var(--tangerine);"></div>
+        </div>
+        <div class="sprint-day">
+          <span class="sprint-day-name">Sel</span>
+          <div class="sprint-day-num day-has-work">14</div>
+          <div class="sprint-dot" style="background:var(--jade);"></div>
+        </div>
+        <div class="sprint-day">
+          <span class="sprint-day-name">Rab</span>
+          <div class="sprint-day-num day-has-work">15</div>
+          <div class="sprint-dot" style="background:var(--ultramarine);"></div>
+        </div>
+        <div class="sprint-day">
+          <span class="sprint-day-name">Kam</span>
+          <div class="sprint-day-num day-has-work">16</div>
+          <div class="sprint-dot" style="background:var(--magenta);"></div>
+        </div>
+        <div class="sprint-day">
+          <span class="sprint-day-name">Jum</span>
+          <div class="sprint-day-num day-future">17</div>
+          <div class="sprint-dot" style="background:var(--graphite-600);"></div>
+        </div>
+        <div class="sprint-day">
+          <span class="sprint-day-name">Sab</span>
+          <div class="sprint-day-num day-future">18</div>
+          <div class="sprint-dot" style="background:var(--graphite-600);"></div>
+        </div>
+        <div class="sprint-day">
+          <span class="sprint-day-name">Min</span>
+          <div class="sprint-day-num day-future">19</div>
+          <div class="sprint-dot" style="background:var(--graphite-600);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Idea Board -->
+    <div class="idea-section">
+      <div class="idea-header">
+        <div class="idea-title">💡 Papan Ide</div>
+        <div class="see-all">Tambah ›</div>
+      </div>
+      <div class="idea-stickies">
+        <div class="sticky-note sticky-orange">
+          Coba dark mode<br>untuk Vault juga
+        </div>
+        <div class="sticky-note sticky-yellow">
+          Widget cuaca<br>di Today screen?
+        </div>
+        <div class="sticky-note sticky-green">
+          Onboarding flow<br>perlu diperbaiki
+        </div>
+        <div class="sticky-add">
+          <span>+</span>
+          <span class="sticky-add-label">Ide baru</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 90px;"></div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <div class="nav-icon">🏠</div><span>Today</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">📅</div><span>Plan</span>
+      </div>
+      <div class="nav-item active">
+        <div class="nav-icon">⬡</div><span>Spaces</span>
+        <div class="nav-indicator"></div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">+</div><span>Capture</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">🗄</div><span>Vault</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

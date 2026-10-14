@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academics v2 — Learning Orbit</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --tangerine: #E8742A;
+      --tangerine-dim: #C25F18;
+      --graphite-900: #0F0E0D;
+      --graphite-800: #1A1816;
+      --graphite-700: #252220;
+      --graphite-600: #312E2B;
+      --graphite-500: #403C38;
+      --text-primary: #F0EDE8;
+      --text-secondary: #B5AFA8;
+      --text-muted: #7A7470;
+      --jade: #2FA37A;
+      --ultramarine: #4A5FD0;
+      --magenta: #B84580;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--graphite-900);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .phone-frame {
+      width: 390px;
+      min-height: 844px;
+      background: var(--graphite-900);
+      border-radius: 44px;
+      border: 2px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 0 0 8px #0A0908,
+        0 40px 80px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    /* Organic ambient blob */
+    .ambient-blob {
+      position: absolute;
+      top: -40px;
+      right: -30px;
+      width: 260px;
+      height: 220px;
+      background: radial-gradient(ellipse at 60% 40%, rgba(232,116,42,0.22) 0%, rgba(232,116,42,0.04) 60%, transparent 80%);
+      filter: blur(40px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .scroll-area {
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: 844px;
+      scroll-behavior: smooth;
+      position: relative;
+      z-index: 1;
+    }
+    .scroll-area::-webkit-scrollbar { display: none; }
+
+    /* Status bar */
+    .statusbar {
+      padding: 14px 28px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      position: sticky;
+      top: 0;
+      background: linear-gradient(to bottom, var(--graphite-900) 80%, transparent);
+      z-index: 10;
+    }
+
+    .status-icons {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    /* Header */
+    .header {
+      padding: 4px 20px 16px;
+      position: relative;
+    }
+
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    .icon-btn:hover { background: var(--graphite-600); }
+
+    .notif-dot {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 7px;
+      height: 7px;
+      background: var(--tangerine);
+      border-radius: 50%;
+      border: 1.5px solid var(--graphite-900);
+    }
+
+    .page-title-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .page-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--tangerine) 0%, var(--tangerine-dim) 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .page-title-text h1 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .page-title-text p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* Orbit Section */
+    .orbit-section {
+      padding: 0 20px 20px;
+    }
+
+    .orbit-canvas {
+      position: relative;
+      height: 200px;
+      margin-bottom: 8px;
+    }
+
+    .orbit-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .orbit-ring-1 {
+      width: 160px; height: 160px;
+      top: 20px; left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .orbit-ring-2 {
+      width: 240px; height: 180px;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      border-color: rgba(232,116,42,0.12);
+    }
+
+    .orbit-core {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 88px;
+      height: 88px;
+      background: linear-gradient(135deg, rgba(232,116,42,0.25) 0%, rgba(232,116,42,0.08) 100%);
+      border: 1.5px solid rgba(232,116,42,0.35);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: transform 0.25s, border-color 0.25s;
+    }
+
+    .orbit-core:hover { transform: translate(-50%, -50%) scale(1.04); border-color: rgba(232,116,42,0.6); }
+
+    .orbit-core .core-icon { font-size: 26px; margin-bottom: 4px; }
+    .orbit-core .core-name { font-size: 10px; font-weight: 700; color: var(--text-primary); text-align: center; line-height: 1.2; }
+    .orbit-core .core-code { font-size: 9px; color: var(--text-muted); }
+
+    .orbit-satellite {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .orbit-satellite:hover { transform: scale(1.08); }
+
+    .sat-1 { background: linear-gradient(135deg, #1A3D2E, #0F2218); top: 18px; left: 14px; }
+    .sat-2 { background: linear-gradient(135deg, #1A2A50, #0F1A35); top: 18px; right: 14px; }
+    .sat-3 { background: linear-gradient(135deg, #2E1A40, #1C0F2A); bottom: 10px; left: 40px; }
+    .sat-4 { background: linear-gradient(135deg, #3D1A1A, #2A0F0F); bottom: 10px; right: 40px; }
+
+    .sat-icon { font-size: 18px; margin-bottom: 2px; }
+    .sat-name { font-size: 8px; color: var(--text-secondary); text-align: center; font-weight: 600; line-height: 1.1; }
+
+    .orbit-legend {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 10px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .section-icon { font-size: 16px; }
+
+    .see-all {
+      font-size: 12px;
+      color: var(--tangerine);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    /* Focus card */
+    .focus-card {
+      margin: 0 20px 20px;
+      background: linear-gradient(135deg, rgba(232,116,42,0.14) 0%, rgba(18,16,14,0.8) 70%);
+      border: 1.5px solid rgba(232,116,42,0.25);
+      border-radius: 20px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .focus-card:hover { border-color: rgba(232,116,42,0.45); }
+
+    .focus-card::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -20px;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, rgba(232,116,42,0.15) 0%, transparent 70%);
+    }
+
+    .focus-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--tangerine);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .focus-label::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--tangerine);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .focus-main {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .focus-course-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--tangerine) 0%, var(--tangerine-dim) 100%);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .focus-info { flex: 1; }
+    .focus-course-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+    .focus-meta { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+    .focus-progress-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-bar-bg {
+      flex: 1;
+      height: 5px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--tangerine), #F4A050);
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-pct {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--tangerine);
+      flex-shrink: 0;
+    }
+
+    .focus-next {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+
+    .focus-next-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .next-chevron {
+      width: 26px;
+      height: 26px;
+      background: var(--tangerine);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    /* Deadlines */
+    .deadlines-scroll {
+      padding: 0 20px 20px;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+    }
+    .deadlines-scroll::-webkit-scrollbar { display: none; }
+
+    .deadline-chip {
+      flex-shrink: 0;
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      min-width: 160px;
+    }
+
+    .deadline-chip:hover { background: var(--graphite-600); border-color: rgba(232,116,42,0.2); }
+
+    .deadline-chip.urgent { border-color: rgba(184,69,128,0.4); background: rgba(184,69,128,0.08); }
+    .deadline-chip.soon { border-color: rgba(232,116,42,0.3); background: rgba(232,116,42,0.06); }
+
+    .deadline-date-box {
+      width: 40px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ddate-day { font-size: 18px; font-weight: 800; line-height: 1; }
+    .ddate-mon { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; margin-top: 1px; }
+
+    .deadline-info { flex: 1; min-width: 0; }
+    .deadline-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .deadline-course { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    .deadline-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+
+    .badge-urgent { background: rgba(184,69,128,0.2); color: #E060A0; }
+    .badge-soon { background: rgba(232,116,42,0.15); color: var(--tangerine); }
+    .badge-ok { background: rgba(47,163,122,0.15); color: #40C890; }
+
+    /* Materials */
+    .materials-list {
+      padding: 0 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .material-row {
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .material-row:hover { background: var(--graphite-600); }
+
+    .material-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      font-family: monospace;
+      flex-shrink: 0;
+      font-size: 11px;
+    }
+
+    .mat-pdf { background: rgba(194,95,24,0.2); color: #F4703A; }
+    .mat-doc { background: rgba(74,95,208,0.2); color: #6A7FE8; }
+    .mat-ppt { background: rgba(184,69,128,0.2); color: #D87AAA; }
+
+    .material-info { flex: 1; min-width: 0; }
+    .material-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .material-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .material-action {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* Quick actions */
+    .quick-actions {
+      padding: 0 20px 100px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .qa-btn {
+      background: var(--graphite-700);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .qa-btn:hover { background: var(--graphite-600); border-color: rgba(232,116,42,0.2); }
+
+    .qa-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .qa-text { font-size: 12px; font-weight: 600; line-height: 1.3; }
+    .qa-sub { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: sticky;
+      bottom: 0;
+      background: rgba(15,14,13,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 10px 0 24px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 12px;
+      transition: color 0.2s;
+      min-width: 56px;
+    }
+
+    .nav-item.active { color: var(--tangerine); }
+    .nav-item .nav-icon { font-size: 20px; }
+
+    .nav-item.active .nav-indicator {
+      width: 4px; height: 4px;
+      background: var(--tangerine);
+      border-radius: 50%;
+      margin-top: 2px;
+    }
+
+    /* SVG orbit lines */
+    .orbit-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    @keyframes orbit-rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .orbit-dot {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--tangerine);
+      box-shadow: 0 0 8px rgba(232,116,42,0.6);
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.04);
+      margin: 0 20px 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="ambient-blob"></div>
+  <div class="scroll-area">
+
+    <!-- Status Bar -->
+    <div class="statusbar">
+      <span>09:41</span>
+      <div class="status-icons">
+        <span>▐▌▌</span>
+        <span>WiFi</span>
+        <span>🔋</span>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-nav">
+        <div class="back-btn">
+          <span style="font-size:16px;">‹</span>
+          <span style="font-size:13px; color: var(--text-muted);">Spaces</span>
+        </div>
+        <div class="header-actions">
+          <div class="icon-btn">🔍</div>
+          <div class="icon-btn">🔔<div class="notif-dot"></div></div>
+          <div class="icon-btn">•••</div>
+        </div>
+      </div>
+      <div class="page-title-row">
+        <div class="page-icon">🎓</div>
+        <div class="page-title-text">
+          <h1>Akademik</h1>
+          <p>Semester Gasal 2024/25 · 4 Mata Kuliah</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orbit Section -->
+    <div class="orbit-section">
+      <div class="orbit-canvas">
+        <!-- Orbit rings (SVG) -->
+        <svg class="orbit-svg" viewBox="0 0 350 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="175" cy="100" rx="155" ry="80" fill="none" stroke="rgba(232,116,42,0.10)" stroke-width="1" stroke-dasharray="4 6"/>
+          <ellipse cx="175" cy="100" rx="115" ry="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="3 8"/>
+        </svg>
+        <!-- Satellites -->
+        <div class="orbit-satellite sat-1">
+          <div class="sat-icon">√x</div>
+          <div class="sat-name">Mat.<br>Diskrit</div>
+        </div>
+        <div class="orbit-satellite sat-2">
+          <div class="sat-icon">💻</div>
+          <div class="sat-name">Pemrog.<br>Dasar</div>
+        </div>
+        <div class="orbit-satellite sat-3">
+          <div class="sat-icon">🇬🇧</div>
+          <div class="sat-name">Bahasa<br>Inggris</div>
+        </div>
+        <div class="orbit-satellite sat-4">
+          <div class="sat-icon">📊</div>
+          <div class="sat-name">Statistika</div>
+        </div>
+        <!-- Core (active course) -->
+        <div class="orbit-core">
+          <div class="core-icon">⚛️</div>
+          <div class="core-name">Fisika<br>Dasar II</div>
+          <div class="core-code">FIS102</div>
+        </div>
+      </div>
+
+      <div class="orbit-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--tangerine);"></div>Aktif sekarang</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--graphite-500);"></div>Mata kuliah lain</div>
+      </div>
+    </div>
+
+    <!-- Today's Focus Card -->
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">🎯</span>Fokus Hari Ini</div>
+      <span style="font-size:11px; color:var(--text-muted);">Sel, 14 Okt</span>
+    </div>
+    <div class="focus-card">
+      <div class="focus-label">Sedang berlangsung</div>
+      <div class="focus-main">
+        <div class="focus-course-icon">⚛️</div>
+        <div class="focus-info">
+          <div class="focus-course-name">Fisika Dasar II</div>
+          <div class="focus-meta">🕘 09:00 – 11:00 · Ruang B201</div>
+        </div>
+      </div>
+      <div class="focus-progress-row">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width: 62%;"></div>
+        </div>
+        <div class="progress-pct">62%</div>
+      </div>
+      <div class="focus-next">
+        <div class="focus-next-text">
+          <span>○</span>
+          <span>Berikutnya: Kerjakan Latihan Soal Bab 4</span>
+        </div>
+        <div class="next-chevron">›</div>
+      </div>
+    </div>
+
+    <!-- Deadlines -->
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">📅</span>Deadline & UTS</div>
+      <div class="see-all">Lihat semua ›</div>
+    </div>
+    <div class="deadlines-scroll">
+      <div class="deadline-chip urgent">
+        <div class="deadline-date-box" style="background:rgba(184,69,128,0.15);">
+          <div class="ddate-day" style="color:#E060A0;">14</div>
+          <div class="ddate-mon" style="color:#E060A0;">Okt</div>
+        </div>
+        <div class="deadline-info">
+          <div class="deadline-name">Tugas 2</div>
+          <div class="deadline-course">Matematika Diskrit</div>
+        </div>
+        <div class="deadline-badge badge-urgent">Besok</div>
+      </div>
+      <div class="deadline-chip soon">
+        <div class="deadline-date-box" style="background:rgba(232,116,42,0.12);">
+          <div class="ddate-day" style="color:var(--tangerine);">18</div>
+          <div class="ddate-mon" style="color:var(--tangerine);">Okt</div>
+        </div>
+        <div class="deadline-info">
+          <div class="deadline-name">UTS</div>
+          <div class="deadline-course">Fisika Dasar II</div>
+        </div>
+        <div class="deadline-badge badge-soon">4 hari lagi</div>
+      </div>
+      <div class="deadline-chip">
+        <div class="deadline-date-box" style="background:rgba(47,163,122,0.12);">
+          <div class="ddate-day" style="color:#40C890;">21</div>
+          <div class="ddate-mon" style="color:#40C890;">Okt</div>
+        </div>
+        <div class="deadline-info">
+          <div class="deadline-name">Laporan Lab</div>
+          <div class="deadline-course">Pemrograman Dasar</div>
+        </div>
+        <div class="deadline-badge badge-ok">1 mgg lagi</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Materials -->
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">📂</span>Materi Terbaru</div>
+      <div class="see-all">Lihat semua ›</div>
+    </div>
+    <div class="materials-list">
+      <div class="material-row">
+        <div class="material-thumb mat-pdf">PDF</div>
+        <div class="material-info">
+          <div class="material-name">ringkasan-bab4.pdf</div>
+          <div class="material-meta">Fisika Dasar II · 2,4 MB · 1 jam lalu</div>
+        </div>
+        <div class="material-action">⤓</div>
+      </div>
+      <div class="material-row">
+        <div class="material-thumb mat-doc" style="font-size:11px;">DOC</div>
+        <div class="material-info">
+          <div class="material-name">struktur-data.docx</div>
+          <div class="material-meta">Matematika Diskrit · 1,1 MB · 3 jam lalu</div>
+        </div>
+        <div class="material-action">⤓</div>
+      </div>
+      <div class="material-row">
+        <div class="material-thumb mat-ppt" style="font-size:11px;">PPT</div>
+        <div class="material-info">
+          <div class="material-name">slide-pertemuan8.pptx</div>
+          <div class="material-meta">Bahasa Inggris · 4,7 MB · kemarin</div>
+        </div>
+        <div class="material-action">⤓</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Quick Actions -->
+    <div class="section-header">
+      <div class="section-title"><span class="section-icon">⚡</span>Aksi Cepat</div>
+    </div>
+    <div class="quick-actions">
+      <div class="qa-btn">
+        <div class="qa-icon" style="background:rgba(232,116,42,0.15);">📝</div>
+        <div>
+          <div class="qa-text">Catatan Cepat</div>
+          <div class="qa-sub">Tambah catatan kuliah</div>
+        </div>
+      </div>
+      <div class="qa-btn">
+        <div class="qa-icon" style="background:rgba(47,163,122,0.15);">📷</div>
+        <div>
+          <div class="qa-text">Scan Dokumen</div>
+          <div class="qa-sub">Foto & simpan</div>
+        </div>
+      </div>
+      <div class="qa-btn">
+        <div class="qa-icon" style="background:rgba(74,95,208,0.15);">📅</div>
+        <div>
+          <div class="qa-text">Jadwal Kuliah</div>
+          <div class="qa-sub">Minggu ini</div>
+        </div>
+      </div>
+      <div class="qa-btn">
+        <div class="qa-icon" style="background:rgba(184,69,128,0.15);">🔗</div>
+        <div>
+          <div class="qa-text">Simpan Link</div>
+          <div class="qa-sub">Referensi & sumber</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <div class="nav-icon">🏠</div>
+        <span>Today</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">📅</div>
+        <span>Plan</span>
+      </div>
+      <div class="nav-item active">
+        <div class="nav-icon">⬡</div>
+        <span>Spaces</span>
+        <div class="nav-indicator"></div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">+</div>
+        <span>Capture</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">🗄</div>
+        <span>Vault</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="shell_plan">Plan</string>
+    <string name="capture">Capture</string>
+    <string name="capture_prompt">Save a task or send a file to your Vault.</string>
+    <string name="capture_add_task">Add a task</string>
+    <string name="capture_upload_file">Upload a file to Vault</string>
+    <string name="capture_saved">Task saved.</string>
+</resources>

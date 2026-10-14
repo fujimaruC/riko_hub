@@ -1,11 +1,15 @@
 package id.riko.hub.ui.tasks
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,17 +96,28 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
                  onExpand: () -> Unit, onAdd: () -> Unit, onEdit: (Task) -> Unit,
                  onComplete: (Task, Boolean) -> Unit, onDelete: (Task) -> Unit, onRetry: () -> Unit) {
     var showSkeleton by remember { mutableStateOf(false) }
+    val reducedMotion = rememberReducedMotion()
+    val listState = rememberLazyListState()
     LaunchedEffect(state.loading) {
         showSkeleton = false
         if (state.loading) { delay(150); showSkeleton = true }
     }
     Column(Modifier.fillMaxSize().testTag("screen-Tasks")) {
-        ReturnHomeHandle(Destination.Tasks, onNavigate)
-        LazyColumn(Modifier.weight(1f).testTag("task-list"), contentPadding = PaddingValues(horizontal = Spacing.space5, vertical = Spacing.space3),
+        LazyColumn(state = listState, modifier = Modifier.weight(1f).testTag("task-list"), contentPadding = PaddingValues(horizontal = Spacing.space5, vertical = Spacing.space3),
             verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
             item {
-                Text(stringResource(R.string.tasks), style = MaterialTheme.typography.displayMedium, modifier = Modifier.semantics { heading() })
-                Text(pluralStringResource(R.plurals.tasks_count, state.todayCount, state.todayCount, state.tasks.size), style = MaterialTheme.typography.bodyMedium)
+                OrganicHeader(animated = listState.firstVisibleItemIndex == 0,
+                    modifier = Modifier.animateContentSize(if (reducedMotion) snap() else tween(Motion.medium))
+                        .testTag("task-workspace-header")) {
+                    Text(stringResource(R.string.tasks), style = MaterialTheme.typography.displayMedium,
+                        modifier = Modifier.semantics { heading() })
+                    Text(pluralStringResource(R.plurals.tasks_count, state.todayCount, state.todayCount, state.tasks.size),
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            item {
+                TextButton(onClick = { onNavigate(Destination.Courses) }, modifier = Modifier.fillMaxWidth()
+                    .heightIn(min = Spacing.touch)) { Text(stringResource(R.string.course_spaces)) }
             }
             item { CategoryFilters(state.filter, onFilter) }
             item {

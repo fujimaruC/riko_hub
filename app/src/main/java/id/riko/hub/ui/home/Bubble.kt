@@ -99,7 +99,7 @@ fun TaskBubble(item: BubblePlacement, size: Dp, focus: Boolean, pinned: Boolean,
                 Canvas(Modifier.size(Spacing.space6)) { drawCircle(ink) }
             } else Text(if (info.tier == BubbleTier.S && !focus) task.title.substringBefore(' ').let { if (it.length > 8) stringResource(R.string.home_short_title, it.take(8)) else it } else task.title,
                 color = ink, textAlign = TextAlign.Center,
-                maxLines = if (focus && size >= HomeTokens.focusTitleLargeMinimum && density.fontScale < 1.3f) 3 else if (size < Spacing.returnHandle) 1 else 2,
+                maxLines = if (focus && size >= HomeTokens.focusTitleLargeMinimum && density.fontScale < 1.3f) 3 else if (size < Spacing.bubbleMinWidth) 1 else 2,
                 overflow = TextOverflow.Ellipsis,
                 style = when {
                     focus && size >= HomeTokens.focusTitleLargeMinimum && density.fontScale < 1.3f -> MaterialTheme.typography.titleLarge

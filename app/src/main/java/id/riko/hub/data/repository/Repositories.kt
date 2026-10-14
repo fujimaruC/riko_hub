@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.room.withTransaction
 import id.riko.hub.core.time.Clock
 import id.riko.hub.data.local.RikoDatabase
+import id.riko.hub.data.local.entity.AcademicDeadlineChangeEntity
 import id.riko.hub.data.mapper.*
 import id.riko.hub.domain.logic.prepareEvent
 import id.riko.hub.domain.logic.prepareTask
@@ -36,6 +37,24 @@ class TaskRepository(private val database: RikoDatabase, private val clock: Cloc
             row.id
         }
         val saved = row.toDomain().copy(id = id)
+        if (previous != null && (previous.deadlineAt != saved.deadlineAt || previous.hasDeadlineTime != saved.hasDeadlineTime)) {
+            database.assignments().findByTask(id)?.let { assignment ->
+                val changedAt = maxOf(clock.now(), saved.updatedAt, assignment.createdAt, assignment.updatedAt)
+                require(changedAt in 0..253402300799999L) { "Invalid assignment timestamp" }
+                require((previous.deadlineAt == null || previous.deadlineAt in 0..253402300799999L) &&
+                    (saved.deadlineAt == null || saved.deadlineAt in 0..253402300799999L) &&
+                    (!previous.hasDeadlineTime || previous.deadlineAt != null) &&
+                    (!saved.hasDeadlineTime || saved.deadlineAt != null)) {
+                    "Invalid assignment date"
+                }
+                database.assignments().insertDeadlineChange(AcademicDeadlineChangeEntity(
+                    syncId = UUID.randomUUID().toString(), assignmentId = assignment.id,
+                    previousDeadlineAt = previous.deadlineAt, previousHasDeadlineTime = previous.hasDeadlineTime,
+                    newDeadlineAt = saved.deadlineAt, newHasDeadlineTime = saved.hasDeadlineTime, changedAt = changedAt,
+                ))
+                check(database.assignments().update(assignment.copy(updatedAt = changedAt)) == 1)
+            }
+        }
         if (previous?.status == TaskStatus.DONE && saved.status != TaskStatus.DONE) {
             dao.findGeneratedSuccessor(id)?.let { successor ->
                 dao.deleteGeneratedForUndo(successor.id, maxOf(clock.now(), successor.createdAt, successor.updatedAt))

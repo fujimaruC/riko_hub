@@ -18,23 +18,22 @@ class SettingsDataStore(private val store: DataStore<Preferences>) {
     constructor(context: Context) : this(context.applicationContext.settingsDataStore)
     private val theme = stringPreferencesKey("theme_mode")
     private val name = stringPreferencesKey("display_name")
-    private val navigation = stringPreferencesKey("nav_style")
     private val hints = intPreferencesKey("hints_shown_count")
     private val pinId = longPreferencesKey("pinned_focus_task_id")
     private val pinDate = stringPreferencesKey("pinned_focus_date")
 
+    // The navigation field stays in backup format for older snapshots; runtime navigation uses the dock.
     data class BackupValues(val theme: String, val displayName: String, val navigation: String, val hints: Int, val pinnedFocusSyncId: String?, val pinnedFocusDate: String?)
 
     suspend fun backupValues(taskSyncIds: Map<Long, String>): BackupValues {
         val values = store.data.first()
-        return BackupValues(values[theme] ?: "SYSTEM", values[name] ?: "Riko", values[navigation] ?: "SPATIAL_COMPASS", values[hints] ?: 0, values[pinId]?.let(taskSyncIds::get), values[pinDate])
+        return BackupValues(values[theme] ?: "DARK", values[name] ?: "Riko", "RENAISSANCE_DOCK", values[hints] ?: 0, values[pinId]?.let(taskSyncIds::get), values[pinDate])
     }
 
     suspend fun restoreBackup(values: BackupValues, pinIdValue: Long?) {
         store.edit {
             it[theme] = values.theme
             it[name] = values.displayName
-            it[navigation] = values.navigation
             it[hints] = values.hints
             if (pinIdValue != null && values.pinnedFocusDate != null) {
                 it[pinId] = pinIdValue
@@ -51,9 +50,8 @@ class SettingsDataStore(private val store: DataStore<Preferences>) {
         val date = values[pinDate]?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         val id = values[pinId]?.takeIf { it > 0 && date != null }
         AppSettings(
-            themeMode = ThemeMode.entries.firstOrNull { it.name == values[theme] } ?: ThemeMode.SYSTEM,
+            themeMode = ThemeMode.entries.firstOrNull { it.name == values[theme] } ?: ThemeMode.DARK,
             displayName = values[name]?.takeIf { it.isNotBlank() } ?: "Riko",
-            navStyle = NavigationStyle.entries.firstOrNull { it.name == values[navigation] } ?: NavigationStyle.SPATIAL_COMPASS,
             hintsShownCount = (values[hints] ?: 0).coerceAtLeast(0),
             pinnedFocusTaskId = id, pinnedFocusDate = if (id == null) null else date,
         )
@@ -64,7 +62,6 @@ class SettingsDataStore(private val store: DataStore<Preferences>) {
         require(value.isNotBlank()) { "Display name must not be blank" }
         store.edit { it[name] = value.trim() }
     }
-    suspend fun setNavigationStyle(value: NavigationStyle) { store.edit { it[navigation] = value.name } }
     suspend fun setHintsShownCount(value: Int) {
         require(value >= 0) { "Hint count must not be negative" }
         store.edit { it[hints] = value }

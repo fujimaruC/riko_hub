@@ -194,7 +194,7 @@ fun BackupSettingsSection(service: LocalBackupService) {
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         }
         state.result?.let { result ->
-            Text(stringResource(R.string.backup_imported, result.insertedTasks, result.insertedEvents), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            Text(stringResource(R.string.backup_imported, result.insertedTasks, result.insertedEvents, result.insertedCourses, result.insertedWeeklySlots, result.insertedAssignments, result.insertedDeadlineChanges, result.insertedNotes), modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             if (result.preferencesFailed) Text(stringResource(R.string.backup_preferences_failed), color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             if (result.remindersFailed) Text(stringResource(R.string.backup_reminders_failed), color = MaterialTheme.colorScheme.error, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
         }
@@ -216,6 +216,11 @@ fun BackupSettingsSection(service: LocalBackupService) {
                 Column(Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState())) {
                     Text(stringResource(R.string.backup_preview_counts, preview.totalTasks, preview.totalEvents))
                     Text(stringResource(R.string.backup_preview_new, preview.newTasks, preview.newEvents))
+                    Text(stringResource(R.string.backup_preview_courses, preview.totalCourses, preview.totalWeeklySlots))
+                    Text(stringResource(R.string.backup_preview_new_courses, preview.newCourses, preview.newWeeklySlots))
+                    Text(stringResource(R.string.backup_preview_assignments, preview.totalAssignments, preview.totalDeadlineChanges))
+                    Text(stringResource(R.string.backup_preview_new_assignments, preview.newAssignments, preview.newDeadlineChanges))
+                    Text(stringResource(R.string.backup_preview_notes, preview.totalNotes, preview.newNotes))
                     Text(stringResource(R.string.backup_preview_duplicates, preview.duplicates))
                     Text(stringResource(R.string.backup_preview_conflicts, preview.conflicts))
                     Text(stringResource(R.string.backup_existing_wins))

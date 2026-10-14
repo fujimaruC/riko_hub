@@ -5,6 +5,7 @@
     <string name="timeline_current_week">Minggu ini</string>
     <string name="timeline_week_range">%1$s–%2$s</string>
     <string name="timeline_today_marker">Hari ini</string>
+    <string name="timeline_now">Sekarang</string>
     <string name="timeline_deadline_stop">Deadline tugas</string>
     <string name="timeline_completed_stop">Tugas selesai</string>
     <string name="timeline_stop_metadata">%1$s · %2$s</string>
