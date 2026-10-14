@@ -1,7 +1,11 @@
 package id.riko.hub.navigation
 
-enum class Destination { Home, Tasks, Timeline, Vault, Sync, Settings }
+enum class Destination {
+    Home, Tasks, Timeline, Capture, Vault, Sync, Settings, Courses,
+    Spaces, AcademicsSpace, ProjectsSpace, PersonalSpace, DevicesSpace,
+}
 
-val compassDestinations = listOf(
-    Destination.Timeline, Destination.Sync, Destination.Home, Destination.Vault, Destination.Tasks,
-)
+val Destination.isSpaces: Boolean
+    get() = this == Destination.Spaces || this == Destination.AcademicsSpace ||
+        this == Destination.ProjectsSpace || this == Destination.PersonalSpace ||
+        this == Destination.DevicesSpace

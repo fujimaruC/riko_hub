@@ -13,7 +13,7 @@ import id.riko.hub.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 import java.io.IOException
 
-internal enum class SettingsPreference { THEME, DISPLAY_NAME, NAVIGATION_STYLE }
+internal enum class SettingsPreference { THEME, DISPLAY_NAME }
 
 internal class SettingsWriteTracker {
     private val generations = mutableMapOf<SettingsPreference, Int>()
@@ -66,19 +66,21 @@ fun RikoHub(openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}, onDar
         runAttempt()
     }
     val mode = settings.themeMode
+    var spacesVisible by remember { mutableStateOf(false) }
     val dark = when (mode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    SideEffect { onDarkThemeChanged(dark) }
+    // Spaces has a scoped dark canvas; keep system-bar icons legible without changing the user's theme.
+    SideEffect { onDarkThemeChanged(dark || spacesVisible) }
     RikoHubTheme(dark) {
         RikoNavHost(settings, onTheme = { selected -> persist(SettingsPreference.THEME) { settingsStore.setTheme(selected) } },
             onDisplayName = { value -> persist(SettingsPreference.DISPLAY_NAME) { settingsStore.setDisplayName(value) } },
-            onNavigationStyle = { value -> persist(SettingsPreference.NAVIGATION_STYLE) { settingsStore.setNavigationStyle(value) } },
             settingsWriteFailure = writes.earliestFailure(),
             onSettingsFailureDismissed = writes::dismiss,
             backupContent = { id.riko.hub.ui.settings.BackupSettingsSection((context as RikoHubApp).container.backups) },
-            openTaskId = openTaskId, onTaskOpenConsumed = onTaskOpenConsumed)
+            openTaskId = openTaskId, onTaskOpenConsumed = onTaskOpenConsumed,
+            onSpacesVisibilityChanged = { spacesVisible = it })
     }
 }

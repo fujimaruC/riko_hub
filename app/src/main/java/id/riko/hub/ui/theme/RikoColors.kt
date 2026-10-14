@@ -24,11 +24,11 @@ internal val LightRikoColors = RikoColors(
     peach = accent(0xFFFFB48A, 0xFFFFE7D8),
 )
 internal val DarkRikoColors = RikoColors(
-    academic = accent(0xFFB9A8F2, 0xFF3A3360, 0xFF1B1822),
-    organization = accent(0xFF82C6F4, 0xFF1F3A52, 0xFF14202B),
-    personal = accent(0xFF82DDBC, 0xFF1D4136, 0xFF12251F),
-    projects = accent(0xFFF7CD68, 0xFF4A3E1B, 0xFF2A2208),
+    academic = accent(0xFF4A5FD0, 0xFF22294C, 0xFFE8E6E1),
+    organization = accent(0xFF2FA37A, 0xFF17382C, 0xFF101213),
+    personal = accent(0xFFB8458F, 0xFF3A2030, 0xFFE8E6E1),
+    projects = accent(0xFFD4A030, 0xFF3B3019, 0xFF0F0E0D),
     urgent = accent(0xFFFF907F, 0xFF5A2C28, 0xFF2B1210),
-    peach = accent(0xFFFFC19B, 0xFF503528, 0xFF2B1A10),
+    peach = accent(0xFFB5AFA8, 0xFF303536, 0xFF101213),
 )
 val LocalRikoColors = staticCompositionLocalOf { LightRikoColors }

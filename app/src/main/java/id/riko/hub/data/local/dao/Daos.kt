@@ -23,6 +23,8 @@ interface TaskDao {
     // Internal transaction reads include deleted rows for restore; never expose them to UI.
     @Query("SELECT * FROM tasks WHERE id = :id")
     suspend fun adminFindForWrite(id: Long): TaskEntity?
+    @Query("SELECT syncId FROM tasks WHERE syncId = :syncId")
+    suspend fun findSyncId(syncId: String): String?
     @Query("SELECT * FROM tasks ORDER BY id")
     suspend fun adminFindAllForReminders(): List<TaskEntity>
     @Query("SELECT * FROM tasks ORDER BY id")
@@ -35,9 +37,10 @@ interface TaskDao {
     @Update suspend fun update(task: TaskEntity): Int
     @Query("UPDATE tasks SET deletedAt = :deletedAt, updatedAt = :updatedAt, generationPristine = 0 WHERE id = :id")
     suspend fun setDeletedAt(id: Long, deletedAt: Long?, updatedAt: Long)
-    @Query("UPDATE tasks SET deletedAt = :updatedAt, updatedAt = :updatedAt WHERE id = :id AND deletedAt IS NULL AND generationPristine = 1")
+    // An academic assignment marks generated work as manually worked; recurrence undo must preserve it.
+    @Query("UPDATE tasks SET deletedAt = :updatedAt, updatedAt = :updatedAt WHERE id = :id AND deletedAt IS NULL AND generationPristine = 1 AND NOT EXISTS (SELECT 1 FROM academic_assignments WHERE taskId = :id)")
     suspend fun deleteGeneratedForUndo(id: Long, updatedAt: Long): Int
-    @Query("UPDATE tasks SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :id AND deletedAt IS NOT NULL AND generationPristine = 1")
+    @Query("UPDATE tasks SET deletedAt = NULL, updatedAt = :updatedAt WHERE id = :id AND deletedAt IS NOT NULL AND generationPristine = 1 AND NOT EXISTS (SELECT 1 FROM academic_assignments WHERE taskId = :id)")
     suspend fun restoreGeneratedForRedo(id: Long, updatedAt: Long): Int
 }
 

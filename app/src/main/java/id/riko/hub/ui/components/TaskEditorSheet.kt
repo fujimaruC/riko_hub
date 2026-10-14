@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import id.riko.hub.R
@@ -22,7 +23,9 @@ import id.riko.hub.RikoHubApp
 import id.riko.hub.domain.model.*
 import id.riko.hub.ui.tasks.ChecklistFields
 import id.riko.hub.ui.tasks.TaskExtensionFields
+import id.riko.hub.ui.academic.AssignmentEditorDialog
 import id.riko.hub.ui.tasks.label
+import id.riko.hub.ui.tasks.deadlineLabel
 import id.riko.hub.ui.theme.*
 import java.time.ZoneId
 
@@ -30,10 +33,12 @@ import java.time.ZoneId
 @Composable
 fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar: SnackbarHostState,
                     onChange: (Task) -> Unit, onSave: () -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit, quickAdd: Boolean = false,
-                    reminderPermission: ReminderPermissionState? = null) {
+                    reminderPermission: ReminderPermissionState? = null, onPin: (() -> Unit)? = null,
+                    pinned: Boolean = false) {
     val app = LocalContext.current.applicationContext as RikoHubApp
     val permission = reminderPermission ?: rememberReminderPermissionState { app.container.reminders.requestReconciliation() }
     var details by remember(task.id) { mutableStateOf(!quickAdd) }
+    var showAcademic by remember(task.id) { mutableStateOf(false) }
     var estimateRaw by rememberSaveable(task.id) { mutableStateOf(task.estimatedMinutes?.toString().orEmpty()) }
     var reminderRaw by rememberSaveable(task.id) { mutableStateOf(task.reminderMinutesBefore?.toString().orEmpty()) }
     val changeTask: (Task) -> Unit = { changed ->
@@ -47,11 +52,33 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.space5).padding(bottom = Spacing.space6),
                 verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-                Text(stringResource(if (task.id == 0L) R.string.new_task else R.string.edit_task), style = MaterialTheme.typography.titleLarge)
+                OrganicHeader(animated = true, modifier = Modifier.testTag("task-editor-organic-header")) {
+                    Text(stringResource(if (task.id == 0L) R.string.new_task else R.string.edit_task),
+                        style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+                    if (task.id != 0L) {
+                        Text(task.title, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimary)
+                        Text(stringResource(task.status.label()), style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary)
+                        Text(deadlineLabel(task, now, zone), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimary)
+                    } else Text(stringResource(task.category.label()), style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimary)
+                }
+                if (onPin != null) {
+                    TextButton(onClick = onPin, enabled = !busy,
+                        modifier = Modifier.heightIn(min = Spacing.touch).testTag("task-workspace-pin")) {
+                        Text(stringResource(if (pinned) R.string.home_unpin else R.string.home_pin))
+                    }
+                }
                 TaskTitle(task, busy, validTaskInput(task, estimateRaw, reminderRaw), onChange, onSave)
                 TaskChoices(stringResource(R.string.category), Category.entries, task.category, { it.label() }, !busy) {
                     onChange(task.copy(category = it))
                 }
+                TextButton(onClick = { showAcademic = true }, enabled = !busy && task.id != 0L,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("task-academic-workflow")) {
+                    Text(stringResource(R.string.assignment_open))
+                }
+                if (task.id == 0L) Text(stringResource(R.string.assignment_save_task_first), style = MaterialTheme.typography.bodySmall)
                 TaskDeadlineFields(task, now, zone, !busy, changeTask)
                 if (quickAdd) TextButton(onClick = { details = !details }) { Text(stringResource(R.string.home_details)) }
                 if (details) {
@@ -86,6 +113,13 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
                     modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("task-save")) {
                     Text(stringResource(if (busy) R.string.saving else R.string.save))
                 }
+                if (task.id != 0L) OutlinedButton(
+                    onClick = { changeTask(task.copy(status = if (task.status == TaskStatus.DONE) TaskStatus.NOT_STARTED else TaskStatus.DONE)); onSave() },
+                    enabled = !busy && validTaskInput(task, estimateRaw, reminderRaw),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("task-completion-action"),
+                ) {
+                    Text(stringResource(if (task.status == TaskStatus.DONE) R.string.renaissance_task_reopen else R.string.renaissance_task_complete))
+                }
                 if (task.id != 0L) TextButton(onClick = onDelete, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.delete_task))
                 }
@@ -93,6 +127,7 @@ fun TaskEditorSheet(task: Task, now: Long, zone: ZoneId, busy: Boolean, snackbar
             }
         }
     }
+    if (showAcademic && task.id != 0L) AssignmentEditorDialog(task) { showAcademic = false }
 }
 
 private fun validTaskInput(task: Task, estimate: String, reminder: String) =

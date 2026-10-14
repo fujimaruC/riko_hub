@@ -1,0 +1,20 @@
+<resources>
+    <string name="spaces_title">Spaces</string>
+    <string name="spaces_subtitle">Ruang untuk hal yang sedang kamu jalani.</string>
+    <string name="spaces_back">Kembali</string>
+    <string name="spaces_academics">Akademik</string>
+    <string name="spaces_academics_hint">Kelas dan materi</string>
+    <string name="spaces_academics_accessibility">Akademik, buka ruang kelas dan materi</string>
+    <string name="spaces_projects">Projects</string>
+    <string name="spaces_projects_hint">Hal yang sedang kamu bangun</string>
+    <string name="spaces_projects_accessibility">Projects, buka ruang pekerjaan dan tugas</string>
+    <string name="spaces_personal">Personal</string>
+    <string name="spaces_personal_hint">Ritme dan keseharianmu</string>
+    <string name="spaces_personal_accessibility">Personal, buka ruang pribadimu</string>
+    <string name="spaces_devices">Perangkat</string>
+    <string name="spaces_devices_hint">Jembatan antar perangkat</string>
+    <string name="spaces_devices_accessibility">Perangkat, buka ruang koneksi perangkat</string>
+    <string name="spaces_open_courses">Buka Kelas</string>
+    <string name="spaces_open_tasks">Buka Tasks</string>
+    <string name="spaces_open_sync">Buka Sinkronisasi</string>
+</resources>

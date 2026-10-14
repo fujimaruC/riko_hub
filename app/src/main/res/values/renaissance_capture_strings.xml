@@ -1,0 +1,19 @@
+<resources>
+    <string name="capture_studio_title">Tangkap sebelum terlupa.</string>
+    <string name="capture_studio_subtitle">Ruang kecil untuk tugas, ide, dan referensi berikutnya.</string>
+    <string name="capture_studio_draft">Teks cepat</string>
+    <string name="capture_studio_input">Apa yang ingin kamu simpan?</string>
+    <string name="capture_studio_placeholder">Tugas, catatan singkat, atau tautan sebagai teks…</string>
+    <string name="capture_studio_destinations">Tugas dibuka di ruang kerja. Catatan dan tautan teks disimpan sebagai ide lokal di Projects.</string>
+    <string name="capture_studio_task">Jadikan tugas</string>
+    <string name="capture_studio_note">Simpan ide</string>
+    <string name="capture_studio_note_saved">Ide tersimpan di Projects.</string>
+    <string name="capture_studio_task_limit">Teks ini terlalu panjang untuk catatan tugas. Simpan sebagai ide agar seluruh teks tetap tersimpan.</string>
+    <string name="capture_studio_note_limit">Ide dapat memuat hingga 10.000 karakter. Persingkat teks sebelum menyimpan; draf ini belum disimpan.</string>
+    <string name="capture_studio_file">Simpan file ke Vault</string>
+    <string name="capture_studio_file_detail">Pilih file dan tujuan Google Drive di perpustakaan.</string>
+    <string name="capture_studio_recent">Tugas terbaru</string>
+    <string name="capture_studio_recent_scope">Tugas terakhir dibuat di perangkat ini, dari semua ruang.</string>
+    <string name="capture_studio_idea_board">Buka papan ide</string>
+    <string name="capture_studio_empty">Belum ada tugas. Mulai dengan satu hal yang ingin kamu ingat.</string>
+</resources>

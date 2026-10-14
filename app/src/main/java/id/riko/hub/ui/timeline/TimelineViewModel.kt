@@ -81,6 +81,10 @@ class TimelineViewModel(private val tasks: TaskRepository, private val events: E
         val date = selectedDate.value ?: Instant.ofEpochMilli(clock.now()).atZone(clock.zone()).toLocalDate()
         selectedDate.value = if (dayMode.value) date.plusDays(direction) else timelineWeek(date).plusWeeks(direction)
     }
+    fun selectDay(date: LocalDate) {
+        selectedDate.value = date
+        dayMode.value = true
+    }
     fun toggleDayMode() {
         if (!dayMode.value && selectedDate.value == null) {
             selectedDate.value = Instant.ofEpochMilli(clock.now()).atZone(clock.zone()).toLocalDate()

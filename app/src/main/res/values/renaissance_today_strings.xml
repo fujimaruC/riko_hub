@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="today_homebase">HOMEBASE / HARI INI</string>
+    <string name="today_greeting_note">Satu langkah kecil. Ruang untuk hal yang berarti.</string>
+    <string name="today_default_name">teman</string>
+    <string name="today_priority_heading">Setelah ini</string>
+    <string name="today_quick_personal">Ruang Personal</string>
+</resources>
