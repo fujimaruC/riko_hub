@@ -1,87 +1,61 @@
+<div align="center">
+
 # Riko Hub
 
-A private, offline campus and life control center for Riko. Specifications live in [docs](docs/README.md).
+**An offline-first command center for study, plans, and work across Android and Linux.**
 
-## Build
+<kbd>Android · Kotlin + Compose</kbd> <kbd>Linux Companion · Python</kbd> <kbd>Active development</kbd>
 
-Open this directory in Android Studio. Use its bundled JDK (25 on this laptop), SDK platform 37 and build tools 36.0.0. Set `sdk.dir` in ignored `local.properties` or set `ANDROID_HOME`.
+[Start here](docs/handbook/00_START_HERE.md) · [Features](docs/handbook/01_FEATURES.md) · [Roadmap](docs/handbook/02_ROADMAP.md) · [Contribute](docs/handbook/06_CONTRIBUTING.md)
 
-```sh
-export JAVA_HOME=/opt/android-studio/jbr
-./gradlew assembleDebug testDebugUnitTest lintDebug
-./gradlew connectedDebugAndroidTest # requires an emulator or device
+</div>
+
+Riko Hub helps a person capture a task, see what matters today, keep course materials close, and resume selected work on a trusted laptop. The Android planner keeps its core records locally. Google Drive is optional for selected materials; the Linux Companion is an optional, explicitly paired extension. Neither is required to plan offline.
+
+The project aims to reduce the steps between **capture → organize → act → resume**. It is a personal productivity tool with academic workflows, not a general-purpose workspace builder or a Notion clone. The current interface is a working foundation; a total visual redesign is being explored and has not been approved or implemented.
+
+## What you can explore
+
+| Area | Today’s source | Evidence boundary |
+|---|---|---|
+| Local planning | Tasks, Home urgency/focus, Timeline, reminders, widget, backup | v0.2 was owner accepted; later changes need fresh checks. |
+| Materials Vault | Google Drive selection, browsing and file actions | v0.3 source exists; live Drive QA is pending. |
+| Laptop Companion | LAN discovery, pairing, recent presence and terminal dashboard | v0.4 source exists; cross-device acceptance is pending. |
+| Universal Handoff | Selected LAN file/text transfer and workspace metadata | Bounded v0.5 source exists; build and device behavior remain unverified. |
+| Academic work | Course and assignment source in the working tree | v0.6 work is unverified and unreleased. |
+
+See the [feature catalog](docs/handbook/01_FEATURES.md) for user problems, modules and exact status labels. Source presence is never treated as proof of a successful build or a released feature.
+
+## Where it is going
+
+The proposed [roadmap](docs/handbook/02_ROADMAP.md) extends the Companion beyond the LAN, deepens handoff, and connects courses, documents, evidence and local automation. Later milestones target a unified daily workspace and a reliability-focused v1.0. These are plans, with separate owner decisions and acceptance gates.
+
+## How the pieces fit
+
+```mermaid
+flowchart LR
+    UI[Android Compose UI] --> R[Repositories and domain logic]
+    R --> DB[(Local Room database)]
+    UI --> V[Optional Materials Vault]
+    V --> D[Google Drive: selected files]
+    UI --> C[Optional Sync and Handoff]
+    C <-->|Pinned HTTPS on private LAN| L[Linux Python Companion]
 ```
 
-The default system Java 26 is not used for validation. No machine-wide Java or SDK upgrades are required.
+The Android app is one Gradle `:app` module using Kotlin, Jetpack Compose, Room, DataStore and WorkManager. The Linux Companion uses Python 3.11+, `cryptography` and `zeroconf`, with a foreground CLI and terminal dashboard. [Architecture](docs/handbook/03_ARCHITECTURE.md) explains the trust boundary and what remains proposed.
 
-Debug package: `id.riko.hub.debug`. Release package: `id.riko.hub`. Minimum Android: 8.0 (API 26).
+## Screenshots
 
-Phase 6 implementation is in place; final packaging verification remains pending. Home and Timeline runtime acceptance also remain pending. The user authorized Phase 5 without direct Phase 4 testing. Tasks supports local CRUD, category filters, deadline buckets, completion and undo deletion. Home adds ranked urgency bubbles, daily focus pinning, progress, next obligation, quick add and completion undo. Timeline merges events, deadlines and completed work into a Monday–Sunday narrative path, with event editing and deletion undo. Release builds use R8/resource shrinking and sign only when local keystore properties are configured.
+Verified current screenshots are not included yet. This space is reserved for owner-reviewed captures of the Android UI and Companion dashboard; the planned redesign should not be represented by mockups as shipped UI.
 
-## Foundation navigation
+## Get started
 
-- Home is the center. Swipe its main panel up for Tasks, down for Timeline, left for Vault, and right for Sync.
-- Horizontal drags beginning within 24dp of either edge are ignored by app navigation.
-- Tap the icon-only compass ball for its labeled menu. Hold it to bloom soft bubbles, drag 28dp toward a destination, and release to move there. No labels appear during the hold. Home hints also work as buttons.
-- Back returns to Home. Neighbor screens also have a full-width, 96dp return handle with a direction hint. Tap it or swipe in the indicated direction; scrolling the content does not navigate.
-- Settings saves system/light/dark theme, display name, and spatial-plus-compass or compass-only navigation preferences locally with DataStore.
-- System animator scale 0 switches navigation to fades. Fonts and icons are bundled; runtime needs no internet.
+- [New team member orientation](docs/handbook/00_START_HERE.md)
+- [Android and Linux setup](docs/handbook/05_GETTING_STARTED.md)
+- [Project map](docs/handbook/04_PROJECT_STRUCTURE.md)
+- [Design direction](docs/handbook/07_DESIGN_DIRECTION.md) and [glossary](docs/handbook/08_GLOSSARY.md)
+- [Current status](docs/STATUS.md) and [Renaissance planning suite](docs/renaissance/00_README.md)
 
-## Verification
+Contributions are welcome: start with the [contributing guide](docs/handbook/06_CONTRIBUTING.md), keep changes focused, and bring architectural or design proposals to the Project Owner for review.
 
-The foundation has eight JVM checks for spatial mapping and text contrast, plus seven Compose instrumentation tests for compass menu and hold navigation, four-way swipes, edge exclusion, return-handle swipes/taps, theme restoration, and text layout at 100%, 130% and 200% font scale. Preview gallery code is in the debug source set.
-
-Build APKs first, then run emulator checks separately on memory-constrained machines. The verification emulator is an isolated API 35 AOSP profile under `~/.cache/rikohub/avd`; it does not contain personal app data. See `docs/STATUS.md` for actual results and remaining manual checks.
-
-Phase 2 verification on 2026-10-06: debug app/test APKs build, all 11 JVM tests pass, and lint has 0 errors / 16 existing warnings. Two focused database tests pass on the phone. A separate debug seed/write, force-stop, and read check proves task/event data and theme preferences survive process death; the original theme is restored afterward. See `docs/STATUS.md` for exact commands and results.
-
-Earlier Phase 1 checks passed seven phone UI tests and six reduced-motion navigation tests, with 36 screenshots reviewed across themes/font scales. The full TalkBack walkthrough remains deferred to release review at the user's request.
-
-## Persistence foundation
-
-`AppContainer` lazily owns `riko_hub.db`, task/event repositories, the injected clock and `SettingsDataStore`. Public queries return domain models and exclude deleted rows. Writes validate titles/notes and use Room transactions. The generated v1 schema is in `app/schemas/id.riko.hub.data.local.RikoDatabase/1.json`; never edit it manually or enable destructive release migrations.
-
-`DebugSeeder` exists only in debug source and runs only when explicitly requested. It does not seed normal launches. Restart checks use a separate private fixture database so they do not populate the real app database. Run the database checks with `-e class id.riko.hub.data.DatabaseTest`; the two restart stages require `SeedPersistenceTest#write_debug_seed -e persistenceStage write`, then force-stop, then `SeedPersistenceTest#read_after_process_death -e persistenceStage read` on the test runner. The staged checks skip during ordinary all-tests runs.
-
-Validation added command-line tools and an API 35 AOSP system image to the user-owned SDK, plus an isolated AVD/cache. Existing Java defaults and Android platforms were not upgraded. The test emulator has been stopped.
-
-## Task management
-
-Open Tugas and tap Tambah. The editor supports category, a date with optional time, priority, status and notes. Save requires a trimmed title of 1–120 characters and notes no longer than 2000 characters. Date-only deadlines use local 23:59. Swipe right to complete, swipe left to delete, or use the checkbox and editor buttons. Deletion offers a five-second undo, extended when Android accessibility settings recommend it.
-
-The done bucket starts collapsed. “Minggu ini” follows the data specification: the next 2–7 local dates, including across Sunday. Lists refresh their time buckets every 30 seconds while observed. The editor keeps its draft on write failure and activity recreation. Home quick add is integrated in Phase 4.
-
-Focused Phase 3 phone checks use a separate `phase3-ui-check.db`, preserving the real task database. Run the test runner with `-e class id.riko.hub.ui.tasks.TaskCrudTest`; see `docs/STATUS.md` for results.
-
-## Home visualization
-
-Tap a bubble for details, start/edit/complete actions or a daily focus pin. Long press completes directly; Urungkan restores the previous status. Tap the focus bubble’s outer ring to pin/unpin it. Extra tasks open Tugas through the overflow bubble. Large text uses three large task bubbles plus overflow in a scrolling field.
-
-Home uses Room flows and the injected clock, refreshing at least once per minute and at local midnight while the screen is started. Drift runs only while resumed and stops with system reduced motion. Home engine tests cover urgency, ranking, pins, modes, overflow, layout bounds/overlap, drift clearance, progress and rollover.
-
-`id.riko.hub.ui.home.HomeTest` contains the focused Home UI/ViewModel checks. No physical-device result is claimed for Phase 4: the USB cable is unavailable. The local emulator startup attempt stayed offline; instrumentation and actual rendered review are pending a healthy runtime. See `docs/STATUS.md` for the current build results and exact deferred gates.
-
-## Timeline
-
-Use the week arrows or Minggu ini to browse. Timeline opens at today, merges task deadlines/completions with events, and splits spanning events across their local dates. Tap a stop to edit its task or event. Tambah acara supports kind, category, start, optional end, location and notes; deletion offers undo. Dense days and large text use a straight path.
-
-`TimelineBuilderTest` covers ordering, Monday boundaries, deleted records, point/spanning events and DST. `id.riko.hub.ui.timeline.TimelineTest` contains event CRUD/undo, task editor, week navigation, retry-target and 200% validation checks; both focused scenarios passed on the OPPO CPH2015 on 2026-10-07. Full visual/TalkBack review and lint remain pending. No screenshots were generated in this pass. See `docs/STATUS.md` for observed results.
-
-## Release build and signing
-
-Release builds enable R8 optimization and resource shrinking. Without a local `keystore.properties`, Gradle prints that the release will be unsigned and produces an unsigned APK. To sign releases, create and back up a private keystore yourself; never commit it:
-
-```sh
-keytool -genkeypair -v -keystore riko-hub-release.jks -alias riko-hub -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Create `keystore.properties` in the repository root (already git-ignored):
-
-```properties
-storeFile=riko-hub-release.jks
-storePassword=YOUR_STORE_PASSWORD
-keyAlias=riko-hub
-keyPassword=YOUR_KEY_PASSWORD
-```
-
-Keep both files private and backed up securely. Losing the keystore prevents installing updates over an existing signed install. Build with `./gradlew assembleRelease`; the APK is under `app/build/outputs/apk/release/`. When signing is configured it is signed as `app-release.apk`. Without signing configuration, Gradle produces `app-release-unsigned.apk`; it cannot be installed until signed with a private key. Install updates over an existing app only when signed with the same key and using a higher `versionCode`.
+> **Maturity:** Riko Hub is in active development and has no public stable release documented here. Historical checks and owner reports are recorded in [STATUS](docs/STATUS.md); this README does not certify the current working tree, device behavior or future roadmap milestones.

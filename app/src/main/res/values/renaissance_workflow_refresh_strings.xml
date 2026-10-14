@@ -1,0 +1,5 @@
+<resources>
+    <string name="renaissance_task_complete">Tandai selesai</string>
+    <string name="renaissance_task_reopen">Buka kembali tugas</string>
+    <string name="renaissance_settings_preferences">Preferensi</string>
+</resources>

@@ -22,6 +22,10 @@ private fun type(size: Int, height: Int, weight: FontWeight, display: Boolean = 
 internal val RikoTypography = Typography(
     displayLarge = type(36, 40, FontWeight.SemiBold, true),
     displayMedium = type(28, 32, FontWeight.SemiBold, true),
+    displaySmall = type(24, 28, FontWeight.SemiBold, true),
+    headlineLarge = type(28, 34, FontWeight.SemiBold, true),
+    headlineMedium = type(24, 30, FontWeight.SemiBold, true),
+    headlineSmall = type(22, 28, FontWeight.Bold),
     titleLarge = type(22, 28, FontWeight.ExtraBold),
     titleMedium = type(17, 24, FontWeight.Bold),
     titleSmall = type(15, 20, FontWeight.Bold),
@@ -30,5 +34,5 @@ internal val RikoTypography = Typography(
     bodySmall = type(14, 20, FontWeight.Medium),
     labelLarge = type(14, 20, FontWeight.Bold),
     labelMedium = type(12, 16, FontWeight.SemiBold),
-    labelSmall = type(11, 14, FontWeight.SemiBold),
+    labelSmall = type(12, 16, FontWeight.SemiBold),
 )

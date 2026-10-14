@@ -22,7 +22,7 @@ import kotlin.math.sqrt
 fun BubbleField(snapshot: HomeSnapshot, reduced: Boolean, resumed: Boolean,
                 onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit, onOverflow: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxWidth().semantics { isTraversalGroup = true }) {
-        val largeText = LocalDensity.current.fontScale >= 1.3f || maxWidth < Spacing.field + Spacing.returnHandle
+        val largeText = LocalDensity.current.fontScale >= 1.3f || maxWidth < Spacing.field + Spacing.bubbleMinWidth
         val planned = if (largeText) BubbleLayoutPlanner.largeTextPlan(snapshot.ranked, snapshot.focus) else snapshot.bubbles
         val target = if (!largeText && planned.size == 1 && planned.single().urgency != null)
             listOf(planned.single().copy(x = .5, y = .5, diameter = HomeTokens.singleTargetDiameter)) else planned

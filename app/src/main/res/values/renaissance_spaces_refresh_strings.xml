@@ -1,0 +1,5 @@
+<resources>
+    <string name="renaissance_devices_android">Android</string>
+    <string name="renaissance_devices_queue_offline">Aktifkan Wi-Fi lokal dan pasangkan laptop untuk melihat penawaran handoff.</string>
+    <string name="renaissance_personal_routines_empty">Kebiasaan berulang akan muncul di sini. Buat tugas pribadi, lalu atur tenggat sebelum memilih pengulangan.</string>
+</resources>

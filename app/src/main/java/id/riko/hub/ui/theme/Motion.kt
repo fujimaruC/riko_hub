@@ -11,8 +11,9 @@ import androidx.compose.ui.platform.LocalContext
 object Motion {
     const val fast = 120
     const val short = 180
-    const val medium = 380
+    const val medium = 320
     const val long = 600
+    const val dock = 260
     val standard = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 }
 
