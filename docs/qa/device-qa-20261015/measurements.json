@@ -1,0 +1,161 @@
+{
+  "device": {
+    "serial": "[DEVICE_SERIAL_REDACTED]",
+    "model": "CPH2015",
+    "android": "9",
+    "api": 28,
+    "pixels": [
+      720,
+      1600
+    ],
+    "density_dpi": 320
+  },
+  "app": {
+    "package": "id.riko.hub.debug",
+    "version": "0.4.0",
+    "version_code": 400,
+    "last_update_device_time": "2026-10-15 13:02:41",
+    "head": "fac68fe",
+    "source_dirty_before_qa": true,
+    "apk_source_identity_verified": false
+  },
+  "settings": {
+    "original_theme": "DARK",
+    "original_font_scale": 0.9,
+    "tested_font_scale": 1.6,
+    "final_theme": "DARK",
+    "final_font_scale": 0.9,
+    "restoration_evidence": [
+      "70-font-restored-confirmed.png",
+      "74-settings-restored.png",
+      "device-info.txt",
+      "80-audit-end-home.png"
+    ]
+  },
+  "warm_navigation": {
+    "routes": [
+      "Settings",
+      "Home",
+      "Timeline",
+      "Capture",
+      "Vault",
+      "Spaces",
+      "Home"
+    ],
+    "start": "2026-10-15 15:37:46 WITA",
+    "end": "2026-10-15 15:38:05 WITA",
+    "frames": 30,
+    "janky": 30,
+    "p50_ms": 81,
+    "p90_ms": 250,
+    "p95_ms": 250,
+    "p99_ms": 300,
+    "slow_ui_thread": 26,
+    "artifact": "gfxinfo-warm.txt",
+    "caveat": "Small installed-debug sample on old OEM hardware; not release performance or code attribution."
+  },
+  "contrast": [
+    {
+      "foreground": "#E2D8C6",
+      "background": "#FBF6EC",
+      "ratio": 1.3109
+    },
+    {
+      "foreground": "#E2D8C6",
+      "background": "#F7F2FA",
+      "ratio": 1.28
+    },
+    {
+      "foreground": "#6F6877",
+      "background": "#FBF6EC",
+      "ratio": 4.9703
+    },
+    {
+      "foreground": "#A34412",
+      "background": "#FBF6EC",
+      "ratio": 5.746
+    }
+  ],
+  "screenshot_palette": {
+    "33-settings-light.png": [
+      {
+        "color": "#F3EBDD",
+        "pixels": 642558
+      },
+      {
+        "color": "#FBF6EC",
+        "pixels": 164922
+      },
+      {
+        "color": "#FFFDF8",
+        "pixels": 75044
+      },
+      {
+        "color": "#A34412",
+        "pixels": 24711
+      },
+      {
+        "color": "#6F6877",
+        "pixels": 14438
+      }
+    ],
+    "37-task-editor.png": [
+      {
+        "color": "#F7F2FA",
+        "pixels": 770855
+      },
+      {
+        "color": "#A34412",
+        "pixels": 16007
+      },
+      {
+        "color": "#DCEFFC",
+        "pixels": 12863
+      },
+      {
+        "color": "#AD552D",
+        "pixels": 9281
+      },
+      {
+        "color": "#A94E22",
+        "pixels": 6272
+      }
+    ],
+    "44-assignment.png": [
+      {
+        "color": "#FFFDF8",
+        "pixels": 734368
+      },
+      {
+        "color": "#636164",
+        "pixels": 103076
+      },
+      {
+        "color": "#A34412",
+        "pixels": 31798
+      },
+      {
+        "color": "#DCEFFC",
+        "pixels": 14317
+      },
+      {
+        "color": "#2B2630",
+        "pixels": 12632
+      }
+    ]
+  },
+  "hierarchy": {
+    "attempts": 3,
+    "success": false,
+    "error": "null root node returned by UiTestAutomationBridge"
+  },
+  "screenshots_total": 80,
+  "gallery_screenshots": 64,
+  "routes_reached": 13,
+  "scope": "Non-destructive actual-device inspection. No builds/tests/install or record saves/deletions. Theme/font owner-approved and restored.",
+  "_preservation": {
+    "original_local_path": "build/verification/device-qa-20261015/measurements.json",
+    "unique_device_identifier_redacted": true,
+    "visual_values": "Historical measurements only; not approved design tokens."
+  }
+}

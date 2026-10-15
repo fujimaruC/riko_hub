@@ -1,0 +1,512 @@
+{
+  "format_version": 1,
+  "preservation_date": "2026-10-15",
+  "original_local_directory": "build/verification/device-qa-20261015",
+  "documentation_directory": "docs/qa/device-qa-20261015",
+  "original_audit_source_head": "fac68fe",
+  "preservation_branch": "checkpoint/rikohub-redesign",
+  "preservation_parent_head": "fac68fe53be7ea2968615b702daa379781d5f953",
+  "verified_counts": {
+    "original_files": 96,
+    "original_pngs": 80,
+    "gallery_images": 64,
+    "runtime_routes": 13,
+    "findings": 15
+  },
+  "owner_reported_duration": "approximately 1 hour 27 minutes",
+  "full_session_duration_independently_verified": false,
+  "original_files": {
+    "01-home.png": {
+      "sha256": "316e6d17db6e3f5e2cbacd93d68b396fe9153e174230dc96e5c4571d9a57a5c1",
+      "bytes": 102453
+    },
+    "02-unlock-check.png": {
+      "sha256": "9594776c574622eff91daa0343cb72f1c3cb08245cb0da22e3fc4045af315085",
+      "bytes": 156810
+    },
+    "03-plan.png": {
+      "sha256": "bafc42947fdb0805682bea068618a45e86c232b0cbbf460d73f373efcaa74d02",
+      "bytes": 126740
+    },
+    "04-capture.png": {
+      "sha256": "570b671041e02912077c31bae4d8d698a1701626de7e609ccf274a6c0e0e30a9",
+      "bytes": 132718
+    },
+    "05-vault.png": {
+      "sha256": "a145614bea9cedcecbb2509346dd95a8f36560fb195a927b05b7f66f31681997",
+      "bytes": 123404
+    },
+    "06-spaces.png": {
+      "sha256": "e3f3443a23b2fbe455a6586b9c977fdd4c8290ccf8ba574819a965fcd4ea4652",
+      "bytes": 450757
+    },
+    "07-academics.png": {
+      "sha256": "b902d2a63ee1cb080d93ab3c698bf2e4cd8a5ebf0c29342ebfda50670b75e364",
+      "bytes": 106591
+    },
+    "08-academics-lower.png": {
+      "sha256": "9409ba237e87c1bdae7f74990032c713e6417b99957f8e19db27edc65676c39a",
+      "bytes": 123100
+    },
+    "09-courses.png": {
+      "sha256": "a05b51931e60377e78f924bf9cecd4227008d91a368fcf4c1786cc3a9e59bef8",
+      "bytes": 56824
+    },
+    "10-courses-archive.png": {
+      "sha256": "335d4faed2f18ea87d72f82e94add8b3f49b9b6f82c88261d23b848faf9f3c1c",
+      "bytes": 55774
+    },
+    "11-course-editor.png": {
+      "sha256": "5046d99adcdcc06406fe05cd6e78e20eb057e460b4bb9be5bf56c591ccfda85a",
+      "bytes": 73062
+    },
+    "12-projects.png": {
+      "sha256": "a3d3ec09d790864629358f1f29e910e45b6680738c3fa4b7460924916b285d4d",
+      "bytes": 138612
+    },
+    "13-project-editor.png": {
+      "sha256": "83ff78bd847e958a2546c14b63c2937be8c0d24999e59cbd63dd0d4516514b31",
+      "bytes": 97352
+    },
+    "14-projects-lower.png": {
+      "sha256": "cda76217c2d24f944aae199d29daf1501ffa0560f2e1c3f9af072520610e4404",
+      "bytes": 78148
+    },
+    "15-projects-board.png": {
+      "sha256": "0aa367cfbf90caf665b75a36446cb9a5a7e579364e8b3d5500dd6d7a86c248af",
+      "bytes": 91368
+    },
+    "16-idea-dialog.png": {
+      "sha256": "8f4450b953c9a2ba1bb69dcc456acb12a77bf3a8ae3511f3f7e127164307ec08",
+      "bytes": 75284
+    },
+    "17-personal.png": {
+      "sha256": "6996565ecc26ba7361feb10f2db38daf4fd738b0e9ca822f36297ae26a8f5725",
+      "bytes": 174942
+    },
+    "18-personal-journal.png": {
+      "sha256": "5042f82ed11cb520b80755aadf5efc3f77335e77a7066772c75b2fdd147e30dc",
+      "bytes": 125142
+    },
+    "19-journal-history.png": {
+      "sha256": "9d15e2b5c80bced3bd8d8509e5374da090818cf26dc96b2d93942c6eeaf379e8",
+      "bytes": 109006
+    },
+    "20-journal-keyboard.png": {
+      "sha256": "9280919770a09e94f495717d23621276d06661c0f80d8bd8bd144d589e2d1895",
+      "bytes": 129241
+    },
+    "21-journal-leave.png": {
+      "sha256": "cb406bb544bd0146ce49dbafda1251d1c2a83e493ffa31e62b4b07181c31e926",
+      "bytes": 451428
+    },
+    "22-journal-return.png": {
+      "sha256": "ee029d3307340171672c57a7fc431a8a5c71f78fec1174ec362b8544cfedc170",
+      "bytes": 122467
+    },
+    "23-personal-lower.png": {
+      "sha256": "3c42b5f639d2bb7afaade761341df0aff07230ea32abf0ebf30380f1bd6bf6db",
+      "bytes": 112957
+    },
+    "24-routine-editor.png": {
+      "sha256": "e861350c5a2057f29bec08b8190755ac27b902633c0d19411712276e82c44d26",
+      "bytes": 97587
+    },
+    "25-personal-return-state.png": {
+      "sha256": "142262ac2cb9bee8f4155fcaffc84e12d4bd3c339bb7a655e41aed98bccd105e",
+      "bytes": 451588
+    },
+    "26-devices.png": {
+      "sha256": "64ad22a9d1773151347c6351d747b9a55a3846204ea54d4671171099e3906b65",
+      "bytes": 123157
+    },
+    "27-devices-lower.png": {
+      "sha256": "984556326b1f3a57f1c2ddaf681b4e9b117e605ad5e8401c89a3447c87afae98",
+      "bytes": 105016
+    },
+    "28-devices-trust.png": {
+      "sha256": "563eb26f0f81ee04b917e2c3187578005dd1581f992832ce99093619b215efe9",
+      "bytes": 105006
+    },
+    "29-sync.png": {
+      "sha256": "f9c950f601524bec92f8f9a2f4215894f1c2bbb408f9d7d12db8b60b124a4a06",
+      "bytes": 75340
+    },
+    "30-settings.png": {
+      "sha256": "9fab4d077651067c1f908ef4e5eccc070d447d1f61a60d4c46f65a3f91a298ed",
+      "bytes": 86233
+    },
+    "31-settings-backup.png": {
+      "sha256": "c12436f017e69db16bd5c811252e54389fe95a5381a9a9ed62447b5ef3851ebd",
+      "bytes": 116814
+    },
+    "32-import-picker.png": {
+      "sha256": "8bac6fc3db41867c8b5faddf717647700aad3b729a214343bbfa808b3f523a02",
+      "bytes": 112366
+    },
+    "33-settings-light.png": {
+      "sha256": "306b86a51ac5337b2960a987be986057093ac781f72cdbbd474628b63ce8333a",
+      "bytes": 84971
+    },
+    "34-home-light.png": {
+      "sha256": "1909e42fdedecd16f93676e4a4f71963cb942c1bc9ca4ca6aa1a92439d5e00da",
+      "bytes": 159265
+    },
+    "35-home-lower.png": {
+      "sha256": "ba3c9855859e48c4ef018a721c57856ca9500a0d54e8c569ffe60f0c536e31fb",
+      "bytes": 146648
+    },
+    "36-tasks.png": {
+      "sha256": "d00819da9589d7589d27043d980266abb26686695a00f41d0caa937e418323e7",
+      "bytes": 94984
+    },
+    "37-task-editor.png": {
+      "sha256": "4febb18402ba2f014e497cfd91058c9a2ec87263c586fd641728b5d047c11de2",
+      "bytes": 102350
+    },
+    "38-task-date-picker.png": {
+      "sha256": "b0534c4e814bbba2b4ae1ce12ced6e4783d19b49c9ef00a2dc9e1a5afec722f8",
+      "bytes": 87483
+    },
+    "39-task-date-draft.png": {
+      "sha256": "a823c22bc46e22066d910c19b19c0ddfb47c442de0b3eb6ec88c18bfea9eee3f",
+      "bytes": 102435
+    },
+    "40-time-picker.png": {
+      "sha256": "0acfa45c11da5e4264d0ce86ca18b71edbf84b5fbff4358290e2a40a34658d5f",
+      "bytes": 93665
+    },
+    "41-task-dismiss-check.png": {
+      "sha256": "59b93cb780e27b65c4690550652e8b1ed879447322c12ef92b8afe67caed002b",
+      "bytes": 94813
+    },
+    "42-existing-task.png": {
+      "sha256": "8091efbb86565861c7a3ffbe63cfb8c9cfa5586fa6675491d6946b79da5fc70a",
+      "bytes": 116095
+    },
+    "43-task-details.png": {
+      "sha256": "cd499760c19e64b8a9badbf189957f3fec4c73086f3371784b8587af1eec8244",
+      "bytes": 97420
+    },
+    "44-assignment.png": {
+      "sha256": "6efebf54d3a61c2ffe933092fd07ba46686ce68403a7b8fbef00a27c35a841a1",
+      "bytes": 122143
+    },
+    "45-course-dropdown.png": {
+      "sha256": "3cf5841fa6e62a1d693dea76c38c50f21200147987209e115e8deac934723c2b",
+      "bytes": 119042
+    },
+    "46-assignment-lower.png": {
+      "sha256": "ec2e433888ebe3c19710b6ab352a3aad0d1e654fc5fdda4d7c4610f1a196fd8f",
+      "bytes": 114352
+    },
+    "47-plan-light.png": {
+      "sha256": "f7a878d34856cf9feacd8fddf06d40109c094f759f92ccec10472d790a19a619",
+      "bytes": 125045
+    },
+    "48-plan-day.png": {
+      "sha256": "855fc01a3c39e1d4d6dfa80e4444bf5e5c510addbe2d21e6275ea22023ad8da3",
+      "bytes": 100043
+    },
+    "49-event-editor.png": {
+      "sha256": "c3ce27f3c097c3780c0d10879b4ae543f444c9deed1c2714b97c523876fbb2d7",
+      "bytes": 108059
+    },
+    "50-event-editor-lower.png": {
+      "sha256": "b0df61498b0f8428f6e74ba842443eccf00e616cab2ffa91ec928e5d5bdad6b2",
+      "bytes": 108870
+    },
+    "51-event-details.png": {
+      "sha256": "a4f0c5eb1ed95640789764e529527072ea0ac3fe56211693d765f3b0c89af1bc",
+      "bytes": 81755
+    },
+    "52-spaces-light.png": {
+      "sha256": "dca8736a1c6410e6f03d704eb142f9e5c7267cc9544198f2e2d7fec00a740c00",
+      "bytes": 449995
+    },
+    "53-spaces-large.png": {
+      "sha256": "04775860800ccceb706cc299f402fb62e1266b15e0daf157446ac2e6ce4ad997",
+      "bytes": 449883
+    },
+    "54-home-large.png": {
+      "sha256": "69c9e0859ce9f8303fc19b5d917befdc6a8877860b78b0db1b1088b8b3b7c913",
+      "bytes": 146648
+    },
+    "55-plan-large.png": {
+      "sha256": "ea7fe928049689592d3a4b6e73a54e4809f1a8b15ceb57baa3f1fd147e02187b",
+      "bytes": 99929
+    },
+    "56-system-display.png": {
+      "sha256": "26bab3f12bd7120535c3fea254254e6483c307bf418d9eb0af81b9029cfa7ffd",
+      "bytes": 76893
+    },
+    "57-font-original.png": {
+      "sha256": "b0220798a869cf996316c74cc4b48d58f676e42a731f8b627e9a7e23cb17b21d",
+      "bytes": 139639
+    },
+    "58-current-large.png": {
+      "sha256": "15ee8d03915fa2ce364e458ceff52aa07b46a63ba0704f37f5492ce6a182432f",
+      "bytes": 99953
+    },
+    "59-font-changed.png": {
+      "sha256": "480031ba04f900b6cd4c98cb736daf5607f71c040fd621d06569ee06d858d983",
+      "bytes": 114405
+    },
+    "60-plan-font16.png": {
+      "sha256": "27173af457750fa6764a56a4e91cac00ca7fc391c5c7d6567e7ac68367646ff5",
+      "bytes": 115494
+    },
+    "61-home-font16.png": {
+      "sha256": "71fb2294462f16ddda37fda1192831796add817afae70511e91e46c5ca925680",
+      "bytes": 128054
+    },
+    "62-capture-font16.png": {
+      "sha256": "b933a97ad4683bd609b0266ff4c4c476c174f1bbc2160cf0fce63b64f370ded7",
+      "bytes": 149414
+    },
+    "63-vault-font16.png": {
+      "sha256": "dc4bd99fc75ac25a84312e9ad18429adce4f796241e00a2cee8820aa80f81bcf",
+      "bytes": 134433
+    },
+    "64-spaces-font16.png": {
+      "sha256": "29eb1cbb90dd7348f21a8566aa2410be259394430fa66474bbe1173c609be17e",
+      "bytes": 357579
+    },
+    "65-academics-font16.png": {
+      "sha256": "d36503f5fad4f0bc56581eace22ca92de625aceadbc525efbfd42832f6c9c8ab",
+      "bytes": 93429
+    },
+    "66-spaces-lower-font16.png": {
+      "sha256": "d1ecf264028eac17760cf5cf6de199a50d85eb2a988a21741bcbd186e6793033",
+      "bytes": 367973
+    },
+    "67-devices-font16.png": {
+      "sha256": "b70f6904ad7f9f6dfd26907d0b3803faa5d0ff23604a855ef8b7c1e628ee79bd",
+      "bytes": 81559
+    },
+    "68-font-restored.png": {
+      "sha256": "b70f6904ad7f9f6dfd26907d0b3803faa5d0ff23604a855ef8b7c1e628ee79bd",
+      "bytes": 81559
+    },
+    "69-font-restore-ui.png": {
+      "sha256": "928410a738b2932eb10ebe4e781c77529be56d4a2a5d77e1c98062e5a063ba14",
+      "bytes": 114379
+    },
+    "70-font-restored-confirmed.png": {
+      "sha256": "f03db840e0f72306db920c7d4463c6f57ac0f2c44a78a8e80d179e357e2c7beb",
+      "bytes": 140028
+    },
+    "71-home-after-font-restore.png": {
+      "sha256": "4f030aee489fa3329a42025beddacf91d2c3fb9d54d6db12bbe195a94b4088c2",
+      "bytes": 146913
+    },
+    "72-tasks-done-expanded.png": {
+      "sha256": "777b04bba9eb1b1e20c51b264e13f431e446cca81fd8f5ede3dc48d73bf7b1be",
+      "bytes": 97973
+    },
+    "73-search-empty.png": {
+      "sha256": "35ba86f76f1a49bcc53b34d280e4496ba0227357e267cce239963019d7592cd6",
+      "bytes": 91826
+    },
+    "74-settings-restored.png": {
+      "sha256": "20264973a662dcfc66e1d7ce1f9ffa72c1e848e5b9a9a40fc71d454072e4cf10",
+      "bytes": 86539
+    },
+    "75-final-home.png": {
+      "sha256": "3bcef9a00988bbdcdc46d93a3449d7b70684f3492781862f6a6e057844acfe70",
+      "bytes": 157537
+    },
+    "76-personal-final-lower.png": {
+      "sha256": "0cfffd71991cb527f542d3fc794ae61bf8d2c3b4aafd829645f5508efdffe1c5",
+      "bytes": 112887
+    },
+    "77-note-editor.png": {
+      "sha256": "70557f7055bda388575e4897376f021ccaec8241e4a0dff5be09b4870354ab48",
+      "bytes": 82152
+    },
+    "78-course-editor-lower.png": {
+      "sha256": "b3e8045b711275a5a13e3a8ea1d7c085b0ce130a031c5f92cd641107d30c1979",
+      "bytes": 77891
+    },
+    "79-weekly-slot-draft.png": {
+      "sha256": "6e4a54678cd047da56daad75d3c1c05379a7930334ff09fed1a1476dc0d8b662",
+      "bytes": 80358
+    },
+    "80-audit-end-home.png": {
+      "sha256": "ff6dfd833637c759a37b5196b3e9631c16b7f6166d4bc6c9153dfb6ee09ac0dd",
+      "bytes": 157155
+    },
+    "AUDIT.md": {
+      "sha256": "f579794a778bd4860bb119d7300053683bedf23ab030a22a876f748c2934a831",
+      "bytes": 25359
+    },
+    "app-warnings-final.txt": {
+      "sha256": "ef9acc3c60157cdd82fa5145656dbe9487ef76c0cee65fee0f7dcef5418f6fff",
+      "bytes": 8400
+    },
+    "app-warnings.txt": {
+      "sha256": "11ac1719b21a731cf6594b8cfd11ffe5051856fbb5b4189a705270e038afb207",
+      "bytes": 28367
+    },
+    "device-info.txt": {
+      "sha256": "451be63040406ef372336cff5bd34fc8b361398090be3dfab1d7606bfc7c5478",
+      "bytes": 214
+    },
+    "evidence-manifest.json": {
+      "sha256": "32420b232795af8f669b6da950479aa0c05723b6e625045cf28fc71e64cb7507",
+      "bytes": 12754
+    },
+    "evidence.html": {
+      "sha256": "4c361970e177f853a721ed5ad4017802b8bfba2e7c9679e90bfe12be59e530e5",
+      "bytes": 17476
+    },
+    "framestats.txt": {
+      "sha256": "3602d71043e8afc266ac46b8ae86d9a849338f072dcfe98d51dd5e67170da86a",
+      "bytes": 14257
+    },
+    "gfxinfo-before-reset.txt": {
+      "sha256": "9804c0f2f45529b46f01019b4ac55db2914942acca779bf9d3bd749f2065c95f",
+      "bytes": 2846
+    },
+    "gfxinfo-initial.txt": {
+      "sha256": "ef0596ed8cc10d03de08e922cd753d08ac2863834ea99413943c11186b0bec9d",
+      "bytes": 2771
+    },
+    "gfxinfo-warm.txt": {
+      "sha256": "bd8f815509d467c3172dfeb43a8fe83bbbb3c0be21d337c2856424986a40d74e",
+      "bytes": 2811
+    },
+    "measurements.json": {
+      "sha256": "7d499ab4af0fc6aa26edf648dedf205deb22a289b8296b1f9dff28de1587c813",
+      "bytes": 3230
+    },
+    "meminfo.txt": {
+      "sha256": "573fb01446b8f356cda1a08e1813fd8acc6e845746e508ede0ccb7486d6d733d",
+      "bytes": 3374
+    },
+    "source-review.md": {
+      "sha256": "59aa171ffd746b22da1e51f7d19979a196db328926b069bbeb53bfa3ad8b0793",
+      "bytes": 6832
+    },
+    "surface-inventory.md": {
+      "sha256": "8538c2de1cc370d7f137a135d9fca4cbb86d5ee5e6d85734f7f75e46b5d98a3d",
+      "bytes": 20026
+    },
+    "warm-sample-end.txt": {
+      "sha256": "d33a4d8349175d37cb31740d078866d9ac727dac66bc40f13d08e5f136a973e9",
+      "bytes": 30
+    },
+    "warm-sample-start.txt": {
+      "sha256": "8b5b77536b8f191cca615567835668800d592b71728557ec8a9b8803b8738333",
+      "bytes": 30
+    }
+  },
+  "original_gallery_members": [
+    "02-unlock-check.png",
+    "03-plan.png",
+    "04-capture.png",
+    "05-vault.png",
+    "06-spaces.png",
+    "07-academics.png",
+    "08-academics-lower.png",
+    "09-courses.png",
+    "10-courses-archive.png",
+    "11-course-editor.png",
+    "12-projects.png",
+    "13-project-editor.png",
+    "15-projects-board.png",
+    "16-idea-dialog.png",
+    "17-personal.png",
+    "18-personal-journal.png",
+    "19-journal-history.png",
+    "20-journal-keyboard.png",
+    "21-journal-leave.png",
+    "22-journal-return.png",
+    "23-personal-lower.png",
+    "24-routine-editor.png",
+    "26-devices.png",
+    "27-devices-lower.png",
+    "28-devices-trust.png",
+    "29-sync.png",
+    "30-settings.png",
+    "31-settings-backup.png",
+    "32-import-picker.png",
+    "33-settings-light.png",
+    "34-home-light.png",
+    "35-home-lower.png",
+    "36-tasks.png",
+    "37-task-editor.png",
+    "38-task-date-picker.png",
+    "39-task-date-draft.png",
+    "40-time-picker.png",
+    "41-task-dismiss-check.png",
+    "42-existing-task.png",
+    "43-task-details.png",
+    "44-assignment.png",
+    "45-course-dropdown.png",
+    "46-assignment-lower.png",
+    "47-plan-light.png",
+    "48-plan-day.png",
+    "49-event-editor.png",
+    "51-event-details.png",
+    "52-spaces-light.png",
+    "60-plan-font16.png",
+    "61-home-font16.png",
+    "62-capture-font16.png",
+    "63-vault-font16.png",
+    "64-spaces-font16.png",
+    "65-academics-font16.png",
+    "66-spaces-lower-font16.png",
+    "67-devices-font16.png",
+    "72-tasks-done-expanded.png",
+    "73-search-empty.png",
+    "74-settings-restored.png",
+    "75-final-home.png",
+    "77-note-editor.png",
+    "78-course-editor-lower.png",
+    "79-weekly-slot-draft.png",
+    "80-audit-end-home.png"
+  ],
+  "original_gallery_excluded_capture_numbers": [
+    1,
+    14,
+    25,
+    50,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    68,
+    69,
+    70,
+    71,
+    76
+  ],
+  "privacy": {
+    "screenshots_committed": false,
+    "raw_logs_committed": false,
+    "original_html_gallery_committed": false,
+    "redactions": {
+      "AUDIT.md": {
+        "device_serial_occurrences": 1
+      },
+      "surface-inventory.md": {
+        "existing_task_title_occurrences": 1
+      },
+      "measurements.json": {
+        "device_serial_fields": 1
+      }
+    },
+    "replacements": [
+      "[DEVICE_SERIAL_REDACTED]",
+      "[EXISTING_ACADEMIC_TASK]"
+    ],
+    "source_originals_modified": false,
+    "evidence_uploaded": false
+  },
+  "copy_policy": "Reports retain original bodies except disclosed privacy substitutions and evidence-link rebasing. Preservation prefaces are added. Measurements retain all original values except the device serial, with preservation metadata added. Historical design suggestions and sampled colors are not approved redesign requirements.",
+  "unrelated_existing_work": "Present before preservation, outside QA documentation; not staged or included by this task."
+}
