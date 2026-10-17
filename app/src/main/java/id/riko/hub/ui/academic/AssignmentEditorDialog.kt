@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -24,6 +25,8 @@ import id.riko.hub.R
 import id.riko.hub.RikoHubApp
 import id.riko.hub.domain.model.*
 import id.riko.hub.ui.tasks.label
+import id.riko.hub.ui.components.rikoFormColorScheme
+import id.riko.hub.ui.components.rikoFormFieldColors
 import id.riko.hub.ui.theme.*
 import java.time.Instant
 import java.time.ZoneId
@@ -52,7 +55,8 @@ internal fun AssignmentEditorContent(task: Task, model: AssignmentViewModel, onD
     var courseMenu by remember { mutableStateOf(false) }
     val zone = app.container.clock.zone()
     Dialog(onDismissRequest = { if (!state.busy) onDismiss() }) {
-        Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surface) {
+      MaterialTheme(colorScheme = rikoFormColorScheme()) {
+        Surface(shape = RikoShapes.sheet, color = Color(0xFF30312D)) {
             Column(Modifier.fillMaxWidth().heightIn(max = 680.dp).verticalScroll(rememberScrollState()).padding(Spacing.space5),
                 verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
                 Text(stringResource(R.string.assignment_title), style = MaterialTheme.typography.titleLarge,
@@ -97,6 +101,7 @@ internal fun AssignmentEditorContent(task: Task, model: AssignmentViewModel, onD
                     }
                     OutlinedTextField(value = reference, onValueChange = { if (it.length <= 2000) reference = it },
                         label = { Text(stringResource(R.string.assignment_submission_reference)) }, enabled = !state.busy,
+                        colors = rikoFormFieldColors(),
                         supportingText = { Text("${reference.length}/2000") }, minLines = 2, modifier = Modifier.fillMaxWidth().testTag("assignment-reference"))
                     Text(stringResource(R.string.assignment_task_status_note, stringResource((state.task ?: task).status.label())), style = MaterialTheme.typography.bodySmall)
                     assignment?.submittedAt?.let { submittedAt ->
@@ -125,6 +130,7 @@ internal fun AssignmentEditorContent(task: Task, model: AssignmentViewModel, onD
                 }
             }
         }
+      }
     }
 }
 

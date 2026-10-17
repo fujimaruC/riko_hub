@@ -2,8 +2,10 @@ package id.riko.hub.ui.timeline
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
@@ -43,8 +45,8 @@ fun TimelineStopRow(stop: TimelineStop, index: Int, dense: Boolean, now: Long, z
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     val time = stopTime(stop, zone)
     val inlineTime = largeText || time.length > 13
-    val gutter = if (largeText) 32.dp else 76.dp
-    val riverX = if (largeText) 12.dp else 60.dp
+    val gutter = if (largeText) 48.dp else 64.dp
+    val riverX = if (largeText) 22.dp else 30.dp
     Box(Modifier.fillMaxWidth()) {
         Canvas(Modifier.matchParentSize()) {
             val x = riverX.toPx()
@@ -69,34 +71,50 @@ fun TimelineStopRow(stop: TimelineStop, index: Int, dense: Boolean, now: Long, z
         if (!inlineTime) Text(time, style = MaterialTheme.typography.labelMedium, color = secondary,
             modifier = Modifier.width(48.dp).padding(top = 20.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
         Surface(onClick = onOpen, enabled = enabled,
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 8.dp, topEnd = 24.dp, bottomEnd = 8.dp, bottomStart = 24.dp),
-            color = if (currentEvent) accent.container else MaterialTheme.colorScheme.surfaceVariant,
-            border = androidx.compose.foundation.BorderStroke(if (currentEvent) 1.5.dp else 1.dp,
-                if (currentEvent) accent.color else MaterialTheme.colorScheme.outlineVariant),
+            shape = RoundedCornerShape(16.dp),
+            color = when (stop.kind) {
+                TimelineStopKind.EVENT -> PreviewSage
+                TimelineStopKind.DEADLINE -> PreviewButter
+                TimelineStopKind.COMPLETED -> PreviewLime
+            },
+            contentColor = PreviewGround,
             modifier = Modifier.fillMaxWidth().padding(start = gutter,
                 end = if (!dense && !largeText && index % 2 == 1) 8.dp else 0.dp,
                 top = 4.dp, bottom = 8.dp).heightIn(min = Spacing.touch).testTag("timeline-stop-${stop.key}")) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = if (dense) 8.dp else 12.dp),
+            Row(Modifier.padding(horizontal = 14.dp, vertical = if (dense) 8.dp else 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Canvas(Modifier.width(3.dp).height(32.dp)) {
-                    drawLine(categoryAccent.color.copy(alpha = if (past) .6f else 1f), Offset(size.width / 2, 0f),
-                        Offset(size.width / 2, size.height), size.width, androidx.compose.ui.graphics.StrokeCap.Round)
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (inlineTime) Text(time, style = MaterialTheme.typography.labelLarge, color = secondary)
-                    Text(stop.event?.title ?: requireNotNull(stop.task).title,
-                        style = MaterialTheme.typography.titleSmall, color = ink)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     val kind = stringResource(when (stop.kind) {
                         TimelineStopKind.EVENT -> requireNotNull(stop.event).kind.eventKindLabel()
                         TimelineStopKind.DEADLINE -> R.string.timeline_deadline_stop
                         TimelineStopKind.COMPLETED -> R.string.timeline_completed_stop
-                    })
-                    Text(stringResource(R.string.timeline_stop_metadata, kind, stringResource(category.label())),
-                        style = MaterialTheme.typography.bodySmall, color = secondary)
-                    if (currentEvent) Text(stringResource(R.string.timeline_now),
-                        style = MaterialTheme.typography.labelMedium, color = ink)
-                    stop.event?.location?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = secondary)
+                    }).uppercase()
+                    Text(
+                        "$kind · ${stringResource(category.label()).uppercase()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = PreviewGround.copy(alpha = .75f),
+                    )
+                    Text(
+                        stop.event?.title ?: requireNotNull(stop.task).title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = PreviewGround,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(time, style = MaterialTheme.typography.labelSmall, color = PreviewGround.copy(alpha = .7f))
+                        stop.event?.location?.takeIf { it.isNotBlank() }?.let { loc ->
+                            Text("·", style = MaterialTheme.typography.labelSmall, color = PreviewGround.copy(alpha = .7f))
+                            Text(loc, style = MaterialTheme.typography.labelSmall, color = PreviewGround.copy(alpha = .7f))
+                        }
+                    }
+                    if (currentEvent) {
+                        Text(
+                            stringResource(R.string.timeline_now).uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PreviewGround,
+                        )
                     }
                 }
             }

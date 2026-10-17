@@ -9,7 +9,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -24,7 +23,7 @@ import id.riko.hub.RikoHubApp
 import id.riko.hub.domain.model.AppSettings
 import id.riko.hub.ui.capture.CaptureScreen
 import id.riko.hub.ui.home.HomeScreen
-import id.riko.hub.ui.navigation.RenaissanceDock
+import id.riko.hub.ui.navigation.RikoDock
 import id.riko.hub.ui.courses.CoursesScreen
 import id.riko.hub.ui.settings.SettingsScreen
 import id.riko.hub.ui.spaces.AcademicsSpaceScreen
@@ -52,7 +51,6 @@ fun RikoNavHost(
     openTaskId: Long? = null,
     onTaskOpenConsumed: () -> Unit = {},
     backupContent: @Composable () -> Unit = {},
-    onSpacesVisibilityChanged: (Boolean) -> Unit = {},
 ) {
     val controller = rememberNavController()
     val app = LocalContext.current.applicationContext as RikoHubApp
@@ -62,10 +60,8 @@ fun RikoNavHost(
     val sharedVaultState by sharedVaultModel.state.collectAsStateWithLifecycle()
     val entry by controller.currentBackStackEntryAsState()
     val current = destination(entry)
-    SideEffect { onSpacesVisibilityChanged(current.isSpaces) }
+    val spacesPalette = if (LocalRikoDarkTheme.current) DarkSpacesPalette else LightSpacesPalette
     val materialBackground = MaterialTheme.colorScheme.background
-    val homeBackground = remember(materialBackground) { mutableStateOf(materialBackground) }
-    val onHomeBackgroundChanged: (Color) -> Unit = remember(homeBackground) { { homeBackground.value = it } }
     val reduced = rememberReducedMotion()
     val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val snackbar = remember { SnackbarHostState() }
@@ -92,7 +88,7 @@ fun RikoNavHost(
                         launchSingleTop = true
                     }
                 }
-                target in setOf(Destination.Timeline, Destination.Capture, Destination.Vault) ->
+                target in setOf(Destination.Tasks, Destination.Timeline, Destination.Capture, Destination.Vault) ->
                     controller.navigate(target.name) {
                         launchSingleTop = true
                         restoreState = true
@@ -116,17 +112,14 @@ fun RikoNavHost(
     }
       Scaffold(
           containerColor = when {
-              current.isSpaces -> SpacesTokens.canvas
-              current == Destination.Home -> homeBackground.value
+              current.isSpaces -> spacesPalette.canvas
               else -> materialBackground
           },
-          contentColor = if (current.isSpaces) SpacesTokens.primary else MaterialTheme.colorScheme.onBackground,
+          contentColor = if (current.isSpaces) spacesPalette.primary else MaterialTheme.colorScheme.onBackground,
           snackbarHost = { SnackbarHost(snackbar) },
           bottomBar = {
             if (!imeVisible) {
-                Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.screenGutter, vertical = Spacing.space2)) {
-                    RenaissanceDock(current, reduced, navigate)
-                }
+                RikoDock(current, reduced, navigate)
             }
           },
       ) { padding ->
@@ -144,7 +137,7 @@ fun RikoNavHost(
             ) {
                 composable(Destination.Home.name) {
                     HomeScreen(hintsShownCount = settings.hintsShownCount,
-                        onBackgroundColorChanged = onHomeBackgroundChanged, onNavigate = navigate)
+                        onNavigate = navigate)
                 }
                 composable(Destination.Tasks.name) { TasksScreen(navigate, openTaskId, onTaskOpenConsumed) }
                 composable(Destination.Capture.name) { CaptureScreen(navigate) }

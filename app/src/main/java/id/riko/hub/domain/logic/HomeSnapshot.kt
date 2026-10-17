@@ -6,7 +6,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-data class NextObligation(val title: String, val at: Long, val event: Boolean)
+data class NextObligation(val title: String, val at: Long, val event: Boolean, val location: String? = null)
 data class HomeSnapshot(
     val now: Long, val zone: ZoneId, val today: LocalDate, val ranked: List<UrgencyInfo>,
     val focus: Long?, val validPin: Long?, val mode: HomeMode, val bubbles: List<BubblePlacement>,
@@ -34,7 +34,7 @@ fun homeSnapshot(tasks: List<Task>, events: List<Event>, settings: AppSettings, 
     val mode = ModeSelector.select(ranked.count { it.isUrgent })
     val end = now + 24 * 60 * 60 * 1000L
     val next = (events.filter { it.deletedAt == null && it.startAt in now..end }
-        .map { NextObligation(it.title, it.startAt, true) } + ranked.mapNotNull { item ->
+        .map { NextObligation(it.title, it.startAt, true, it.location) } + ranked.mapNotNull { item ->
         item.task.deadlineAt?.takeIf { item.task.hasDeadlineTime && it in now..end }
             ?.let { NextObligation(item.task.title, it, false) }
     }).sortedWith(compareBy<NextObligation> { it.at }.thenBy { it.title }.thenBy { it.event }).firstOrNull()

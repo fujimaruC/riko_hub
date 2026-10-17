@@ -106,23 +106,21 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
         LazyColumn(state = listState, modifier = Modifier.weight(1f).testTag("task-list"), contentPadding = PaddingValues(horizontal = Spacing.space5, vertical = Spacing.space3),
             verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
             item {
-                OrganicHeader(animated = listState.firstVisibleItemIndex == 0,
-                    modifier = Modifier.animateContentSize(if (reducedMotion) snap() else tween(Motion.medium))
-                        .testTag("task-workspace-header")) {
-                    Text(stringResource(R.string.tasks), style = MaterialTheme.typography.displayMedium,
+                Column(Modifier.fillMaxWidth().padding(top = Spacing.space4).testTag("task-workspace-header"),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+                    Text("RUANG 02 / DAFTAR KERJA", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("TUGAS\nTERKUMPUL.", style = MaterialTheme.typography.displayLarge,
                         modifier = Modifier.semantics { heading() })
                     Text(pluralStringResource(R.plurals.tasks_count, state.todayCount, state.todayCount, state.tasks.size),
-                        style = MaterialTheme.typography.bodyMedium)
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
-            item {
-                TextButton(onClick = { onNavigate(Destination.Courses) }, modifier = Modifier.fillMaxWidth()
-                    .heightIn(min = Spacing.touch)) { Text(stringResource(R.string.course_spaces)) }
             }
             item { CategoryFilters(state.filter, onFilter) }
             item {
                 OutlinedTextField(value = state.query, onValueChange = onSearch, singleLine = true,
-                    label = { Text(stringResource(R.string.task_search)) }, modifier = Modifier.fillMaxWidth().testTag("task-search"))
+                    leadingIcon = { Text("⌕") }, placeholder = { Text(stringResource(R.string.task_search)) },
+                    modifier = Modifier.fillMaxWidth().testTag("task-search"), shape = RikoShapes.pill)
             }
             when {
                 state.readFailed -> item {
@@ -149,7 +147,7 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
             }
         }
         Button(onClick = onAdd, enabled = !state.busy, shape = RikoShapes.pill,
-            modifier = Modifier.padding(horizontal = Spacing.space5, vertical = Spacing.space2).heightIn(min = Spacing.touch)) {
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.space5, vertical = Spacing.space2).heightIn(min = Spacing.touch)) {
             Text(stringResource(R.string.add_task))
         }
     }

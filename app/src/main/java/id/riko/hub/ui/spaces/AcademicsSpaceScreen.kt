@@ -1,20 +1,20 @@
 package id.riko.hub.ui.spaces
 
 import android.util.Log
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -22,51 +22,58 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import id.riko.hub.R
 import id.riko.hub.RikoHubApp
 import id.riko.hub.data.remote.drive.DriveFile
+import id.riko.hub.domain.model.Category
 import id.riko.hub.domain.model.Course
 import id.riko.hub.domain.model.Event
 import id.riko.hub.domain.model.EventKind
-import id.riko.hub.domain.model.Category
 import id.riko.hub.domain.model.Task
 import id.riko.hub.domain.model.TaskStatus
 import id.riko.hub.ui.academic.CourseAssignmentsSection
 import id.riko.hub.ui.components.TaskEditorSheet
 import id.riko.hub.ui.tasks.TaskEffect
 import id.riko.hub.ui.tasks.TasksViewModel
-import id.riko.hub.ui.theme.SpacesTokens
+import id.riko.hub.ui.theme.ChefButter
+import id.riko.hub.ui.theme.ChefCanvas
+import id.riko.hub.ui.theme.ChefCoral
+import id.riko.hub.ui.theme.ChefCyan
+import id.riko.hub.ui.theme.ChefGround
+import id.riko.hub.ui.theme.ChefInk
+import id.riko.hub.ui.theme.ChefLime
+import id.riko.hub.ui.theme.ChefLine
+import id.riko.hub.ui.theme.ChefMuted
+import id.riko.hub.ui.theme.ChefPanel
+import id.riko.hub.ui.theme.ChefRaised
+import id.riko.hub.ui.theme.ChefSage
+import id.riko.hub.ui.theme.NotoCondensedBlack
 import id.riko.hub.ui.theme.Spacing
-import id.riko.hub.ui.theme.rememberReducedMotion
 import id.riko.hub.ui.vault.VaultUiState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.flowOf
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.time.DayOfWeek
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 
 @Composable
 fun AcademicsSpaceScreen(
@@ -126,8 +133,6 @@ fun AcademicsSpaceScreen(
     }.collectAsStateWithLifecycle(initialValue = AssignmentLoad())
     val fontScale = LocalConfiguration.current.fontScale
     val compact = fontScale < 1.3f
-    val reducedMotion = rememberReducedMotion()
-    var showAllCourses by remember { mutableStateOf(false) }
     val taskSnackbar = remember { SnackbarHostState() }
     val failedMessage = stringResource(R.string.save_failed)
     val deletedMessage = stringResource(R.string.deleted_task)
@@ -152,67 +157,112 @@ fun AcademicsSpaceScreen(
         }
     }
 
-    SpacesTheme {
-        Column(
-            Modifier.fillMaxSize().testTag("screen-AcademicsSpace").background(SpacesTokens.canvas)
-                .verticalScroll(rememberScrollState()).padding(horizontal = Spacing.space5, vertical = Spacing.space4),
-            verticalArrangement = Arrangement.spacedBy(Spacing.space4),
+    Column(
+        Modifier
+            .fillMaxSize()
+            .testTag("screen-AcademicsSpace")
+            .background(ChefCanvas)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        // Header Bar: M-CHEF Header
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            SpacesPageHeader(
-                title = stringResource(R.string.academics_space_title),
-                subtitle = stringResource(R.string.academics_space_subtitle),
-                onBack = { onNavigate(id.riko.hub.navigation.Destination.Spaces) },
-                trailing = { TextButton(onClick = { onNavigate(id.riko.hub.navigation.Destination.Courses) },
-                    modifier = Modifier.heightIn(min = Spacing.touch).testTag("academics-manage-courses")) {
-                    Text(stringResource(R.string.academics_manage))
-                } },
-            )
-            when {
-                courses.loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                courses.failed -> MessageCard(stringResource(R.string.academics_courses_failed)) {
-                    TextButton(onClick = { courseRetry++ }, modifier = Modifier.heightIn(min = Spacing.touch)) { Text(stringResource(R.string.retry)) }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(ChefPanel)
+                        .border(1.dp, ChefLine, CircleShape)
+                        .clickable { onNavigate(id.riko.hub.navigation.Destination.Spaces) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("←", color = ChefInk, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
-                courses.items.isEmpty() -> {
-                    OrbitCard(emptyList(), null, compact, reducedMotion, showAllCourses,
-                        onSelect = {}, onShowAll = { showAllCourses = !showAllCourses })
-                    EmptyCourses { onNavigate(id.riko.hub.navigation.Destination.Courses) }
-                    EmptyFocusCourseCard()
-                    DeadlineSection(AssignmentLoad(loading = false), now, zone, onRetry = { assignmentRetry++ },
-                        onTaskClick = { quickAddModel.edit(it) }, noCourse = true)
-                }
-                else -> {
-                    OrbitCard(courses.items, activeCourse, compact, reducedMotion, showAllCourses,
-                        onSelect = { chosenId = it.id }, onShowAll = { showAllCourses = !showAllCourses })
-                    if (activeCourse != null) {
-                        FocusCourseCard(activeCourse, assignments, now, zone, compact, quickAddModel::edit)
-                        DeadlineSection(assignments, now, zone, onRetry = { assignmentRetry++ },
-                            onTaskClick = { quickAddModel.edit(it) })
-                        CourseAssignmentsSection(activeCourse.id)
-                    }
+                Column {
+                    Text(
+                        text = "01 / AKADEMIK",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                        color = ChefMuted,
+                    )
+                    Text(
+                        text = "KAMPUS BERGERAK",
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 22.sp,
+                        color = ChefInk,
+                        modifier = Modifier.semantics { heading() },
+                    )
                 }
             }
-            ExamSection(examEvents, zone) { examRetry++ }
-            MaterialsPreview(vaultState, onOpenMaterial, onVault = { onNavigate(id.riko.hub.navigation.Destination.Vault) })
-            if (vaultState.error != null) {
-                MessageCard(stringResource(R.string.academics_vault_attention)) {
-                    Button(onClick = { onNavigate(id.riko.hub.navigation.Destination.Vault) }, modifier = Modifier.heightIn(min = Spacing.touch)) {
-                        Text(stringResource(R.string.academics_open_vault))
-                    }
+
+            TextButton(
+                onClick = { onNavigate(id.riko.hub.navigation.Destination.Courses) },
+                modifier = Modifier.testTag("academics-manage-courses"),
+            ) {
+                Text(stringResource(R.string.academics_manage), color = ChefLime, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        when {
+            courses.loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = ChefLime)
+            courses.failed -> MessageCard(stringResource(R.string.academics_courses_failed)) {
+                TextButton(onClick = { courseRetry++ }, modifier = Modifier.heightIn(min = Spacing.touch)) {
+                    Text(stringResource(R.string.retry), color = ChefLime)
                 }
             }
-            QuickActions(compact,
-                onManageCourses = { onNavigate(id.riko.hub.navigation.Destination.Courses) },
-                onAddTask = { quickAddModel.edit(Task(title = "", category = Category.ACADEMIC)) },
-                onPlan = { onNavigate(id.riko.hub.navigation.Destination.Timeline) },
-                onVault = { onNavigate(id.riko.hub.navigation.Destination.Vault) },
-            )
-            SnackbarHost(taskSnackbar)
+            courses.items.isEmpty() -> {
+                EmptyCourses { onNavigate(id.riko.hub.navigation.Destination.Courses) }
+                EmptyFocusCourseCard()
+                DeadlineSection(AssignmentLoad(loading = false), now, zone, onRetry = { assignmentRetry++ },
+                    onTaskClick = { quickAddModel.edit(it) }, noCourse = true)
+            }
+            else -> {
+                if (activeCourse != null) {
+                    FocusCourseCard(activeCourse, assignments, now, zone, compact, quickAddModel::edit)
+                    CourseSelectionStrip(courses.items, activeCourse, onSelect = { chosenId = it.id })
+                    DeadlineSection(assignments, now, zone, onRetry = { assignmentRetry++ },
+                        onTaskClick = { quickAddModel.edit(it) })
+                    CourseAssignmentsSection(activeCourse.id)
+                }
+            }
         }
-        quickState.editor?.let { task ->
-            TaskEditorSheet(task, now, zone, quickState.busy, taskSnackbar,
-                quickAddModel::change, { saveRequested = true; quickAddModel.save() },
-                { saveRequested = false; quickAddModel.delete(task) }, { saveRequested = false; quickAddModel.dismissEditor() }, quickAdd = true)
+
+        ExamSection(examEvents, zone) { examRetry++ }
+        MaterialsPreview(vaultState, onOpenMaterial, onVault = { onNavigate(id.riko.hub.navigation.Destination.Vault) })
+        if (vaultState.error != null) {
+            MessageCard(stringResource(R.string.academics_vault_attention)) {
+                Button(
+                    onClick = { onNavigate(id.riko.hub.navigation.Destination.Vault) },
+                    colors = ButtonDefaults.buttonColors(containerColor = ChefCoral, contentColor = ChefGround),
+                    shape = RoundedCornerShape(999.dp),
+                ) {
+                    Text(stringResource(R.string.academics_open_vault), fontWeight = FontWeight.Bold)
+                }
+            }
         }
+        QuickActions(
+            compact = compact,
+            onManageCourses = { onNavigate(id.riko.hub.navigation.Destination.Courses) },
+            onAddTask = { quickAddModel.edit(Task(title = "", category = Category.ACADEMIC)) },
+            onPlan = { onNavigate(id.riko.hub.navigation.Destination.Timeline) },
+            onVault = { onNavigate(id.riko.hub.navigation.Destination.Vault) },
+        )
+        SnackbarHost(taskSnackbar)
+    }
+
+    quickState.editor?.let { task ->
+        TaskEditorSheet(task, now, zone, quickState.busy, taskSnackbar,
+            quickAddModel::change, { saveRequested = true; quickAddModel.save() },
+            { saveRequested = false; quickAddModel.delete(task) }, { saveRequested = false; quickAddModel.dismissEditor() }, quickAdd = true)
     }
 }
 
@@ -228,250 +278,220 @@ internal fun Course.hasCurrentSlot(now: Long, zone: ZoneId): Boolean {
 }
 
 @Composable
+private fun CourseSelectionStrip(courses: List<Course>, selected: Course, onSelect: (Course) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.academics_manage).uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
+            color = ChefMuted,
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(courses, key = Course::id) { course ->
+                val chosen = course.id == selected.id
+                Surface(
+                    onClick = { onSelect(course) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (chosen) ChefButter else ChefPanel,
+                    border = BorderStroke(1.dp, if (chosen) ChefButter else ChefLine),
+                ) {
+                    Text(
+                        text = course.title,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        color = if (chosen) ChefGround else ChefInk,
+                        fontWeight = if (chosen) FontWeight.Bold else FontWeight.Medium,
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun EmptyCourses(onManage: () -> Unit) {
     MessageCard(stringResource(R.string.academics_no_courses)) {
-        Button(onClick = onManage, modifier = Modifier.heightIn(min = Spacing.touch)) { Text(stringResource(R.string.academics_add_course)) }
+        Button(
+            onClick = onManage,
+            colors = ButtonDefaults.buttonColors(containerColor = ChefLime, contentColor = ChefGround),
+            shape = RoundedCornerShape(999.dp),
+        ) {
+            Text(stringResource(R.string.academics_add_course), fontWeight = FontWeight.Bold)
+        }
     }
 }
 
 @Composable
 private fun EmptyFocusCourseCard() {
-    val shape = RoundedCornerShape(28.dp)
-    Column(Modifier.fillMaxWidth().clip(shape)
-        .background(Brush.linearGradient(listOf(SpacesTokens.tangerine.copy(alpha = .12f), SpacesTokens.surface)))
-        .border(1.5.dp, SpacesTokens.tangerine.copy(alpha = .24f), shape).padding(Spacing.space4),
-        verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.academics_focus), style = MaterialTheme.typography.labelLarge, color = SpacesTokens.tangerine)
-        Text(stringResource(R.string.academics_choose_course), style = MaterialTheme.typography.titleMedium, color = SpacesTokens.primary)
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, ChefButter.copy(alpha = 0.4f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(stringResource(R.string.academics_focus), style = MaterialTheme.typography.labelLarge, color = ChefButter, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.academics_choose_course), style = MaterialTheme.typography.titleMedium, color = ChefInk)
+        }
     }
 }
 
 @Composable
 private fun MessageCard(message: String, action: (@Composable () -> Unit)? = null) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SpacesTokens.surface).padding(Spacing.space4),
-        verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-        Text(message, style = MaterialTheme.typography.bodyLarge, color = SpacesTokens.secondary)
-        action?.invoke()
-    }
-}
-
-@Composable
-private fun OrbitCard(courses: List<Course>, selected: Course?, compact: Boolean, reducedMotion: Boolean, overflowOpen: Boolean,
-                      onSelect: (Course) -> Unit, onShowAll: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(SpacesTokens.surface).padding(Spacing.space4),
-        verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-        Text(stringResource(R.string.academics_orbit_title), style = MaterialTheme.typography.titleLarge, color = SpacesTokens.primary)
-        if (compact) {
-            BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val remaining = courses.filterNot { it.id == selected?.id }
-                val narrow = maxWidth < 280.dp
-                val visibleCount = if (narrow || courses.size > 8) 4 else 8
-                val visible = remaining.take(visibleCount)
-                val overflow = remaining.drop(visibleCount)
-                val largeOrbit = remaining.size > 4
-                val satelliteSize = if (largeOrbit) 44.dp else 56.dp
-                val orbitWidth = maxWidth
-                Column(Modifier.fillMaxWidth()) {
-                    Box(Modifier.fillMaxWidth().height(200.dp)) {
-                        Canvas(Modifier.fillMaxSize()) {
-                            val stroke = 1.5.dp.toPx()
-                            val firstOrbit = Path().apply {
-                                addOval(Rect(Offset(size.width * .19f, size.height * .16f), androidx.compose.ui.geometry.Size(size.width * .62f, size.height * .66f)))
-                            }
-                            drawPath(firstOrbit, SpacesTokens.edge, style = Stroke(stroke,
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx()))))
-                            if (largeOrbit) {
-                                val outerOrbit = Path().apply {
-                                    addOval(Rect(Offset(size.width * .06f, size.height * .06f), androidx.compose.ui.geometry.Size(size.width * .88f, size.height * .88f)))
-                                }
-                                drawPath(outerOrbit, SpacesTokens.edge.copy(alpha = .7f), style = Stroke(stroke,
-                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 6.dp.toPx()))))
-                            }
-                        }
-                        Surface(
-                            modifier = Modifier.align(Alignment.Center).size(88.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            color = SpacesTokens.tangerine.copy(alpha = .16f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, SpacesTokens.tangerine.copy(alpha = .55f)),
-                        ) {
-                            Crossfade(targetState = selected, animationSpec = tween(if (reducedMotion) 0 else 180), label = "course-orbit-focus") { course ->
-                                Column(Modifier.fillMaxSize().padding(Spacing.space2), horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center) {
-                                    Canvas(Modifier.size(16.dp)) {
-                                        val ink = SpacesTokens.tangerine
-                                        val stroke = 1.4.dp.toPx()
-                                        drawRoundRect(ink, Offset(size.width * .12f, size.height * .12f),
-                                            androidx.compose.ui.geometry.Size(size.width * .76f, size.height * .76f),
-                                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()), style = Stroke(stroke))
-                                        drawLine(ink, Offset(size.width * .5f, size.height * .16f), Offset(size.width * .5f, size.height * .84f), stroke)
-                                    }
-                                    Text(course?.code ?: stringResource(R.string.academics_focus), color = SpacesTokens.tangerine,
-                                        style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                                    Text(course?.title ?: stringResource(R.string.academics_choose_course), color = SpacesTokens.primary,
-                                        style = MaterialTheme.typography.labelSmall, maxLines = 2)
-                                }
-                            }
-                        }
-                        val inner = listOf(-.23f to -.25f, .23f to -.25f, -.23f to .25f, .23f to .25f)
-                        val outer = listOf(-.40f to -.32f, .40f to -.32f, -.40f to .32f, .40f to .32f)
-                        visible.forEachIndexed { index, course ->
-                            val (dx, dy) = if (largeOrbit && index >= 4) outer[index - 4] else inner[index % 4]
-                            CourseSatellite(course, index, false, satelliteSize,
-                            Modifier.offset(x = (orbitWidth.value / 2 + dx * orbitWidth.value - satelliteSize.value / 2).dp,
-                                    y = (100 + dy * 200 - satelliteSize.value / 2).dp), onClick = { onSelect(course) })
-                        }
-                    }
-                    if (overflow.isNotEmpty()) {
-                        val overflowLabel = stringResource(R.string.academics_more_courses, overflow.size)
-                        Box(Modifier.fillMaxWidth().padding(top = Spacing.space1), contentAlignment = Alignment.CenterEnd) {
-                            Box {
-                                Surface(onClick = onShowAll, modifier = Modifier.sizeIn(minWidth = Spacing.touch, minHeight = Spacing.touch)
-                                .semantics { contentDescription = overflowLabel },
-                                shape = CircleShape, color = SpacesTokens.amber, contentColor = SpacesTokens.canvas) {
-                                    Box(contentAlignment = Alignment.Center) { Text("+${overflow.size}", style = MaterialTheme.typography.labelMedium) }
-                                }
-                                DropdownMenu(expanded = overflowOpen, onDismissRequest = onShowAll) {
-                                    overflow.forEach { course ->
-                                        DropdownMenuItem(text = { Text(course.title) }, onClick = { onSelect(course); onShowAll() })
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            if (courses.isEmpty()) {
-                Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-                    Surface(modifier = Modifier.size(88.dp), shape = RoundedCornerShape(24.dp),
-                        color = SpacesTokens.tangerine.copy(alpha = .16f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, SpacesTokens.tangerine.copy(alpha = .55f))) {
-                        Column(Modifier.fillMaxSize().padding(Spacing.space2), horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center) {
-                            Canvas(Modifier.size(16.dp)) {
-                                val ink = SpacesTokens.tangerine
-                                val stroke = 1.4.dp.toPx()
-                                drawRoundRect(ink, Offset(size.width * .12f, size.height * .12f),
-                                    androidx.compose.ui.geometry.Size(size.width * .76f, size.height * .76f),
-                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()), style = Stroke(stroke))
-                                drawLine(ink, Offset(size.width * .5f, size.height * .16f), Offset(size.width * .5f, size.height * .84f), stroke)
-                            }
-                            Text(stringResource(R.string.academics_choose_course), color = SpacesTokens.primary,
-                                style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-                }
-            } else Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-                courses.forEach { course ->
-                    Row(Modifier.fillMaxWidth().heightIn(min = Spacing.touch).clip(RoundedCornerShape(16.dp))
-                        .background(SpacesTokens.row).selectable(selected = course.id == selected?.id, role = Role.RadioButton,
-                            onClick = { onSelect(course) }).semantics { contentDescription = course.title }.padding(horizontal = Spacing.space3),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = course.id == selected?.id, onClick = null)
-                        Text(course.code ?: course.title, Modifier.weight(1f), color = SpacesTokens.primary)
-                    }
-                }
-            }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(message, style = MaterialTheme.typography.bodyMedium, color = ChefMuted)
+            action?.invoke()
         }
-    }
-}
-
-@Composable
-private fun CourseSatellite(course: Course, index: Int, selected: Boolean, diameter: androidx.compose.ui.unit.Dp,
-                            position: Modifier, onClick: () -> Unit) {
-    Box(position.sizeIn(minWidth = Spacing.touch, minHeight = Spacing.touch)
-        .clickable(role = Role.Button, onClick = onClick).semantics { contentDescription = course.title },
-        contentAlignment = Alignment.Center) {
-      Surface(
-        modifier = Modifier.size(diameter),
-        shape = CircleShape,
-        color = if (selected) SpacesTokens.tangerine else SpacesTokens.row,
-        contentColor = if (selected) SpacesTokens.canvas else SpacesTokens.primary,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SpacesTokens.tangerine.copy(alpha = if (selected) .85f else .25f)),
-      ) {
-        Column(Modifier.fillMaxSize().padding(3.dp), horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center) {
-            Canvas(Modifier.size(15.dp)) {
-                val c = if (selected) SpacesTokens.canvas else SpacesTokens.tangerine
-                val sw = 1.5.dp.toPx()
-                when (index % 4) {
-                    0 -> {
-                        drawRect(c, Offset(size.width * .2f, size.height * .22f), androidx.compose.ui.geometry.Size(size.width * .6f, size.height * .62f), style = Stroke(sw))
-                        drawLine(c, Offset(size.width * .5f, size.height * .22f), Offset(size.width * .5f, size.height * .84f), sw)
-                    }
-                    1 -> {
-                        drawLine(c, Offset(size.width * .36f, size.height * .2f), Offset(size.width * .17f, size.height * .5f), sw)
-                        drawLine(c, Offset(size.width * .17f, size.height * .5f), Offset(size.width * .36f, size.height * .8f), sw)
-                        drawLine(c, Offset(size.width * .64f, size.height * .2f), Offset(size.width * .83f, size.height * .5f), sw)
-                        drawLine(c, Offset(size.width * .83f, size.height * .5f), Offset(size.width * .64f, size.height * .8f), sw)
-                    }
-                    2 -> {
-                        drawCircle(c, size.minDimension * .13f, Offset(size.width * .3f, size.height * .33f))
-                        drawCircle(c, size.minDimension * .13f, Offset(size.width * .7f, size.height * .33f))
-                        drawLine(c, Offset(size.width * .22f, size.height * .7f), Offset(size.width * .78f, size.height * .7f), sw)
-                    }
-                    else -> {
-                        drawLine(c, Offset(size.width * .22f, size.height * .8f), Offset(size.width * .22f, size.height * .2f), sw)
-                        drawLine(c, Offset(size.width * .22f, size.height * .8f), Offset(size.width * .82f, size.height * .8f), sw)
-                        drawLine(c, Offset(size.width * .38f, size.height * .7f), Offset(size.width * .38f, size.height * .53f), sw)
-                        drawLine(c, Offset(size.width * .57f, size.height * .7f), Offset(size.width * .57f, size.height * .39f), sw)
-                        drawLine(c, Offset(size.width * .76f, size.height * .7f), Offset(size.width * .76f, size.height * .24f), sw)
-                    }
-                }
-            }
-            Text(course.code?.take(4) ?: course.title.take(4), style = MaterialTheme.typography.labelSmall, maxLines = 1)
-        }
-      }
     }
 }
 
 @Composable
 private fun FocusCourseCard(course: Course, assignments: AssignmentLoad, now: Long, zone: ZoneId, compact: Boolean, onEditNext: (Task) -> Unit) {
-    val shape = RoundedCornerShape(28.dp)
-    val brush = Brush.linearGradient(listOf(SpacesTokens.tangerine.copy(alpha = .16f), SpacesTokens.surface))
     val local = Instant.ofEpochMilli(now).atZone(zone)
     val currentSlot = course.weeklySlots.firstOrNull { it.dayOfWeek == local.dayOfWeek.value &&
         local.hour * 60 + local.minute in it.startMinute until it.endMinute }
     val nextSlot = currentSlot ?: course.weeklySlots.sortedWith(compareBy({ it.dayOfWeek }, { it.startMinute })).firstOrNull()
-    Column(Modifier.fillMaxWidth().clip(shape).background(brush).border(1.5.dp, SpacesTokens.tangerine.copy(alpha = .3f), shape)
-        .padding(Spacing.space4), verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.academics_focus), style = MaterialTheme.typography.labelLarge, color = SpacesTokens.tangerine)
-        Text(course.title, style = MaterialTheme.typography.headlineSmall, color = SpacesTokens.primary)
-        val schedule = nextSlot?.let { slot ->
-            val day = DayOfWeek.of(slot.dayOfWeek).getDisplayName(TextStyle.SHORT, java.util.Locale.getDefault())
-            val nowLabel = if (slot == currentSlot) stringResource(R.string.academics_now) else null
-            buildString {
-                nowLabel?.let { append(it).append(" · ") }
-                append(day).append(" · ").append(formatMinute(slot.startMinute)).append("–").append(formatMinute(slot.endMinute))
-                slot.location?.let { append(" · ").append(it) }
+
+    // Hero Focus Card in Butter Yellow
+    Surface(
+        shape = RoundedCornerShape(26.dp),
+        color = ChefButter,
+        border = BorderStroke(2.dp, ChefGround),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = ChefGround.copy(alpha = 0.12f),
+                ) {
+                    Text(
+                        text = stringResource(R.string.academics_focus).uppercase(),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 1.sp),
+                        color = ChefGround,
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(ChefGround),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("↗", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
             }
-        }
-            Text(schedule ?: stringResource(R.string.academics_no_schedule), style = MaterialTheme.typography.bodyMedium, color = SpacesTokens.secondary)
-        when {
-            assignments.loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-            assignments.failed -> Text(stringResource(R.string.academics_assignments_failed), color = SpacesTokens.secondary)
-            assignments.items.isNotEmpty() -> {
-                val completed = assignments.items.count { it.assignment.state == id.riko.hub.domain.model.AcademicState.COMPLETED || it.task.status == TaskStatus.DONE }
-                val progress = completed.toFloat() / assignments.items.size
-                Text(stringResource(R.string.academics_assignments_progress, completed, assignments.items.size),
-                    style = MaterialTheme.typography.labelMedium, color = SpacesTokens.secondary)
-                LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth(), color = SpacesTokens.tangerine,
-                    trackColor = SpacesTokens.row)
-            }
-        }
-        val nextTask = assignments.items.filter {
-            it.task.status != TaskStatus.DONE && it.assignment.state !in setOf(
-                id.riko.hub.domain.model.AcademicState.SUBMITTED,
-                id.riko.hub.domain.model.AcademicState.COMPLETED,
+
+            Text(
+                text = course.title,
+                fontFamily = NotoCondensedBlack,
+                fontWeight = FontWeight.Black,
+                fontSize = 26.sp,
+                lineHeight = 28.sp,
+                color = ChefGround,
             )
-        }
-            .sortedWith(compareBy({ it.task.deadlineAt ?: Long.MAX_VALUE }, { it.task.title })).firstOrNull()
-        if (nextTask != null) {
-            TextButton(onClick = { onEditNext(nextTask.task) }, modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch),
-                colors = ButtonDefaults.textButtonColors(containerColor = SpacesTokens.row.copy(alpha = .8f))) {
-                Column(Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.academics_next_action), color = SpacesTokens.secondary, style = MaterialTheme.typography.labelSmall)
-                    Text(nextTask.task.title, color = SpacesTokens.primary, maxLines = if (compact) 2 else 3)
+
+            val schedule = nextSlot?.let { slot ->
+                val day = DayOfWeek.of(slot.dayOfWeek).getDisplayName(TextStyle.SHORT, java.util.Locale.getDefault())
+                val nowLabel = if (slot == currentSlot) stringResource(R.string.academics_now) else null
+                buildString {
+                    nowLabel?.let { append(it).append(" · ") }
+                    append(day).append(" · ").append(formatMinute(slot.startMinute)).append("–").append(formatMinute(slot.endMinute))
+                    slot.location?.let { append(" · ").append(it) }
+                }
+            }
+            Text(
+                text = schedule ?: stringResource(R.string.academics_no_schedule),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = ChefGround.copy(alpha = 0.85f),
+            )
+
+            when {
+                assignments.loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = ChefGround, trackColor = ChefGround.copy(alpha = 0.2f))
+                assignments.failed -> Text(stringResource(R.string.academics_assignments_failed), color = ChefCoral)
+                assignments.items.isNotEmpty() -> {
+                    val completed = assignments.items.count { it.assignment.state == id.riko.hub.domain.model.AcademicState.COMPLETED || it.task.status == TaskStatus.DONE }
+                    val progress = completed.toFloat() / assignments.items.size
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.academics_assignments_progress, completed, assignments.items.size),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = ChefGround,
+                        )
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                            color = ChefGround,
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                        color = ChefGround,
+                        trackColor = ChefGround.copy(alpha = 0.2f),
+                    )
+                }
+            }
+
+            val nextTask = assignments.items.filter {
+                it.task.status != TaskStatus.DONE && it.assignment.state !in setOf(
+                    id.riko.hub.domain.model.AcademicState.SUBMITTED,
+                    id.riko.hub.domain.model.AcademicState.COMPLETED,
+                )
+            }.sortedWith(compareBy({ it.task.deadlineAt ?: Long.MAX_VALUE }, { it.task.title })).firstOrNull()
+
+            if (nextTask != null) {
+                Surface(
+                    onClick = { onEditNext(nextTask.task) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = ChefGround,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.academics_next_action).uppercase(),
+                                color = ChefMuted,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            )
+                            Text(
+                                text = nextTask.task.title,
+                                color = ChefInk,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                maxLines = if (compact) 2 else 3,
+                            )
+                        }
+                        Text("↗", color = ChefLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -479,61 +499,111 @@ private fun FocusCourseCard(course: Course, assignments: AssignmentLoad, now: Lo
 }
 
 @Composable
-private fun DeadlineSection(state: AssignmentLoad, now: Long, zone: ZoneId, onRetry: () -> Unit,
-                            onTaskClick: (Task) -> Unit, noCourse: Boolean = false) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.academics_deadlines), style = MaterialTheme.typography.titleMedium, color = SpacesTokens.primary)
+private fun DeadlineSection(
+    state: AssignmentLoad,
+    now: Long,
+    zone: ZoneId,
+    onRetry: () -> Unit,
+    onTaskClick: (Task) -> Unit,
+    noCourse: Boolean = false,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            stringResource(R.string.academics_deadlines).uppercase(),
+            fontFamily = NotoCondensedBlack,
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp,
+            color = ChefInk,
+        )
         when {
-            state.loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+            state.loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = ChefLime)
             state.failed -> Column {
-                Text(stringResource(R.string.academics_deadlines_failed), color = SpacesTokens.secondary)
-                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = Spacing.touch)) { Text(stringResource(R.string.retry)) }
+                Text(stringResource(R.string.academics_deadlines_failed), color = ChefCoral)
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry), color = ChefLime) }
             }
             else -> {
                 val deadlines = state.items.filter {
                     it.task.deadlineAt != null && it.task.status != TaskStatus.DONE &&
-                        it.assignment.state !in setOf(id.riko.hub.domain.model.AcademicState.SUBMITTED,
-                            id.riko.hub.domain.model.AcademicState.COMPLETED)
-                }
-                    .sortedBy { it.task.deadlineAt }.take(3)
+                        it.assignment.state !in setOf(
+                            id.riko.hub.domain.model.AcademicState.SUBMITTED,
+                            id.riko.hub.domain.model.AcademicState.COMPLETED,
+                        )
+                }.sortedBy { it.task.deadlineAt }.take(3)
+
                 if (deadlines.isEmpty()) {
-                    Surface(shape = CircleShape, color = SpacesTokens.row, modifier = Modifier.heightIn(min = Spacing.touch)) {
-                        Text(stringResource(if (noCourse) R.string.academics_deadlines_no_course else R.string.academics_no_deadlines),
-                            Modifier.padding(horizontal = Spacing.space3, vertical = Spacing.space2),
-                            color = SpacesTokens.secondary)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = ChefPanel,
+                        border = BorderStroke(1.dp, ChefLine),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            stringResource(if (noCourse) R.string.academics_deadlines_no_course else R.string.academics_no_deadlines),
+                            Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                            color = ChefMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
-                } else LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                    items(deadlines, key = { it.task.id }) { item ->
-                        val targetDate = Instant.ofEpochMilli(item.task.deadlineAt!!).atZone(zone).toLocalDate()
-                        val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-                        val days = java.time.temporal.ChronoUnit.DAYS.between(today, targetDate)
-                        val tierColor = when {
-                            days <= 1L -> SpacesTokens.magenta
-                            days <= 5L -> SpacesTokens.tangerine
-                            else -> SpacesTokens.jade
-                        }
-                        val badge = when {
-                            days < 0L -> stringResource(R.string.academics_overdue)
-                            days == 0L -> stringResource(R.string.academics_today)
-                            days == 1L -> stringResource(R.string.academics_tomorrow)
-                            else -> stringResource(R.string.academics_days_left, days)
-                        }
-                        Surface(onClick = { onTaskClick(item.task) }, modifier = Modifier.widthIn(min = 160.dp).heightIn(min = 72.dp),
-                            shape = RoundedCornerShape(20.dp), color = tierColor.copy(alpha = .09f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, tierColor.copy(alpha = .4f))) {
-                            Row(Modifier.padding(Spacing.space2), verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                                Column(Modifier.width(40.dp).heightIn(min = 44.dp).clip(RoundedCornerShape(12.dp))
-                                    .background(tierColor.copy(alpha = .16f)), horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center) {
-                                    Text(DateTimeFormatter.ofPattern("d", java.util.Locale.getDefault()).withZone(zone)
-                                        .format(Instant.ofEpochMilli(item.task.deadlineAt)), color = SpacesTokens.primary, style = MaterialTheme.typography.titleMedium)
-                                    Text(DateTimeFormatter.ofPattern("MMM", java.util.Locale.getDefault()).withZone(zone)
-                                        .format(Instant.ofEpochMilli(item.task.deadlineAt)), color = SpacesTokens.secondary, style = MaterialTheme.typography.labelSmall)
-                                }
-                                Column(Modifier.weight(1f)) {
-                                    Text(item.task.title, color = SpacesTokens.primary, style = MaterialTheme.typography.labelLarge, maxLines = 2)
-                                    Text(badge, color = SpacesTokens.secondary, style = MaterialTheme.typography.labelSmall)
+                } else {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(deadlines, key = { it.task.id }) { item ->
+                            val targetDate = Instant.ofEpochMilli(item.task.deadlineAt!!).atZone(zone).toLocalDate()
+                            val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+                            val days = java.time.temporal.ChronoUnit.DAYS.between(today, targetDate)
+                            val tierColor = when {
+                                days <= 1L -> ChefCoral
+                                days <= 5L -> ChefButter
+                                else -> ChefLime
+                            }
+                            val badge = when {
+                                days < 0L -> stringResource(R.string.academics_overdue)
+                                days == 0L -> stringResource(R.string.academics_today)
+                                days == 1L -> stringResource(R.string.academics_tomorrow)
+                                else -> stringResource(R.string.academics_days_left, days)
+                            }
+                            Surface(
+                                onClick = { onTaskClick(item.task) },
+                                modifier = Modifier.widthIn(min = 180.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                color = ChefPanel,
+                                border = BorderStroke(1.dp, ChefLine),
+                            ) {
+                                Row(
+                                    Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Column(
+                                        Modifier
+                                            .size(44.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(tierColor.copy(alpha = 0.18f)),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center,
+                                    ) {
+                                        Text(
+                                            DateTimeFormatter.ofPattern("d", java.util.Locale.getDefault()).withZone(zone)
+                                                .format(Instant.ofEpochMilli(item.task.deadlineAt)),
+                                            color = tierColor,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleMedium,
+                                        )
+                                        Text(
+                                            DateTimeFormatter.ofPattern("MMM", java.util.Locale.getDefault()).withZone(zone)
+                                                .format(Instant.ofEpochMilli(item.task.deadlineAt)),
+                                            color = ChefMuted,
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(
+                                            item.task.title,
+                                            color = ChefInk,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            maxLines = 2,
+                                        )
+                                        Text(badge, color = tierColor, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -546,23 +616,49 @@ private fun DeadlineSection(state: AssignmentLoad, now: Long, zone: ZoneId, onRe
 
 @Composable
 private fun ExamSection(state: EventLoad, zone: ZoneId, onRetry: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.academics_exams), style = MaterialTheme.typography.titleMedium, color = SpacesTokens.primary)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            stringResource(R.string.academics_exams).uppercase(),
+            fontFamily = NotoCondensedBlack,
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp,
+            color = ChefInk,
+        )
         when {
-            state.loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+            state.loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = ChefLime)
             state.failed -> Column {
-                Text(stringResource(R.string.academics_exams_failed), color = SpacesTokens.secondary)
-                TextButton(onClick = onRetry, modifier = Modifier.heightIn(min = Spacing.touch)) { Text(stringResource(R.string.retry)) }
+                Text(stringResource(R.string.academics_exams_failed), color = ChefCoral)
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry), color = ChefLime) }
             }
-            state.items.isEmpty() -> Text(stringResource(R.string.academics_no_exams), color = SpacesTokens.secondary)
+            state.items.isEmpty() -> Text(stringResource(R.string.academics_no_exams), color = ChefMuted, style = MaterialTheme.typography.bodySmall)
             else -> state.items.take(3).forEach { event ->
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(SpacesTokens.surface).padding(Spacing.space3),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(event.title, color = SpacesTokens.primary)
-                        event.location?.let { Text(it, color = SpacesTokens.secondary, style = MaterialTheme.typography.bodySmall) }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(event.title, color = ChefInk, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                            event.location?.let { Text(it, color = ChefMuted, style = MaterialTheme.typography.bodySmall) }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = ChefCoral,
+                        ) {
+                            Text(
+                                formatDate(event.startAt, zone),
+                                Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                color = ChefGround,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            )
+                        }
                     }
-                    Text(formatDate(event.startAt, zone), color = SpacesTokens.tangerine, style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -571,21 +667,59 @@ private fun ExamSection(state: EventLoad, zone: ZoneId, onRetry: () -> Unit) {
 
 @Composable
 private fun MaterialsPreview(state: VaultUiState, onOpen: ((DriveFile) -> Unit)?, onVault: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(SpacesTokens.surface).padding(Spacing.space4),
-        verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.academics_vault_preview), Modifier.weight(1f), color = SpacesTokens.primary,
-                style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = onVault, modifier = Modifier.heightIn(min = Spacing.touch)) { Text(stringResource(R.string.academics_open_vault)) }
-        }
-        Text(stringResource(R.string.academics_vault_preview_note), color = SpacesTokens.secondary, style = MaterialTheme.typography.bodySmall)
-        val files = state.files.filterNot { it.isFolder }.take(3)
-        if (state.connectedEmail == null) Text(stringResource(R.string.academics_vault_not_connected), color = SpacesTokens.secondary)
-        else if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        else if (files.isEmpty()) Text(stringResource(R.string.academics_vault_empty), color = SpacesTokens.secondary)
-        else files.forEach { file ->
-            TextButton(onClick = { onOpen?.invoke(file) ?: onVault() }, modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch)) {
-                Text(file.name, Modifier.fillMaxWidth(), maxLines = 2)
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.academics_vault_preview),
+                    Modifier.weight(1f),
+                    color = ChefInk,
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                )
+                TextButton(onClick = onVault) {
+                    Text(stringResource(R.string.academics_open_vault), color = ChefLime, fontWeight = FontWeight.Bold)
+                }
+            }
+            Text(stringResource(R.string.academics_vault_preview_note), color = ChefMuted, style = MaterialTheme.typography.bodySmall)
+            val files = state.files.filterNot { it.isFolder }.take(3)
+            when {
+                state.connectedEmail == null -> Text(stringResource(R.string.academics_vault_not_connected), color = ChefMuted, style = MaterialTheme.typography.bodySmall)
+                state.loading -> LinearProgressIndicator(Modifier.fillMaxWidth(), color = ChefLime)
+                files.isEmpty() -> Text(stringResource(R.string.academics_vault_empty), color = ChefMuted, style = MaterialTheme.typography.bodySmall)
+                else -> files.forEach { file ->
+                    Surface(
+                        onClick = { onOpen?.invoke(file) ?: onVault() },
+                        shape = RoundedCornerShape(14.dp),
+                        color = ChefRaised,
+                        border = BorderStroke(1.dp, ChefLine),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Box(
+                                Modifier.size(28.dp).clip(RoundedCornerShape(8.dp)).background(ChefSage),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text("📄", fontSize = 12.sp)
+                            }
+                            Text(file.name, Modifier.weight(1f), maxLines = 1, color = ChefInk, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium))
+                            Text("↗", color = ChefMuted, fontSize = 14.sp)
+                        }
+                    }
+                }
             }
         }
     }
@@ -593,32 +727,37 @@ private fun MaterialsPreview(state: VaultUiState, onOpen: ((DriveFile) -> Unit)?
 
 @Composable
 private fun QuickActions(compact: Boolean, onManageCourses: () -> Unit, onAddTask: () -> Unit, onPlan: () -> Unit, onVault: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.academics_quick_actions), style = MaterialTheme.typography.titleMedium, color = SpacesTokens.primary)
-        if (compact) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                ActionButton(R.string.academics_manage, Modifier.weight(1f), onManageCourses)
-                ActionButton(R.string.academics_add_task, Modifier.weight(1f), onAddTask)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                ActionButton(R.string.academics_plan, Modifier.weight(1f), onPlan)
-                ActionButton(R.string.academics_open_vault, Modifier.weight(1f), onVault)
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                ActionButton(R.string.academics_manage, Modifier.fillMaxWidth(), onManageCourses)
-                ActionButton(R.string.academics_add_task, Modifier.fillMaxWidth(), onAddTask)
-                ActionButton(R.string.academics_plan, Modifier.fillMaxWidth(), onPlan)
-                ActionButton(R.string.academics_open_vault, Modifier.fillMaxWidth(), onVault)
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            stringResource(R.string.academics_quick_actions).uppercase(),
+            fontFamily = NotoCondensedBlack,
+            fontWeight = FontWeight.Black,
+            fontSize = 15.sp,
+            color = ChefInk,
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ActionButton(R.string.academics_manage, Modifier.weight(1f).testTag("academics-manage-courses"), onManageCourses)
+            ActionButton(R.string.academics_add_task, Modifier.weight(1f), onAddTask)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ActionButton(R.string.academics_plan, Modifier.weight(1f), onPlan)
+            ActionButton(R.string.academics_open_vault, Modifier.weight(1f), onVault)
         }
     }
 }
 
 @Composable
 private fun ActionButton(label: Int, modifier: Modifier, onClick: () -> Unit) {
-    FilledTonalButton(onClick = onClick, modifier = modifier.heightIn(min = Spacing.touch)) {
-        Text(stringResource(label), maxLines = 2)
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = modifier.heightIn(min = 44.dp),
+    ) {
+        Box(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(label), maxLines = 1, color = ChefInk, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 

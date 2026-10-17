@@ -1,27 +1,28 @@
 package id.riko.hub.ui.spaces
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.riko.hub.R
 import id.riko.hub.data.remote.device.CompanionSnapshot
 import id.riko.hub.data.remote.device.HandoffProgress
@@ -29,13 +30,11 @@ import id.riko.hub.data.remote.device.HandoffSnapshot
 import id.riko.hub.navigation.Destination
 import id.riko.hub.ui.sync.SyncScreen
 import id.riko.hub.ui.sync.SyncUiState
-import id.riko.hub.ui.theme.SpacesTokens
-import id.riko.hub.ui.theme.Spacing
-import id.riko.hub.ui.theme.rememberReducedMotion
+import id.riko.hub.ui.theme.*
 
 @Composable
 fun DevicesSpaceScreen(onNavigate: (Destination) -> Unit) {
-    SpacesTheme { SyncScreen(onNavigate, inSpace = true) }
+    SyncScreen(onNavigate, inSpace = true)
 }
 
 enum class DeviceBridgeState { UNPAIRED, OFFLINE, PAIRING, DISCONNECTED, CONNECTED, TRANSFERRING, ERROR }
@@ -68,12 +67,11 @@ fun DevicesConnectionBridge(
     val handoff = state.handoff
     val bridgeState = deviceBridgeState(companion, handoff)
     val connected = bridgeState == DeviceBridgeState.CONNECTED || bridgeState == DeviceBridgeState.TRANSFERRING
-    val green = SpacesTokens.connected
     val statusColor = when (bridgeState) {
-        DeviceBridgeState.CONNECTED, DeviceBridgeState.TRANSFERRING -> green
-        DeviceBridgeState.PAIRING -> SpacesTokens.tangerine
-        DeviceBridgeState.ERROR -> SpacesTokens.magenta
-        else -> SpacesTokens.secondary
+        DeviceBridgeState.CONNECTED, DeviceBridgeState.TRANSFERRING -> ChefLime
+        DeviceBridgeState.PAIRING -> ChefButter
+        DeviceBridgeState.ERROR -> ChefCoral
+        else -> ChefMuted
     }
     val status = stringResource(when (bridgeState) {
         DeviceBridgeState.UNPAIRED -> R.string.devices_state_unpaired
@@ -86,18 +84,24 @@ fun DevicesConnectionBridge(
     })
     val thisPhone = stringResource(R.string.devices_this_phone)
     val narrow = LocalConfiguration.current.screenWidthDp < 360 || LocalConfiguration.current.fontScale >= 1.3f
-    val borderColor = if (connected) green.copy(alpha = .32f) else SpacesTokens.edge.copy(alpha = .8f)
-    Card(
+    val borderColor = if (connected) ChefLime.copy(alpha = 0.6f) else ChefLine
+    Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = SpacesTokens.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
+        shape = RoundedCornerShape(24.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, borderColor),
     ) {
-        Column(Modifier.fillMaxWidth().padding(Spacing.space4), verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(stringResource(R.string.devices_bridge_title), style = MaterialTheme.typography.titleLarge, color = SpacesTokens.primary)
-                    Text(status, style = MaterialTheme.typography.labelLarge, color = statusColor)
+                    Text(
+                        stringResource(R.string.devices_bridge_title),
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = ChefInk,
+                    )
+                    Text(status, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = statusColor)
                 }
                 StatusDot(statusColor, connected)
             }
@@ -108,26 +112,26 @@ fun DevicesConnectionBridge(
                     subtitle = stringResource(R.string.renaissance_devices_android),
                     connected = companion.connected,
                     kind = DeviceKind.Phone,
-                    accent = SpacesTokens.tangerine,
+                    accent = ChefButter,
                 )
                 BridgeConnectionLine(bridgeState, handoff.progress, vertical = true)
                 LaptopPanel(companion, handoff, connected)
             } else {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DevicePanel(
                         iconDescription = stringResource(R.string.devices_phone_icon),
                         name = thisPhone,
                         subtitle = stringResource(R.string.renaissance_devices_android),
                         connected = companion.connected,
                         kind = DeviceKind.Phone,
-                        accent = SpacesTokens.tangerine,
+                        accent = ChefButter,
                         modifier = Modifier.weight(1f),
                     )
                     BridgeConnectionLine(bridgeState, handoff.progress, vertical = false)
                     LaptopPanel(companion, handoff, connected = connected, modifier = Modifier.weight(1f))
                 }
             }
-            Text(stringResource(R.string.devices_same_network_only), style = MaterialTheme.typography.bodySmall, color = SpacesTokens.secondary)
+            Text(stringResource(R.string.devices_same_network_only), style = MaterialTheme.typography.bodySmall, color = ChefMuted)
             val trusted = companion.trusted
             val capability = when {
                 trusted == null -> null
@@ -136,24 +140,38 @@ fun DevicesConnectionBridge(
                 !handoff.handoffAllowed -> stringResource(R.string.devices_handoff_not_enabled)
                 else -> stringResource(R.string.devices_handoff_supported)
             }
-            capability?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = SpacesTokens.secondary) }
-            if (companion.error != null) Text(companion.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            if (handoff.error != null) Text(handoff.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            capability?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = ChefMuted) }
+            if (companion.error != null) Text(companion.error, color = ChefCoral, style = MaterialTheme.typography.bodySmall)
+            if (handoff.error != null) Text(handoff.error, color = ChefCoral, style = MaterialTheme.typography.bodySmall)
             if (trusted != null) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                    if (connected) OutlinedButton(onClick = onDisconnect, modifier = Modifier.weight(1f).heightIn(min = Spacing.touch)) {
-                        Text(stringResource(R.string.devices_disconnect))
-                    } else Button(onClick = onConnect, enabled = companion.networkReady && !companion.busy,
-                        modifier = Modifier.weight(1f).heightIn(min = Spacing.touch)) {
-                        Text(stringResource(R.string.devices_connect))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (connected) OutlinedButton(
+                        onClick = onDisconnect,
+                        shape = RoundedCornerShape(999.dp),
+                        border = BorderStroke(1.dp, ChefLine),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = ChefInk),
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                    ) {
+                        Text(stringResource(R.string.devices_disconnect), fontWeight = FontWeight.Bold)
+                    } else Button(
+                        onClick = onConnect,
+                        enabled = companion.networkReady && !companion.busy,
+                        shape = RoundedCornerShape(999.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ChefLime, contentColor = ChefGround),
+                        modifier = Modifier.weight(1f).heightIn(min = 44.dp),
+                    ) {
+                        Text(stringResource(R.string.devices_connect), fontWeight = FontWeight.Bold)
                     }
-                    TextButton(onClick = onForget, enabled = !companion.busy, modifier = Modifier.heightIn(min = Spacing.touch)) {
-                        Text(stringResource(R.string.devices_forget))
+                    TextButton(onClick = onForget, enabled = !companion.busy, modifier = Modifier.heightIn(min = 44.dp)) {
+                        Text(stringResource(R.string.devices_forget), color = ChefMuted, fontWeight = FontWeight.Bold)
                     }
                 }
             } else if (companion.laptops.isEmpty()) {
-                Text(stringResource(if (companion.networkReady) R.string.devices_search_nearby else R.string.devices_pair_after_network),
-                    color = SpacesTokens.secondary)
+                Text(
+                    stringResource(if (companion.networkReady) R.string.devices_search_nearby else R.string.devices_pair_after_network),
+                    color = ChefMuted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
     }
@@ -174,7 +192,7 @@ private fun LaptopPanel(companion: CompanionSnapshot, handoff: HandoffSnapshot, 
         },
         connected = connected,
         kind = DeviceKind.Laptop,
-        accent = if (connected) SpacesTokens.connected else SpacesTokens.ultramarine,
+        accent = if (connected) ChefLime else ChefSage,
         modifier = modifier,
     )
 }
@@ -186,23 +204,30 @@ private fun DevicePanel(
     subtitle: String,
     connected: Boolean,
     kind: DeviceKind,
-    accent: androidx.compose.ui.graphics.Color,
+    accent: Color,
     modifier: Modifier = Modifier,
 ) {
     val semantic = stringResource(if (connected) R.string.devices_state_connected else R.string.devices_state_offline)
-    Column(
-        modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(SpacesTokens.row)
-            .semantics { contentDescription = "$iconDescription, $name, $subtitle, $semantic" }
-            .padding(Spacing.space3),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.space1),
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = ChefRaised,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = "$iconDescription, $name, $subtitle, $semantic" },
     ) {
-        DeviceGlyph(kind, accent, Modifier.size(width = 48.dp, height = 44.dp))
-        Text(name, style = MaterialTheme.typography.titleSmall, color = SpacesTokens.primary, maxLines = 2)
-        Text(subtitle, style = MaterialTheme.typography.labelSmall, color = SpacesTokens.secondary, maxLines = 2)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            StatusDot(if (connected) SpacesTokens.connected else SpacesTokens.muted, connected)
-            Text(semantic, style = MaterialTheme.typography.labelMedium, color = if (connected) SpacesTokens.connected else SpacesTokens.secondary)
+        Column(
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            DeviceGlyph(kind, accent, Modifier.size(width = 48.dp, height = 44.dp))
+            Text(name, style = MaterialTheme.typography.titleSmall, color = ChefInk, fontWeight = FontWeight.Bold, maxLines = 2)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = ChefMuted, maxLines = 2)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StatusDot(if (connected) ChefLime else ChefMuted, connected)
+                Text(semantic, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = if (connected) ChefLime else ChefMuted)
+            }
         }
     }
 }
@@ -212,12 +237,13 @@ private fun BridgeConnectionLine(state: DeviceBridgeState, progress: HandoffProg
     val reducedMotion = rememberReducedMotion()
     val connected = state == DeviceBridgeState.CONNECTED || state == DeviceBridgeState.TRANSFERRING
     val lineColor = when (state) {
-        DeviceBridgeState.CONNECTED, DeviceBridgeState.TRANSFERRING -> SpacesTokens.connected
-        DeviceBridgeState.PAIRING -> SpacesTokens.tangerine
-        DeviceBridgeState.ERROR -> SpacesTokens.magenta
-        else -> SpacesTokens.muted
+        DeviceBridgeState.CONNECTED, DeviceBridgeState.TRANSFERRING -> ChefLime
+        DeviceBridgeState.PAIRING -> ChefButter
+        DeviceBridgeState.ERROR -> ChefCoral
+        else -> ChefMuted
     }
-    val line = lineColor.copy(alpha = if (connected) .46f else .62f)
+    val connectedColor = ChefLime
+    val line = lineColor.copy(alpha = if (connected) 0.5f else 0.6f)
     val fraction = if (state == DeviceBridgeState.TRANSFERRING && !reducedMotion) deviceTransferProgress(progress) else null
     val description = stringResource(R.string.devices_local_bridge)
     Canvas(if (vertical) Modifier.fillMaxWidth().height(44.dp) else Modifier.width(44.dp).height(142.dp)
@@ -228,36 +254,36 @@ private fun BridgeConnectionLine(state: DeviceBridgeState, progress: HandoffProg
             pathEffect = if (connected) null else PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 5.dp.toPx())))
         if (fraction != null) {
             val center = Offset(start.x + (end.x - start.x) * fraction, start.y + (end.y - start.y) * fraction)
-            drawCircle(SpacesTokens.connected.copy(alpha = .18f), radius = 8.dp.toPx(), center = center)
-            drawCircle(SpacesTokens.connected, radius = 3.dp.toPx(), center = center)
+            drawCircle(connectedColor.copy(alpha = 0.2f), radius = 8.dp.toPx(), center = center)
+            drawCircle(connectedColor, radius = 3.dp.toPx(), center = center)
         }
     }
 }
 
 @Composable
-private fun DeviceGlyph(kind: DeviceKind, tint: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+private fun DeviceGlyph(kind: DeviceKind, tint: Color, modifier: Modifier) {
     Canvas(modifier) {
         val sw = 2.dp.toPx()
         if (kind == DeviceKind.Phone) {
-            val left = size.width * .3f
-            val right = size.width * .7f
-            drawRoundRect(tint, Offset(left, size.height * .05f), androidx.compose.ui.geometry.Size(right - left, size.height * .88f),
+            val left = size.width * 0.3f
+            val right = size.width * 0.7f
+            drawRoundRect(tint, Offset(left, size.height * 0.05f), androidx.compose.ui.geometry.Size(right - left, size.height * 0.88f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(5.dp.toPx()), style = Stroke(sw))
-            drawLine(tint, Offset(left + 5.dp.toPx(), size.height * .18f), Offset(right - 5.dp.toPx(), size.height * .18f), sw, cap = StrokeCap.Round)
-            drawCircle(tint, 1.5.dp.toPx(), Offset(size.width / 2, size.height * .79f))
+            drawLine(tint, Offset(left + 5.dp.toPx(), size.height * 0.18f), Offset(right - 5.dp.toPx(), size.height * 0.18f), sw, cap = StrokeCap.Round)
+            drawCircle(tint, 1.5.dp.toPx(), Offset(size.width / 2, size.height * 0.79f))
         } else {
-            drawRoundRect(tint, Offset(size.width * .13f, size.height * .08f), androidx.compose.ui.geometry.Size(size.width * .74f, size.height * .63f),
+            drawRoundRect(tint, Offset(size.width * 0.13f, size.height * 0.08f), androidx.compose.ui.geometry.Size(size.width * 0.74f, size.height * 0.63f),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()), style = Stroke(sw))
-            drawLine(tint, Offset(size.width * .07f, size.height * .83f), Offset(size.width * .93f, size.height * .83f), 3.dp.toPx(), cap = StrokeCap.Round)
-            drawLine(tint, Offset(size.width * .22f, size.height * .72f), Offset(size.width * .78f, size.height * .72f), sw, cap = StrokeCap.Round)
+            drawLine(tint, Offset(size.width * 0.07f, size.height * 0.83f), Offset(size.width * 0.93f, size.height * 0.83f), 3.dp.toPx(), cap = StrokeCap.Round)
+            drawLine(tint, Offset(size.width * 0.22f, size.height * 0.72f), Offset(size.width * 0.78f, size.height * 0.72f), sw, cap = StrokeCap.Round)
         }
     }
 }
 
 @Composable
-private fun StatusDot(color: androidx.compose.ui.graphics.Color, connected: Boolean) {
-    Canvas(Modifier.size(9.dp)) {
-        if (connected) drawCircle(color.copy(alpha = .2f), size.minDimension * .5f)
-        drawCircle(color, size.minDimension * if (connected) .34f else .28f)
+private fun StatusDot(color: Color, connected: Boolean) {
+    Canvas(Modifier.size(10.dp)) {
+        if (connected) drawCircle(color.copy(alpha = 0.25f), size.minDimension * 0.5f)
+        drawCircle(color, size.minDimension * if (connected) 0.35f else 0.28f)
     }
 }
