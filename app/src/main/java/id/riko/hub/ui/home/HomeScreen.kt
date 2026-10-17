@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
@@ -21,16 +22,16 @@ import id.riko.hub.ui.theme.*
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
-fun HomeScreen(onNavigate: (Destination) -> Unit) {
+fun HomeScreen(hintsShownCount: Int = 0, onBackgroundColorChanged: (Color) -> Unit = {}, onNavigate: (Destination) -> Unit) {
     val app = LocalContext.current.applicationContext as RikoHubApp
     val model: HomeViewModel = viewModel(factory = viewModelFactory {
         initializer { HomeViewModel(app.container.tasks, app.container.events, app.container.settings, app.container.clock) }
     })
-    HomeRoute(model, onNavigate)
+    HomeRoute(model, hintsShownCount, onBackgroundColorChanged, onNavigate)
 }
 
 @Composable
-fun HomeRoute(model: HomeViewModel, onNavigate: (Destination) -> Unit) {
+fun HomeRoute(model: HomeViewModel, hintsShownCount: Int = 0, onBackgroundColorChanged: (Color) -> Unit = {}, onNavigate: (Destination) -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
     val lifecycle by androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     LifecycleStartEffect(model) { model.setActive(true); onStopOrDispose { model.setActive(false) } }
@@ -40,22 +41,31 @@ fun HomeRoute(model: HomeViewModel, onNavigate: (Destination) -> Unit) {
     HomeMessages(model, snackbar)
     val complete: (id.riko.hub.domain.model.Task) -> Unit = {
         haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-        model.complete(it)
+        if (it.status == id.riko.hub.domain.model.TaskStatus.DONE) {
+            model.undo(it.id, id.riko.hub.domain.model.TaskStatus.NOT_STARTED)
+        } else {
+            model.complete(it)
+        }
     }
     Box(Modifier.fillMaxSize()) {
-        HomeContent(state, reduced, lifecycle == Lifecycle.State.RESUMED, onNavigate,
-            { model.edit() }, model::peek, complete, model::pin, model::retryRead)
-        if (state.editor == null && state.peek == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+        HomeContent(
+            state, reduced, lifecycle == Lifecycle.State.RESUMED, onNavigate,
+            { model.edit() },
+            { id ->
+                val task = state.snapshot?.ranked?.firstOrNull { it.task.id == id }?.task
+                    ?: state.snapshot?.doneToday?.firstOrNull { it.id == id }
+                task?.let(model::edit)
+            },
+            complete, model::pin, model::retryRead, hintsShownCount, onBackgroundColorChanged,
+        )
+        if (state.editor == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
     val snapshot = state.snapshot
     if (snapshot != null) {
         state.editor?.let { task ->
             TaskEditorSheet(task, snapshot.now, snapshot.zone, state.busy, snackbar,
-                model::change, model::save, { model.delete(task) }, model::dismissEditor, quickAdd = state.quickAdd)
-        }
-        snapshot.ranked.firstOrNull { it.task.id == state.peek }?.let { item ->
-            BubblePeekSheet(item.task, snapshot, state.busy, snackbar, { model.peek(null) },
-                { complete(item.task) }, { model.start(item.task) }, { model.edit(item.task) }, { model.pin(item.task.id) })
+                model::change, model::save, { model.delete(task) }, model::dismissEditor, quickAdd = state.quickAdd,
+                onPin = { model.pin(task.id) }, pinned = snapshot.validPin == task.id)
         }
     }
 }

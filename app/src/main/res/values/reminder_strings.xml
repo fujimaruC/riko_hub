@@ -1,0 +1,4 @@
+<resources>
+    <string name="reminder_channel_name">Pengingat tugas</string>
+    <string name="reminder_notification_title">Pengingat tenggat</string>
+</resources>

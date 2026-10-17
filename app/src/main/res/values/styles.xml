@@ -1,6 +1,6 @@
 <resources>
     <style name="Theme.RikoHub" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">#FBF6EC</item>
+        <item name="android:windowBackground">@color/splash_background</item>
     </style>
 </resources>

@@ -9,9 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -40,8 +37,6 @@ fun TaskBubble(item: BubblePlacement, size: Dp, focus: Boolean, pinned: Boolean,
         Category.ACADEMIC -> colors.academic; Category.ORGANIZATION -> colors.organization
         Category.PERSONAL -> colors.personal; Category.PROJECTS -> colors.projects
     }
-    val dark = MaterialTheme.colorScheme.background.luminance() < .5f
-    val glow = if (dark) HomeTokens.glowDark else HomeTokens.glowLight
     val shape = HomeBlobShapes[HomeTokens.variant(task.id)]
     val deadline = if (info.isOverdue) stringResource(R.string.home_overdue) else deadlineLabel(task, now, zone)
     val description = stringResource(R.string.home_bubble_description, task.title,
@@ -76,12 +71,6 @@ fun TaskBubble(item: BubblePlacement, size: Dp, focus: Boolean, pinned: Boolean,
         translationY = cos(angle) * motion + with(density) { down.toPx() }
         if (!reduced) { scaleX = appearance.value; scaleY = appearance.value }
         this.alpha = alpha
-    }.drawBehind {
-        if (focus && !completing) {
-            val radius = this.size.minDimension / 2 + glow.toPx()
-            drawCircle(Brush.radialGradient(listOf(accent.color.copy(alpha = if (dark) .30f else .25f),
-                accent.color.copy(alpha = 0f)), radius = radius), radius = radius)
-        }
     }.clip(shape).background(if (focus) accent.color else accent.container)
         .border(if (focus) HomeTokens.focusRing else HomeTokens.outline,
             if (info.isOverdue || (focus && info.isUrgent)) colors.urgent.color
@@ -102,14 +91,22 @@ fun TaskBubble(item: BubblePlacement, size: Dp, focus: Boolean, pinned: Boolean,
             }
         }.testTag("bubble-${task.id}"), contentAlignment = Alignment.Center) {
         val ink = if (focus) accent.ink else MaterialTheme.colorScheme.onSurface
-        Column(Modifier.padding(Spacing.space3).clearAndSetSemantics {}, horizontalAlignment = Alignment.CenterHorizontally) {
-            if (focus) Text(stringResource(R.string.home_focus),
-                color = ink, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(Modifier.padding(Spacing.space3).clearAndSetSemantics {},
+            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
+            if (focus) Text(stringResource(if (pinned) R.string.home_focus_pinned else R.string.home_focus),
+                color = ink, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (info.tier == BubbleTier.S && !focus && density.fontScale >= 2f) {
                 Canvas(Modifier.size(Spacing.space6)) { drawCircle(ink) }
             } else Text(if (info.tier == BubbleTier.S && !focus) task.title.substringBefore(' ').let { if (it.length > 8) stringResource(R.string.home_short_title, it.take(8)) else it } else task.title,
-                color = ink, textAlign = TextAlign.Center, maxLines = if (size < Spacing.returnHandle) 1 else 2, overflow = TextOverflow.Ellipsis,
-                style = if (info.tier in listOf(BubbleTier.XL, BubbleTier.L) || focus) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall)
+                color = ink, textAlign = TextAlign.Center,
+                maxLines = if (focus && size >= HomeTokens.focusTitleLargeMinimum && density.fontScale < 1.3f) 3 else if (size < Spacing.bubbleMinWidth) 1 else 2,
+                overflow = TextOverflow.Ellipsis,
+                style = when {
+                    focus && size >= HomeTokens.focusTitleLargeMinimum && density.fontScale < 1.3f -> MaterialTheme.typography.titleLarge
+                    focus -> MaterialTheme.typography.titleMedium
+                    info.tier in listOf(BubbleTier.XL, BubbleTier.L) -> MaterialTheme.typography.titleMedium
+                    else -> MaterialTheme.typography.titleSmall
+                })
             if (info.tier in listOf(BubbleTier.XL, BubbleTier.L) && size >= HomeTokens.metadataMinimum)
                 Text(deadline, color = ink, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
 

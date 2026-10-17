@@ -4,33 +4,68 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
+// Authentic M-CHEF Palette Tokens (DESIGN.md & full-app-v1.html)
+val ChefGround = Color(0xFF1A1B18)
+val ChefCanvas = Color(0xFF222320)
+val ChefPanel = Color(0xFF2A2B27)
+val ChefRaised = Color(0xFF33342E)
+val ChefLine = Color(0xFF3D3E37)
+val ChefInk = Color(0xFFF8F6EC)
+val ChefMuted = Color(0xFFA3A499)
+
+// Accent tokens
+val ChefPeriwinkle = Color(0xFF5463FF)
+val ChefCoral = Color(0xFFFF5A43)
+val ChefButter = Color(0xFFF5CB58)
+val ChefSage = Color(0xFFCBD7C9)
+val ChefLime = Color(0xFFD9F35B)
+val ChefCyan = Color(0xFF9FE3DE)
+
+// Compatibility aliases
+internal val PreviewGround = ChefCanvas
+internal val PreviewPanel = ChefPanel
+internal val PreviewRaised = ChefRaised
+internal val PreviewInk = ChefInk
+internal val PreviewMuted = ChefMuted
+internal val PreviewOrange = ChefCoral
+internal val PreviewLime = ChefLime
+internal val PreviewPink = ChefCoral
+internal val PreviewButter = ChefButter
+internal val PreviewSage = ChefSage
+internal val PreviewLine = ChefLine
+
 internal val LightScheme = lightColorScheme(
-    primary = Color(0xFFA793EA), onPrimary = Color(0xFF2B2630),
-    primaryContainer = Color(0xFFE9E3FB), onPrimaryContainer = Color(0xFF2B2630),
-    secondary = Color(0xFF6DB8EE), onSecondary = Color(0xFF2B2630),
-    secondaryContainer = Color(0xFFDCEFFC), onSecondaryContainer = Color(0xFF2B2630),
-    tertiary = Color(0xFF6FD0AD), onTertiary = Color(0xFF2B2630),
-    tertiaryContainer = Color(0xFFD8F3E8), onTertiaryContainer = Color(0xFF2B2630),
-    background = Color(0xFFFBF6EC), onBackground = Color(0xFF2B2630),
-    surface = Color(0xFFFFFDF8), onSurface = Color(0xFF2B2630),
-    surfaceVariant = Color(0xFFF3EBDD), onSurfaceVariant = Color(0xFF6F6877),
-    surfaceContainer = Color(0xFFF3EBDD), surfaceContainerHigh = Color(0xFFFFFDF8),
-    outline = Color(0xFFE2D8C6), outlineVariant = Color(0xFFE2D8C6),
-    error = Color(0xFF2B2630), errorContainer = Color(0xFFFFE0DA),
-    onErrorContainer = Color(0xFF2B2630), scrim = Color(0xFF2B2630),
+    primary = Color(0xFFB84D13), onPrimary = Color.White,
+    primaryContainer = ChefCoral, onPrimaryContainer = ChefGround,
+    secondary = Color(0xFF71806E), onSecondary = Color.White,
+    secondaryContainer = ChefSage, onSecondaryContainer = ChefGround,
+    tertiary = ChefCoral, onTertiary = Color.White,
+    tertiaryContainer = ChefButter, onTertiaryContainer = ChefGround,
+    background = Color(0xFFF1EFE6), onBackground = ChefGround,
+    surface = Color(0xFFFAF8F0), onSurface = ChefGround,
+    surfaceVariant = Color(0xFFE6E5DB), onSurfaceVariant = Color(0xFF55574E),
+    surfaceContainer = Color(0xFFE6E5DB), surfaceContainerHigh = Color(0xFFFAF8F0),
+    outline = Color(0xFFB7B8AE), outlineVariant = Color(0xFFD0D0C6),
+    error = Color(0xFFBA1A1A), errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002), scrim = ChefGround,
 )
+
 internal val DarkScheme = darkColorScheme(
-    primary = Color(0xFFB9A8F2), onPrimary = Color(0xFF1B1822),
-    primaryContainer = Color(0xFF3A3360), onPrimaryContainer = Color(0xFFF1ECE2),
-    secondary = Color(0xFF82C6F4), onSecondary = Color(0xFF14202B),
-    secondaryContainer = Color(0xFF1F3A52), onSecondaryContainer = Color(0xFFF1ECE2),
-    tertiary = Color(0xFF82DDBC), onTertiary = Color(0xFF12251F),
-    tertiaryContainer = Color(0xFF1D4136), onTertiaryContainer = Color(0xFFF1ECE2),
-    background = Color(0xFF17181F), onBackground = Color(0xFFF1ECE2),
-    surface = Color(0xFF1F2029), onSurface = Color(0xFFF1ECE2),
-    surfaceVariant = Color(0xFF2A2B37), onSurfaceVariant = Color(0xFFA39EAD),
-    surfaceContainer = Color(0xFF2A2B37), surfaceContainerHigh = Color(0xFF1F2029),
-    outline = Color(0xFF3A3B49), outlineVariant = Color(0xFF3A3B49),
-    error = Color(0xFF_FF907F), errorContainer = Color(0xFF5A2C28),
-    onErrorContainer = Color(0xFFF1ECE2), scrim = Color(0xFF000000),
+    primary = ChefLime, onPrimary = ChefGround,
+    primaryContainer = ChefLime, onPrimaryContainer = ChefGround,
+    secondary = ChefSage, onSecondary = ChefGround,
+    secondaryContainer = Color(0xFF41473E), onSecondaryContainer = ChefInk,
+    tertiary = ChefCoral, onTertiary = ChefGround,
+    tertiaryContainer = ChefCoral, onTertiaryContainer = ChefGround,
+    background = ChefCanvas, onBackground = ChefInk,
+    surface = ChefPanel, onSurface = ChefInk,
+    surfaceVariant = ChefRaised, onSurfaceVariant = ChefMuted,
+    surfaceDim = ChefGround, surfaceBright = ChefRaised,
+    surfaceContainerLowest = ChefGround, surfaceContainerLow = ChefPanel,
+    surfaceContainer = ChefPanel, surfaceContainerHigh = ChefRaised,
+    surfaceContainerHighest = Color(0xFF3E3F38),
+    outline = ChefLine, outlineVariant = ChefRaised,
+    error = Color(0xFFFFB4AB), onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A), onErrorContainer = Color(0xFFFFDAD6),
+    scrim = Color.Black,
 )

@@ -16,7 +16,7 @@ import java.time.Instant
 data class HomeUiState(
     val snapshot: HomeSnapshot? = null, val name: String = "", val loading: Boolean = true,
     val readFailed: Boolean = false, val editor: Task? = null, val quickAdd: Boolean = false,
-    val peek: Long? = null, val busy: Boolean = false,
+    val busy: Boolean = false,
 )
 sealed interface HomeEffect {
     data class Completed(val id: Long, val previous: TaskStatus) : HomeEffect
@@ -59,14 +59,13 @@ class HomeViewModel(private val tasks: TaskRepository, private val events: Event
         }
     }
     val state = combine(data, controls) { data, ui ->
-        data.copy(editor = ui.editor, quickAdd = ui.quickAdd, peek = ui.peek?.takeIf { id -> data.snapshot?.ranked?.any { it.task.id == id } == true }, busy = ui.busy)
+        data.copy(editor = ui.editor, quickAdd = ui.quickAdd, busy = ui.busy)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     fun setActive(value: Boolean) { active.value = value }
     fun retryRead() { reload.value++ }
-    fun peek(id: Long?) { controls.update { it.copy(peek = id) } }
     fun edit(task: Task? = null) {
-        if (!controls.value.busy) controls.update { it.copy(editor = task ?: Task(title = "", category = lastCategory), quickAdd = task == null, peek = null) }
+        if (!controls.value.busy) controls.update { it.copy(editor = task ?: Task(title = "", category = lastCategory), quickAdd = task == null) }
     }
     fun change(task: Task) { if (!controls.value.busy) controls.update { it.copy(editor = task) } }
     fun dismissEditor() { if (!controls.value.busy) controls.update { it.copy(editor = null) } }
@@ -81,13 +80,16 @@ class HomeViewModel(private val tasks: TaskRepository, private val events: Event
     }
     fun complete(task: Task): Unit = write({ complete(task) }) {
         tasks.setStatus(task.id, TaskStatus.DONE)
-        controls.update { it.copy(peek = null) }
+        controls.update { it.copy(editor = null) }
         messages.send(HomeEffect.Completed(task.id, task.status))
     }
-    fun start(task: Task): Unit = write({ start(task) }) { tasks.setStatus(task.id, TaskStatus.IN_PROGRESS); peek(null) }
+    fun start(task: Task): Unit = write({ start(task) }) {
+        tasks.setStatus(task.id, TaskStatus.IN_PROGRESS)
+        controls.update { it.copy(editor = null) }
+    }
     fun undo(id: Long, status: TaskStatus): Unit = write({ undo(id, status) }) { tasks.setStatus(id, status) }
     fun delete(task: Task): Unit = write({ delete(task) }) {
-        tasks.softDelete(task.id); controls.update { it.copy(editor = null, peek = null) }; messages.send(HomeEffect.Deleted(task.id))
+        tasks.softDelete(task.id); controls.update { it.copy(editor = null) }; messages.send(HomeEffect.Deleted(task.id))
     }
     fun restore(id: Long): Unit = write({ restore(id) }) { tasks.restore(id) }
     fun pin(id: Long): Unit = write({ pin(id) }) {

@@ -26,6 +26,12 @@ fun TaskStatus.label() = when (this) {
     TaskStatus.IN_PROGRESS -> R.string.task_in_progress
     TaskStatus.DONE -> R.string.done
 }
+fun Recurrence.label() = when (this) {
+    Recurrence.NONE -> R.string.recurrence_none
+    Recurrence.DAILY -> R.string.recurrence_daily
+    Recurrence.WEEKLY -> R.string.recurrence_weekly
+    Recurrence.MONTHLY -> R.string.recurrence_monthly
+}
 fun TaskBucket.label() = when (this) {
     TaskBucket.OVERDUE -> R.string.overdue
     TaskBucket.TODAY -> R.string.today

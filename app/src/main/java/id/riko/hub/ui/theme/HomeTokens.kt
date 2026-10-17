@@ -12,12 +12,12 @@ object HomeTokens {
     val outline = 1.5.dp
     val focusRing = 3.dp
     val metadataMinimum = 128.dp
+    val focusTitleLargeMinimum = 160.dp
+    const val singleTargetDiameter = .68
     val minimumLargeTextBubble = 72.dp
     val drift = 3.dp
     val calmDrift = 2.dp
     val completionTravel = 24.dp
-    val glowLight = 24.dp
-    val glowDark = 20.dp
     const val denseWashAlpha = .55f
     const val completeMillis = 360
     const val denseMillis = 400
