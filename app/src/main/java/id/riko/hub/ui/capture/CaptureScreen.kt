@@ -1,35 +1,70 @@
 package id.riko.hub.ui.capture
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -39,10 +74,23 @@ import id.riko.hub.RikoHubApp
 import id.riko.hub.domain.model.Task
 import id.riko.hub.navigation.Destination
 import id.riko.hub.ui.components.TaskEditorSheet
+import id.riko.hub.ui.components.rikoFormFieldColors
 import id.riko.hub.ui.tasks.TaskEffect
 import id.riko.hub.ui.tasks.TasksViewModel
 import id.riko.hub.ui.tasks.deadlineLabel
-import id.riko.hub.ui.theme.RikoShapes
+import id.riko.hub.ui.theme.ChefButter
+import id.riko.hub.ui.theme.ChefCanvas
+import id.riko.hub.ui.theme.ChefCoral
+import id.riko.hub.ui.theme.ChefCyan
+import id.riko.hub.ui.theme.ChefGround
+import id.riko.hub.ui.theme.ChefInk
+import id.riko.hub.ui.theme.ChefLime
+import id.riko.hub.ui.theme.ChefLine
+import id.riko.hub.ui.theme.ChefMuted
+import id.riko.hub.ui.theme.ChefPanel
+import id.riko.hub.ui.theme.ChefRaised
+import id.riko.hub.ui.theme.ChefSage
+import id.riko.hub.ui.theme.NotoCondensedBlack
 import id.riko.hub.ui.theme.Spacing
 import kotlinx.coroutines.launch
 
@@ -73,6 +121,7 @@ fun CaptureScreen(onNavigate: (Destination) -> Unit) {
     val noteFailed = noteState.failed
     val taskDraft = remember(draft) { captureTaskDraft(draft) }
     val noteTooLong = draft.trim().length > 10_000
+
     LaunchedEffect(noteState.savedBody) {
         val body = noteState.savedBody ?: return@LaunchedEffect
         if (draft.trim() == body) draft = ""
@@ -80,12 +129,14 @@ fun CaptureScreen(onNavigate: (Destination) -> Unit) {
         snackbarScope.launch { snackbar.showSnackbar(noteSaved) }
     }
     LaunchedEffect(model) {
-        model.effects.collect { effect -> when (effect) {
-            is TaskEffect.Failed -> if (snackbar.showSnackbar(failed, retry, withDismissAction = true,
-                duration = SnackbarDuration.Indefinite) == SnackbarResult.ActionPerformed) effect.retry()
-            is TaskEffect.Deleted -> if (snackbar.showSnackbar(deleted, undo, withDismissAction = true,
-                duration = SnackbarDuration.Indefinite) == SnackbarResult.ActionPerformed) model.restore(effect.id)
-        } }
+        model.effects.collect { effect ->
+            when (effect) {
+                is TaskEffect.Failed -> if (snackbar.showSnackbar(failed, retry, withDismissAction = true,
+                        duration = SnackbarDuration.Indefinite) == SnackbarResult.ActionPerformed) effect.retry()
+                is TaskEffect.Deleted -> if (snackbar.showSnackbar(deleted, undo, withDismissAction = true,
+                        duration = SnackbarDuration.Indefinite) == SnackbarResult.ActionPerformed) model.restore(effect.id)
+            }
+        }
     }
     LaunchedEffect(state.editor) {
         if (state.editor == null && saveRequested) {
@@ -95,166 +146,361 @@ fun CaptureScreen(onNavigate: (Destination) -> Unit) {
             snackbar.showSnackbar(saved)
         }
     }
+
     val recent = remember(state.tasks) { state.tasks.filter { it.deletedAt == null }.sortedByDescending { it.createdAt }.take(3) }
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("screen-Capture")) {
-        LazyColumn(Modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(Spacing.space5),
-            verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-            item { CaptureStudioHeader() }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(ChefCanvas)
+            .testTag("screen-Capture"),
+    ) {
+        LazyColumn(
+            Modifier.fillMaxSize().imePadding(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            // Header Bar: AI OPERATIONS LEAD
             item {
-                val edge = MaterialTheme.colorScheme.primary
-                val ink = MaterialTheme.colorScheme.onSurface
-                Column(Modifier.fillMaxWidth().clip(RikoShapes.asymA)
-                    .background(MaterialTheme.colorScheme.surface).border(1.dp, edge.copy(alpha = .35f), RikoShapes.asymA)
-                    .drawWithCache {
-                        val lines = Path()
-                        val step = 28.dp.toPx()
-                        var y = step
-                        while (y < size.height) { lines.moveTo(0f, y); lines.lineTo(size.width, y); y += step }
-                        onDrawBehind { drawPath(lines, ink.copy(alpha = .035f), style = Stroke(1.dp.toPx())) }
-                    }.padding(Spacing.space4), verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(R.drawable.ic_vault_document), null, tint = edge, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(Spacing.space2))
-                        Text(stringResource(R.string.capture_studio_draft), style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.semantics { heading() })
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        Text(
+                            text = "TANGKAP CEPAT",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = ChefMuted,
+                        )
+                        Text(
+                            text = "AI OPERATIONS LEAD",
+                            fontFamily = NotoCondensedBlack,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 24.sp,
+                            color = ChefInk,
+                            modifier = Modifier.semantics { heading() },
+                        )
                     }
-                    OutlinedTextField(value = draft, onValueChange = { draft = it },
-                        label = { Text(stringResource(R.string.capture_studio_input)) },
-                        placeholder = { Text(stringResource(R.string.capture_studio_placeholder)) },
-                        enabled = !noteSaving && !state.busy, isError = noteTooLong, minLines = 3, maxLines = 7,
-                        modifier = Modifier.fillMaxWidth().testTag("capture-draft"),
-                        supportingText = { Text(stringResource(if (noteTooLong) R.string.capture_studio_note_limit else R.string.capture_studio_destinations)) })
-                    if (taskDraft == null) Text(stringResource(R.string.capture_studio_task_limit),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.space2), verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                        Button(onClick = { taskDraft?.let { editorUsesDraft = true; model.edit(it) } },
-                            enabled = taskDraft != null && !state.busy && !noteSaving,
-                            shape = RikoShapes.pill, modifier = Modifier.heightIn(min = Spacing.touch).testTag("capture-task")) {
-                            Icon(painterResource(R.drawable.ic_personal_check), null, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(Spacing.space2))
-                            Text(stringResource(R.string.capture_studio_task))
-                        }
-                        OutlinedButton(onClick = { notes.save(draft) }, enabled = draft.isNotBlank() && !noteTooLong && !state.busy && !noteSaving,
-                            shape = RikoShapes.pill, modifier = Modifier.heightIn(min = Spacing.touch).testTag("capture-note")) {
-                            Icon(painterResource(R.drawable.ic_personal_send), null, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(Spacing.space2))
-                            Text(stringResource(if (noteSaving) R.string.saving else R.string.capture_studio_note))
-                        }
-                    }
-                    if (noteFailed) {
-                        Text(failed, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = { notes.save(draft) }, enabled = !noteSaving && !state.busy && !noteTooLong && draft.isNotBlank(),
-                            modifier = Modifier.heightIn(min = Spacing.touch)) { Text(retry) }
+
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(ChefPanel)
+                            .border(1.dp, ChefLine, CircleShape)
+                            .clickable { onNavigate(Destination.ProjectsSpace) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("↗", color = ChefInk, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+
+            // Assistant Chat Bubble Box
             item {
-                Surface(onClick = { onNavigate(Destination.Vault) }, shape = RikoShapes.wide,
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("capture-vault")) {
-                    Row(Modifier.padding(Spacing.space4), verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-                        Icon(painterResource(R.drawable.ic_vault_file), null, tint = MaterialTheme.colorScheme.primary)
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        // Speaker Row: Avatar + Name + Port info
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, ChefLime, CircleShape),
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.riko_avatar),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Riko AI Assistant",
+                                    fontFamily = NotoCondensedBlack,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 15.sp,
+                                    color = ChefInk,
+                                )
+                                Text(
+                                    text = "Lokal di perangkat · Port 8080",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ChefMuted,
+                                )
+                            }
+                        }
+
+                        // Speech bubble text
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = ChefRaised,
+                            border = BorderStroke(1.dp, ChefLine),
+                        ) {
+                            Text(
+                                text = "Halo, Riko! Draf Skripsi Bab 3 harus diserahkan sebelum 14.00. Dua tugas prioritas masih menunggu tindakanmu. Mau saya catatkan ide baru, to-do, atau jadwal bimbingan?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = ChefInk,
+                                modifier = Modifier.padding(14.dp),
+                            )
+                        }
+
+                        // Suggestion prompt chips (horizontal scroll)
+                        Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            SuggestionChip(
+                                icon = "Hi!",
+                                text = "Cek batas waktu skripsi",
+                                color = ChefCyan,
+                                onClick = { draft = "Cek tenggat revisi bab 3 skripsi" },
+                            )
+                            SuggestionChip(
+                                icon = "📁",
+                                text = "Checklist bimbingan",
+                                color = ChefSage,
+                                onClick = { draft = "Buat checklist persiapan bimbingan dosen" },
+                            )
+                            SuggestionChip(
+                                icon = "✳",
+                                text = "Catat ide riset",
+                                color = ChefButter,
+                                onClick = { draft = "Ide: gunakan sampling purposive 30 guru" },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Input Capture Box
+            item {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = draft,
+                            onValueChange = { draft = it },
+                            placeholder = { Text("Tulis ide atau tugas cepat...", color = ChefMuted) },
+                            colors = rikoFormFieldColors(),
+                            enabled = !noteSaving && !state.busy,
+                            isError = noteTooLong,
+                            minLines = 3,
+                            maxLines = 6,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("capture-draft"),
+                        )
+
+                        // Action Buttons Row: SIMPAN TUGAS & SIMPAN CATATAN
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Button(
+                                onClick = { taskDraft?.let { editorUsesDraft = true; model.edit(it) } },
+                                enabled = taskDraft != null && !state.busy && !noteSaving,
+                                shape = RoundedCornerShape(999.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = ChefLime, contentColor = ChefGround),
+                                modifier = Modifier.weight(1f).height(46.dp).testTag("capture-task"),
+                            ) {
+                                Text("＋ TUGAS", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { notes.save(draft) },
+                                enabled = draft.isNotBlank() && !noteTooLong && !state.busy && !noteSaving,
+                                shape = RoundedCornerShape(999.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = ChefInk),
+                                border = BorderStroke(1.dp, ChefLine),
+                                modifier = Modifier.weight(1f).height(46.dp).testTag("capture-note"),
+                            ) {
+                                Text(if (noteSaving) "MENYIMPAN..." else "＋ CATATAN", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+
+                        if (noteFailed) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(failed, color = ChefCoral, style = MaterialTheme.typography.bodySmall)
+                                Spacer(Modifier.width(8.dp))
+                                TextButton(onClick = { notes.save(draft) }) { Text(retry, color = ChefLime) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Vault Link Button
+            item {
+                Surface(
+                    onClick = { onNavigate(Destination.Vault) },
+                    shape = RoundedCornerShape(20.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag("capture-vault"),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Box(
+                            Modifier.size(34.dp).clip(CircleShape).background(ChefSage),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("📁", fontSize = 16.sp)
+                        }
                         Column(Modifier.weight(1f)) {
-                            Text(stringResource(R.string.capture_studio_file), style = MaterialTheme.typography.titleSmall)
-                            Text(stringResource(R.string.capture_studio_file_detail), style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "Gudang Materi & Berkas",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = ChefInk,
+                            )
+                            Text(
+                                text = "Buka Drive dan berkas riset tersimpan",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ChefMuted,
+                            )
                         }
-                        Icon(painterResource(R.drawable.ic_chevron_right), null)
+                        Text("↗", color = ChefMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
+
+            // Recent Captures List
             item {
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalArrangement = Arrangement.spacedBy(Spacing.space1), itemVerticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.capture_studio_recent), style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() })
-                    TextButton(onClick = { onNavigate(Destination.ProjectsSpace) }, modifier = Modifier.heightIn(min = Spacing.touch)) {
-                        Text(stringResource(R.string.capture_studio_idea_board))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "TANGKAPAN TERAKHIR",
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        color = ChefMuted,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    TextButton(onClick = { onNavigate(Destination.ProjectsSpace) }) {
+                        Text("PAPAN GAGASAN ↗", color = ChefLime, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
-                Text(stringResource(R.string.capture_studio_recent_scope), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+
             when {
                 state.readFailed -> item {
-                    Text(stringResource(R.string.read_failed))
-                    TextButton(onClick = model::retryRead) { Text(retry) }
+                    TextButton(onClick = model::retryRead) { Text(retry, color = ChefLime) }
                 }
-                state.loading -> item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
-                recent.isEmpty() -> item { Text(stringResource(R.string.capture_studio_empty), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                state.loading -> item { LinearProgressIndicator(Modifier.fillMaxWidth(), color = ChefLime) }
+                recent.isEmpty() -> item {
+                    Text("Belum ada tangkapan tersimpan.", color = ChefMuted, style = MaterialTheme.typography.bodySmall)
+                }
                 else -> items(recent, key = { it.id }) { task ->
-                    CaptureRecentTask(task, deadlineLabel(task, state.now, state.zone), !state.busy && !noteSaving) {
+                    CaptureRecentCard(task = task, deadline = deadlineLabel(task, state.now, state.zone)) {
                         editorUsesDraft = false
                         model.edit(task)
                     }
                 }
             }
-            item { Spacer(Modifier.height(Spacing.space6)) }
+
+            item { Spacer(Modifier.height(40.dp)) }
         }
+
         if (state.editor == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
+
     state.editor?.let { task ->
-        TaskEditorSheet(task, state.now, state.zone, state.busy, snackbar, model::change,
-            { saveRequested = true; model.save() },
-            { saveRequested = false; editorUsesDraft = false; model.delete(task) },
-            { saveRequested = false; editorUsesDraft = false; model.dismissEditor() }, quickAdd = task.id == 0L)
+        TaskEditorSheet(
+            task = task,
+            now = state.now,
+            zone = state.zone,
+            busy = state.busy,
+            snackbar = snackbar,
+            onChange = model::change,
+            onSave = { saveRequested = true; model.save() },
+            onDelete = { saveRequested = false; editorUsesDraft = false; model.delete(task) },
+            onDismiss = { saveRequested = false; editorUsesDraft = false; model.dismissEditor() },
+            quickAdd = task.id == 0L,
+        )
     }
 }
 
 @Composable
-private fun CaptureRecentTask(task: Task, deadline: String, enabled: Boolean, onOpen: () -> Unit) {
-    Surface(onClick = onOpen, enabled = enabled, shape = RikoShapes.wide,
-        color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch)) {
-        Row(Modifier.padding(Spacing.space4), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-            Icon(painterResource(R.drawable.ic_personal_check), null, tint = MaterialTheme.colorScheme.primary)
-            Column(Modifier.weight(1f)) {
-                Text(task.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(deadline, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+private fun SuggestionChip(
+    icon: String,
+    text: String,
+    color: Color,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = color,
+    ) {
+        Row(
+            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(icon, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ChefGround)
+            Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ChefGround)
         }
     }
 }
 
 @Composable
-private fun CaptureStudioHeader() {
-    val accent = MaterialTheme.colorScheme.primary
-    val background = MaterialTheme.colorScheme.background
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.capture_studio_title), style = MaterialTheme.typography.displayMedium,
-            modifier = Modifier.semantics { heading() })
-        Text(stringResource(R.string.capture_studio_subtitle), style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Box(Modifier.fillMaxWidth().height(76.dp)) {
-            Canvas(Modifier.matchParentSize()) {
-                val w = size.width; val h = size.height
-                drawRect(Brush.radialGradient(listOf(accent.copy(alpha = .18f), Color.Transparent), Offset(w * .5f, h * .6f), w * .48f))
-                val well = Path().apply {
-                    moveTo(w * .08f, h * .56f)
-                    cubicTo(w * .12f, h * .20f, w * .35f, h * .46f, w * .48f, h * .25f)
-                    cubicTo(w * .64f, h * -.03f, w * .91f, h * .28f, w * .92f, h * .58f)
-                    cubicTo(w * .96f, h * .94f, w * .65f, h * .87f, w * .49f, h * .96f)
-                    cubicTo(w * .28f, h * 1.05f, w * .04f, h * .85f, w * .08f, h * .56f)
-                    close()
-                }
-                drawPath(well, Brush.linearGradient(listOf(accent.copy(alpha = .25f), background), Offset.Zero, Offset(w, h)))
-                drawPath(well, accent.copy(alpha = .45f), style = Stroke(1.5.dp.toPx()))
-                drawOval(accent.copy(alpha = .12f), Offset(w * .27f, h * .59f), Size(w * .46f, h * .26f), style = Stroke(2.dp.toPx()))
-                drawLine(accent.copy(alpha = .55f), Offset(w * .45f, h * .82f), Offset(w * .56f, h * .80f), 2.dp.toPx())
+private fun CaptureRecentCard(task: Task, deadline: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(ChefCoral),
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = ChefInk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = deadline,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ChefMuted,
+                )
             }
-            FloatingCaptureGlyph(R.drawable.ic_vault_document, Modifier.align(Alignment.TopCenter).rotate(-12f), accent)
-            FloatingCaptureGlyph(R.drawable.ic_personal_check, Modifier.align(Alignment.CenterStart).padding(start = 40.dp).rotate(9f), MaterialTheme.colorScheme.secondary)
-            FloatingCaptureGlyph(R.drawable.ic_vault_file, Modifier.align(Alignment.CenterEnd).padding(end = 40.dp).rotate(-8f), MaterialTheme.colorScheme.tertiary)
+            Text("↗", color = ChefMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
-    }
-}
-
-@Composable
-private fun FloatingCaptureGlyph(icon: Int, modifier: Modifier, tint: Color) {
-    Surface(modifier.size(48.dp), shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, tint.copy(alpha = .45f))) {
-        Box(contentAlignment = Alignment.Center) { Icon(painterResource(icon), null, tint = tint, modifier = Modifier.size(24.dp)) }
     }
 }

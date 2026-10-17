@@ -21,7 +21,6 @@ fun ScreenFrame(destination: Destination, content: @Composable ColumnScope.() ->
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.space5),
             verticalArrangement = Arrangement.spacedBy(Spacing.space6),
         ) {
-            Text(destinationLabel(destination), style = MaterialTheme.typography.displayMedium, modifier = Modifier.semantics { heading() })
             content()
             Spacer(Modifier.height(Spacing.space6))
         }

@@ -8,31 +8,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import id.riko.hub.R
 
-private val Nunito = FontFamily(
-    Font(R.font.nunito_500, FontWeight.Medium),
-    Font(R.font.nunito_600, FontWeight.SemiBold),
-    Font(R.font.nunito_700, FontWeight.Bold),
-    Font(R.font.nunito_800, FontWeight.ExtraBold),
+internal val NotoSans = FontFamily(
+    Font(R.font.noto_sans_regular, FontWeight.Normal),
+    Font(R.font.noto_sans_semibold, FontWeight.SemiBold),
 )
-private val Fredoka = FontFamily(Font(R.font.fredoka_600, FontWeight.SemiBold))
+internal val NotoCondensedBlack = FontFamily(Font(R.font.noto_sans_condensed_black, FontWeight.Black))
 private fun type(size: Int, height: Int, weight: FontWeight, display: Boolean = false) = TextStyle(
-    fontFamily = if (display) Fredoka else Nunito, fontWeight = weight,
-    fontSize = size.sp, lineHeight = height.sp, letterSpacing = 0.sp,
+    fontFamily = if (display) NotoCondensedBlack else NotoSans,
+    fontWeight = weight, fontSize = size.sp, lineHeight = height.sp,
+    letterSpacing = if (display) (-0.4).sp else 0.sp,
 )
 internal val RikoTypography = Typography(
-    displayLarge = type(36, 40, FontWeight.SemiBold, true),
-    displayMedium = type(28, 32, FontWeight.SemiBold, true),
-    displaySmall = type(24, 28, FontWeight.SemiBold, true),
-    headlineLarge = type(28, 34, FontWeight.SemiBold, true),
-    headlineMedium = type(24, 30, FontWeight.SemiBold, true),
-    headlineSmall = type(22, 28, FontWeight.Bold),
-    titleLarge = type(22, 28, FontWeight.ExtraBold),
-    titleMedium = type(17, 24, FontWeight.Bold),
-    titleSmall = type(15, 20, FontWeight.Bold),
-    bodyLarge = type(16, 24, FontWeight.Medium),
-    bodyMedium = type(14, 20, FontWeight.Medium),
-    bodySmall = type(14, 20, FontWeight.Medium),
-    labelLarge = type(14, 20, FontWeight.Bold),
+    displayLarge = type(36, 40, FontWeight.Black, true),
+    displayMedium = type(28, 32, FontWeight.Black, true),
+    displaySmall = type(24, 28, FontWeight.Black, true),
+    headlineLarge = type(28, 34, FontWeight.Black, true),
+    headlineMedium = type(24, 30, FontWeight.Black, true),
+    headlineSmall = type(22, 28, FontWeight.SemiBold),
+    titleLarge = type(22, 28, FontWeight.SemiBold),
+    titleMedium = type(17, 24, FontWeight.SemiBold),
+    titleSmall = type(15, 20, FontWeight.SemiBold),
+    bodyLarge = type(16, 24, FontWeight.Normal),
+    bodyMedium = type(14, 20, FontWeight.Normal),
+    bodySmall = type(12, 18, FontWeight.Normal),
+    labelLarge = type(14, 20, FontWeight.SemiBold),
     labelMedium = type(12, 16, FontWeight.SemiBold),
-    labelSmall = type(12, 16, FontWeight.SemiBold),
+    labelSmall = type(10, 14, FontWeight.SemiBold),
 )

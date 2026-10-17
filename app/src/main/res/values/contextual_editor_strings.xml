@@ -1,0 +1,28 @@
+<resources>
+    <string name="contextual_project_new">Tambah proyek</string>
+    <string name="contextual_project_edit">Edit proyek</string>
+    <string name="contextual_project_name">Nama proyek</string>
+    <string name="contextual_project_description">Deskripsi proyek</string>
+    <string name="contextual_project_target_date">Tanggal target</string>
+    <string name="contextual_project_save">Simpan proyek</string>
+    <string name="contextual_project_delete">Hapus proyek</string>
+    <string name="contextual_project_complete">Tandai proyek selesai</string>
+    <string name="contextual_project_reopen">Buka kembali proyek</string>
+    <string name="contextual_project_milestones">Tonggak</string>
+    <string name="contextual_project_milestone">Nama tonggak</string>
+    <string name="contextual_project_add_milestone">Tambah tonggak</string>
+    <string name="contextual_project_remove_milestone">Hapus tonggak</string>
+    <string name="contextual_note_new">Tambah catatan</string>
+    <string name="contextual_note_edit">Edit catatan</string>
+    <string name="contextual_note_title">Judul catatan</string>
+    <string name="contextual_note_body">Isi catatan</string>
+    <string name="contextual_note_save">Simpan catatan</string>
+    <string name="contextual_note_delete">Hapus catatan</string>
+    <string name="contextual_routine_new">Tambah kebiasaan</string>
+    <string name="contextual_routine_edit">Edit kebiasaan</string>
+    <string name="contextual_routine_name">Nama kebiasaan</string>
+    <string name="contextual_routine_schedule">Jadwal kebiasaan</string>
+    <string name="contextual_routine_frequency">Pengulangan: %1$s</string>
+    <string name="contextual_routine_save">Simpan kebiasaan</string>
+    <string name="contextual_routine_delete">Hapus kebiasaan</string>
+</resources>
