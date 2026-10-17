@@ -8,7 +8,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import id.riko.hub.R
 import id.riko.hub.navigation.Destination
-import id.riko.hub.ui.navigation.RenaissanceDock
+import id.riko.hub.ui.navigation.RikoDock
 import id.riko.hub.ui.home.HomePreview
 import id.riko.hub.ui.theme.*
 
@@ -34,7 +34,7 @@ private fun ComponentGallery() {
                         Text(stringResource(R.string.academic), Modifier.padding(Spacing.space4))
                     }
                 }
-                RenaissanceDock(Destination.Home, reducedMotion = false, onNavigate = {})
+                RikoDock(Destination.Home, reducedMotion = false, onNavigate = {})
             }
         }
     }
