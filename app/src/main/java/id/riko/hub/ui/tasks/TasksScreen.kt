@@ -1,11 +1,15 @@
 package id.riko.hub.ui.tasks
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,8 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,17 +36,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
-fun TasksScreen(onNavigate: (Destination) -> Unit) {
+fun TasksScreen(onNavigate: (Destination) -> Unit, openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}) {
     val app = LocalContext.current.applicationContext as RikoHubApp
     val model: TasksViewModel = viewModel(factory = viewModelFactory {
         initializer { TasksViewModel(app.container.tasks, app.container.clock) }
     })
-    TasksRoute(model, onNavigate)
+    TasksRoute(model, onNavigate, openTaskId, onTaskOpenConsumed)
 }
 
 @Composable
-fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit) {
+fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit, openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}) {
+    val app = LocalContext.current.applicationContext as RikoHubApp
+    val reminderPermission = rememberReminderPermissionState { app.container.reminders.requestReconciliation() }
     val state by model.state.collectAsStateWithLifecycle()
+    LaunchedEffect(openTaskId, state.loading, state.readFailed, state.busy, state.editor, state.tasks) {
+        val id = openTaskId ?: return@LaunchedEffect
+        if (!state.loading && !state.readFailed && !state.busy && state.editor == null) {
+            state.tasks.firstOrNull { it.id == id }?.let(model::edit)
+            onTaskOpenConsumed()
+        }
+    }
     val snackbar = remember { SnackbarHostState() }
     val deleted = stringResource(R.string.deleted_task)
     val undo = stringResource(R.string.undo)
@@ -67,34 +80,48 @@ fun TasksRoute(model: TasksViewModel, onNavigate: (Destination) -> Unit) {
         }
     }
     Box(Modifier.fillMaxSize()) {
-        TasksContent(state, onNavigate, model::filter, model::toggleDone, { model.edit() }, model::edit,
+        TasksContent(state, onNavigate, model::filter, model::search, model::clearFilters, model::toggleDone, { model.edit() }, model::edit,
             { task, done -> model.complete(task, done) }, model::delete, model::retryRead)
         if (state.editor == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
     state.editor?.let { task ->
         TaskEditorSheet(task, state.now, state.zone, state.busy, snackbar, model::change, model::save,
-            { model.delete(task) }, model::dismissEditor)
+            { model.delete(task) }, model::dismissEditor, reminderPermission = reminderPermission)
     }
 }
 
 @Composable
-fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilter: (Category?) -> Unit,
+fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilter: (Category?) -> Unit, onSearch: (String) -> Unit,
+                 onClearFilters: () -> Unit,
                  onExpand: () -> Unit, onAdd: () -> Unit, onEdit: (Task) -> Unit,
                  onComplete: (Task, Boolean) -> Unit, onDelete: (Task) -> Unit, onRetry: () -> Unit) {
     var showSkeleton by remember { mutableStateOf(false) }
+    val reducedMotion = rememberReducedMotion()
+    val listState = rememberLazyListState()
     LaunchedEffect(state.loading) {
         showSkeleton = false
         if (state.loading) { delay(150); showSkeleton = true }
     }
     Column(Modifier.fillMaxSize().testTag("screen-Tasks")) {
-        ReturnHomeHandle(Destination.Tasks, onNavigate)
-        LazyColumn(Modifier.weight(1f).testTag("task-list"), contentPadding = PaddingValues(horizontal = Spacing.space5, vertical = Spacing.space3),
+        LazyColumn(state = listState, modifier = Modifier.weight(1f).testTag("task-list"), contentPadding = PaddingValues(horizontal = Spacing.space5, vertical = Spacing.space3),
             verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
             item {
-                Text(stringResource(R.string.tasks), style = MaterialTheme.typography.displayMedium, modifier = Modifier.semantics { heading() })
-                Text(pluralStringResource(R.plurals.tasks_count, state.todayCount, state.todayCount, state.tasks.size), style = MaterialTheme.typography.bodyMedium)
+                Column(Modifier.fillMaxWidth().padding(top = Spacing.space4).testTag("task-workspace-header"),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+                    Text("RUANG 02 / DAFTAR KERJA", style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("TUGAS\nTERKUMPUL.", style = MaterialTheme.typography.displayLarge,
+                        modifier = Modifier.semantics { heading() })
+                    Text(pluralStringResource(R.plurals.tasks_count, state.todayCount, state.todayCount, state.tasks.size),
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             item { CategoryFilters(state.filter, onFilter) }
+            item {
+                OutlinedTextField(value = state.query, onValueChange = onSearch, singleLine = true,
+                    leadingIcon = { Text("⌕") }, placeholder = { Text(stringResource(R.string.task_search)) },
+                    modifier = Modifier.fillMaxWidth().testTag("task-search"), shape = RikoShapes.pill)
+            }
             when {
                 state.readFailed -> item {
                     Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surfaceVariant) {
@@ -107,7 +134,9 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
                 state.loading && showSkeleton -> items(4) {
                     Surface(Modifier.fillMaxWidth().height(Spacing.row), shape = RikoShapes.pill, color = MaterialTheme.colorScheme.surfaceVariant) {}
                 }
-                !state.loading && state.buckets.isEmpty() -> item { TasksEmpty(state.filter != null) { onFilter(null) } }
+                !state.loading && state.buckets.isEmpty() -> item {
+                    TasksEmpty(state.filter != null || state.query.isNotBlank(), onClearFilters)
+                }
                 !state.loading -> state.buckets.forEach { (bucket, tasks) ->
                     item(key = bucket.name) { BucketHeader(bucket, tasks.size, state.doneExpanded, onExpand) }
                     if (bucket != TaskBucket.DONE || state.doneExpanded) itemsIndexed(tasks, key = { _, task -> task.id }) { index, task ->
@@ -118,7 +147,7 @@ fun TasksContent(state: TasksUiState, onNavigate: (Destination) -> Unit, onFilte
             }
         }
         Button(onClick = onAdd, enabled = !state.busy, shape = RikoShapes.pill,
-            modifier = Modifier.padding(horizontal = Spacing.space5, vertical = Spacing.space2).heightIn(min = Spacing.touch)) {
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.space5, vertical = Spacing.space2).heightIn(min = Spacing.touch)) {
             Text(stringResource(R.string.add_task))
         }
     }
@@ -172,6 +201,5 @@ private fun TasksEmpty(filtered: Boolean, onClear: () -> Unit) {
 @Preview @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, fontScale = 2f)
 @Composable
 private fun TasksPreview() = RikoHubTheme {
-    Surface { TasksContent(TasksUiState(loading = false), {}, {}, {}, {}, {}, { _, _ -> }, {}, {}) }
+    Surface { TasksContent(TasksUiState(loading = false), {}, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {}) }
 }
-// TODO(v0.2): Add recurring tasks and subtasks only after the local v0.1 loop is complete.

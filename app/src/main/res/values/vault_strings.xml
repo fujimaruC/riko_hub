@@ -1,0 +1,36 @@
+<resources>
+    <string name="vault_title">Materi</string>
+    <string name="vault_disconnected">Hubungkan Google Drive untuk melihat berkas dan folder Anda.</string>
+    <string name="vault_connect">Hubungkan Google Drive</string>
+    <string name="vault_connected">Google Drive terhubung</string>
+    <string name="vault_authenticating">Menghubungkan ke Google Drive…</string>
+    <string name="vault_refresh">Muat ulang</string>
+    <string name="vault_disconnect">Putuskan</string>
+    <string name="vault_search">Cari nama berkas atau folder</string>
+    <string name="vault_upload">Unggah berkas</string>
+    <string name="vault_loading">Memuat isi folder…</string>
+    <string name="vault_empty">Folder ini kosong.</string>
+    <string name="vault_load_more">Muat berkas berikutnya</string>
+    <string name="vault_page_limit">Menampilkan 500 item pertama. Gunakan pencarian untuk mempersempit hasil.</string>
+    <string name="vault_reconnect">Hubungkan ulang</string>
+    <string name="vault_retry">Coba lagi</string>
+    <string name="vault_uploading">Mengunggah berkas…</string>
+    <string name="vault_cancel">Batal</string>
+    <string name="vault_authorized">Aplikasi</string>
+    <string name="vault_destination_title">Pilih folder tujuan</string>
+    <string name="vault_destination_body">Berkas akan diunggah ke folder “%1$s”. Lanjutkan?</string>
+    <string name="vault_continue">Lanjutkan</string>
+    <string name="vault_upload_success">“%1$s” berhasil diunggah.</string>
+    <string name="vault_upload_failure">Unggahan gagal: %1$s</string>
+    <string name="vault_disconnected_local">Akun terputus dari aplikasi. Izin Google yang sudah diberikan mungkin masih aktif.</string>
+    <string name="vault_disconnected_revoked">Akun terputus dan izin Google Drive telah dicabut.</string>
+    <string name="vault_upload_cancelled">Unggahan dibatalkan.</string>
+    <string name="vault_open_unavailable">Tidak ada aplikasi yang dapat membuka berkas ini.</string>
+    <string name="vault_open_failed">Berkas tidak dapat dibuka. Coba muat ulang lalu buka lagi.</string>
+    <string name="vault_error_auth">Sesi Google perlu diperbarui.</string>
+    <string name="vault_error_permission">Akses ditolak. Periksa izin Google Drive Anda.</string>
+    <string name="vault_error_offline">Tidak dapat terhubung. Periksa jaringan lalu coba lagi.</string>
+    <string name="vault_error_not_found">Folder atau berkas sudah tidak tersedia.</string>
+    <string name="vault_error_quota">Kuota Google Drive tidak mencukupi.</string>
+    <string name="vault_error_general">Terjadi kesalahan saat memuat Drive.</string>
+</resources>

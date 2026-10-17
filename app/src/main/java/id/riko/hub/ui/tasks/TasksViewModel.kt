@@ -17,6 +17,7 @@ data class TasksUiState(
     val tasks: List<Task> = emptyList(),
     val buckets: Map<TaskBucket, List<Task>> = emptyMap(),
     val filter: Category? = null,
+    val query: String = "",
     val doneExpanded: Boolean = false,
     val loading: Boolean = true,
     val readFailed: Boolean = false,
@@ -36,7 +37,8 @@ private data class TaskLoad(val tasks: List<Task> = emptyList(), val loading: Bo
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TasksViewModel(private val repository: TaskRepository, private val clock: Clock) : ViewModel() {
-    private val controls = MutableStateFlow(TasksUiState())
+    private val initial = TasksUiState(now = clock.now(), zone = clock.zone())
+    private val controls = MutableStateFlow(initial)
     private val reload = MutableStateFlow(0)
     private val messages = Channel<TaskEffect>(Channel.BUFFERED)
     val effects = messages.receiveAsFlow()
@@ -59,15 +61,17 @@ class TasksViewModel(private val repository: TaskRepository, private val clock: 
     val state: StateFlow<TasksUiState> = combine(data, controls, ticks) { loaded, ui, time ->
         val (now, zone) = time
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        ui.copy(tasks = loaded.tasks, buckets = groupTasks(loaded.tasks, ui.filter, now, zone),
+        ui.copy(tasks = loaded.tasks, buckets = groupTasks(loaded.tasks, ui.filter, now, zone, ui.query),
             loading = loaded.loading, readFailed = loaded.failed, now = now, zone = zone,
             todayCount = loaded.tasks.count { task -> task.deadlineAt?.let {
                 Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == today
             } == true })
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TasksUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial)
 
     fun retryRead() { reload.value++ }
     fun filter(category: Category?) { controls.update { it.copy(filter = category) } }
+    fun search(query: String) { controls.update { it.copy(query = query) } }
+    fun clearFilters() { controls.update { it.copy(query = "", filter = null) } }
     fun toggleDone() { controls.update { it.copy(doneExpanded = !it.doneExpanded) } }
     fun edit(task: Task? = null) {
         if (!controls.value.busy) controls.update { it.copy(editor = task ?: Task(title = "", category = lastCategory)) }

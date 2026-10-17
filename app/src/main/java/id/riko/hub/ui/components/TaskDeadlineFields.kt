@@ -20,14 +20,15 @@ import java.time.ZoneId
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TaskDeadlineFields(task: Task, now: Long, zone: ZoneId, enabled: Boolean, onChange: (Task) -> Unit) {
+fun TaskDeadlineFields(task: Task, now: Long, zone: ZoneId, enabled: Boolean, onChange: (Task) -> Unit,
+                       label: Int = R.string.deadline) {
     val context = LocalContext.current
     val dateTime = Instant.ofEpochMilli(task.deadlineAt ?: now).atZone(zone)
     val date = dateTime.toLocalDate()
     val time = if (task.hasDeadlineTime) dateTime.toLocalTime().withSecond(0).withNano(0) else null
     val setDate: (LocalDate) -> Unit = { onChange(task.copy(deadlineAt = taskDeadline(it, time, zone))) }
     Column {
-        Text(stringResource(R.string.deadline), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
         Text(deadlineLabel(task, now, zone), style = MaterialTheme.typography.bodyMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
             listOf(R.string.today to 0L, R.string.tomorrow to 1L).forEach { (label, offset) ->
@@ -49,7 +50,8 @@ fun TaskDeadlineFields(task: Task, now: Long, zone: ZoneId, enabled: Boolean, on
             if (task.hasDeadlineTime) TextButton(enabled = enabled, onClick = {
                 onChange(task.copy(deadlineAt = taskDeadline(date, null, zone), hasDeadlineTime = false))
             }) { Text(stringResource(R.string.date_only)) }
-            TextButton(enabled = enabled, onClick = { onChange(task.copy(deadlineAt = null, hasDeadlineTime = false)) }) {
+            TextButton(enabled = enabled, onClick = { onChange(task.copy(deadlineAt = null, hasDeadlineTime = false,
+                recurrence = id.riko.hub.domain.model.Recurrence.NONE, reminderMinutesBefore = null)) }) {
                 Text(stringResource(R.string.clear_deadline))
             }
         }

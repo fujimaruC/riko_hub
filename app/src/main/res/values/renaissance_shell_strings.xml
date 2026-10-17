@@ -1,0 +1,8 @@
+<resources>
+    <string name="shell_plan">Rencana</string>
+    <string name="capture">Tangkap cepat</string>
+    <string name="capture_prompt">Simpan tugas atau kirim file ke Gudang materi.</string>
+    <string name="capture_add_task">Tambah tugas</string>
+    <string name="capture_upload_file">Unggah file ke Gudang materi</string>
+    <string name="capture_saved">Tugas disimpan.</string>
+</resources>
