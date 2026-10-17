@@ -1,8 +1,8 @@
 <resources>
-    <string name="library_eyebrow">VAULT · RAK PENGETAHUAN</string>
-    <string name="library_title">Perpustakaan pribadi.</string>
+    <string name="library_eyebrow">MATERI · RUANG SIMPAN PRIBADI</string>
+    <string name="library_title">Gudang bekal.</string>
     <string name="library_hero_note">Rak untuk\nrasa ingin tahu.</string>
-    <string name="library_subtitle">Tempat kembali untuk materi, dokumen, dan ide yang Anda simpan.</string>
+    <string name="library_subtitle">Tempat kembali untuk materi, dokumen, dan ide yang kamu simpan.</string>
     <string name="library_drive">Google Drive</string>
     <string name="library_not_connected">Belum terhubung</string>
     <string name="library_connect_body">Buka rak digital Anda. Hubungkan akun untuk menelusuri folder, mencari berkas, dan mengunggah materi.</string>

@@ -10,12 +10,12 @@
     <string name="academic">Akademik</string>
     <string name="organization">Organisasi</string>
     <string name="personal">Personal</string>
-    <string name="projects">Project</string>
+    <string name="projects">Proyek</string>
     <string name="close">Tutup</string>
     <string name="today">Hari ini</string>
     <string name="tomorrow">Besok</string>
     <string name="later">Nanti</string>
-    <string name="timeline_empty">Ruang untuk cerita minggu ini.</string>
+    <string name="timeline_empty">Belum ada agenda atau tenggat tugas.</string>
     <string name="vault_placeholder">Vault belum terhubung ke Google Drive. Ini akan hadir di versi 0.3.</string>
     <string name="folder_academic">Kuliah</string>
     <string name="folder_projects">Projects</string>
@@ -89,7 +89,7 @@
     <string name="retry">Coba lagi</string>
     <string name="read_failed">Data tidak bisa dimuat</string>
     <string name="tasks_empty">Belum ada tugas di sini.</string>
-    <string name="tasks_first">Tambah satu hal kecil dulu.</string>
+    <string name="tasks_first">Tambahkan tugas pertama untuk mengisi daftar ini.</string>
     <string name="clear_filter">Tampilkan semua</string>
     <string name="mark_done">Tandai selesai: %1$s</string>
     <string name="mark_not_done">Tandai belum selesai: %1$s</string>
@@ -99,7 +99,7 @@
     <string name="collapsed">Ditutup</string>
     <string name="home_greeting">Halo, %1$s.</string>
     <string name="home_calm">Belum ada yang mendesak.</string>
-    <string name="home_clear">Semua aman. Tarik napas dulu.</string>
+    <string name="home_clear">Tidak ada tugas yang perlu didahulukan.</string>
     <string name="home_urgent">Ada %1$d hal penting hari ini.</string>
     <string name="home_progress">%1$d dari %2$d selesai</string>
     <string name="home_next">%1$s %2$s</string>
@@ -111,8 +111,8 @@
     <string name="home_overflow">+%1$d lainnya</string>
     <string name="home_receded">%1$d tugas selesai hari ini</string>
     <string name="home_receded_more">+%1$d</string>
-    <string name="home_empty">Hari ini masih kosong. Tambah satu hal kecil dulu?</string>
-    <string name="home_all_done">Semua beres. Tarik napas dulu.</string>
+    <string name="home_empty">Belum ada agenda atau tugas untuk hari ini.</string>
+    <string name="home_all_done">Semua tugas hari ini selesai.</string>
     <string name="home_quick_add">Tambah cepat</string>
     <string name="home_details">Detail</string>
     <string name="home_bubble_description">%1$s, prioritas %2$s, %3$s, %4$s, ketuk untuk detail</string>

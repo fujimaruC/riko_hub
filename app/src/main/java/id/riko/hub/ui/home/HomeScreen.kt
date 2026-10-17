@@ -41,12 +41,23 @@ fun HomeRoute(model: HomeViewModel, hintsShownCount: Int = 0, onBackgroundColorC
     HomeMessages(model, snackbar)
     val complete: (id.riko.hub.domain.model.Task) -> Unit = {
         haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-        model.complete(it)
+        if (it.status == id.riko.hub.domain.model.TaskStatus.DONE) {
+            model.undo(it.id, id.riko.hub.domain.model.TaskStatus.NOT_STARTED)
+        } else {
+            model.complete(it)
+        }
     }
     Box(Modifier.fillMaxSize()) {
-        HomeContent(state, reduced, lifecycle == Lifecycle.State.RESUMED, onNavigate,
-            { model.edit() }, { id -> state.snapshot?.ranked?.firstOrNull { it.task.id == id }?.task?.let(model::edit) },
-            complete, model::pin, model::retryRead, hintsShownCount, onBackgroundColorChanged)
+        HomeContent(
+            state, reduced, lifecycle == Lifecycle.State.RESUMED, onNavigate,
+            { model.edit() },
+            { id ->
+                val task = state.snapshot?.ranked?.firstOrNull { it.task.id == id }?.task
+                    ?: state.snapshot?.doneToday?.firstOrNull { it.id == id }
+                task?.let(model::edit)
+            },
+            complete, model::pin, model::retryRead, hintsShownCount, onBackgroundColorChanged,
+        )
         if (state.editor == null) SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
     }
     val snapshot = state.snapshot

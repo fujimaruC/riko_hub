@@ -1,8 +1,9 @@
 <resources>
-    <string name="projects_title">Workshop</string>
-    <string name="projects_subtitle">Hal-hal yang sedang kamu bangun.</string>
-    <string name="projects_all">Semua proyek</string>
-    <string name="projects_add">Buat proyek</string>
+    <string name="projects_eyebrow">IDE · LANGKAH · HASIL</string>
+    <string name="projects_title">Kerja bergerak.</string>
+    <string name="projects_subtitle">Tugas dalam kategori Proyek.</string>
+    <string name="projects_all">Proyek berjalan</string>
+    <string name="projects_add">Tambah proyek</string>
     <string name="projects_add_accessibility">Tambah proyek</string>
     <string name="projects_filter_active">Aktif</string>
     <string name="projects_filter_all">Semua</string>
@@ -10,7 +11,7 @@
     <string name="projects_active_label">FOKUS PROYEK</string>
     <string name="projects_selected_done">PROYEK SELESAI</string>
     <string name="projects_no_active">Belum ada proyek aktif.</string>
-    <string name="projects_no_active_hint">Tambahkan tugas di kategori Projects untuk mulai membangun sesuatu.</string>
+    <string name="projects_no_active_hint">Tambahkan tugas di kategori Proyek untuk menampilkannya di sini.</string>
     <string name="projects_no_milestones">Tambahkan langkah pada checklist untuk melihat progres proyek.</string>
     <string name="projects_milestones">%1$d dari %2$d langkah</string>
     <string name="projects_more_milestones">+%1$d langkah lainnya</string>
@@ -22,9 +23,13 @@
     <string name="projects_status_active">Berjalan</string>
     <string name="projects_toggle_task">Tandai %1$s selesai</string>
     <string name="projects_reopen_task">Buka kembali %1$s</string>
-    <string name="projects_task_based">Proyek berbasis tugas</string>
+    <string name="projects_task_based">Tugas kategori Proyek</string>
+    <string name="projects_deck_note">Kartu proyek menampilkan tugas di kategori Proyek.</string>
+    <string name="projects_deck_position">%1$d dari %2$d</string>
+    <string name="projects_previous">Sebelumnya</string>
+    <string name="projects_next">Berikutnya</string>
     <string name="projects_open">Buka</string>
-    <string name="projects_empty">Belum ada proyek. Buat proyek pertamamu.</string>
+    <string name="projects_empty">Belum ada tugas di kategori Proyek.</string>
     <string name="projects_load_failed">Proyek belum dapat dimuat.</string>
     <string name="projects_sprint">Tenggat 7 hari</string>
     <string name="projects_sprint_range">%1$s – %2$s</string>

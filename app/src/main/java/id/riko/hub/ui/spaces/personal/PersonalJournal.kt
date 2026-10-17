@@ -17,26 +17,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.riko.hub.R
 import id.riko.hub.data.repository.SpaceNoteRepository
 import id.riko.hub.domain.model.SpaceNote
+import id.riko.hub.ui.components.rikoFormFieldColors
 import id.riko.hub.ui.spaces.SpacesBadge
-import id.riko.hub.ui.theme.SpacesTokens
+import id.riko.hub.ui.theme.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -44,7 +46,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 internal fun PersonalJournalSurface(
     repository: SpaceNoteRepository,
     now: Long,
@@ -122,58 +124,66 @@ internal fun PersonalJournalSurface(
 
     val parsedDate = runCatching { LocalDate.parse(draftDate) }.getOrDefault(today)
     val dateLabel = parsedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.forLanguageTag("id-ID")))
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(22.dp)
+    val journalLine = ChefLine
     Box(modifier.fillMaxWidth().clip(shape)
-        .background(Brush.linearGradient(listOf(SpacesTokens.cream.copy(alpha = .09f), SpacesTokens.tangerine.copy(alpha = .05f))))
-        .border(1.dp, SpacesTokens.cream.copy(alpha = .16f), shape).testTag("personal-journal-surface")) {
+        .background(ChefPanel)
+        .border(1.dp, ChefLine, shape).testTag("personal-journal-surface")) {
         Canvas(Modifier.matchParentSize()) {
-            var y = 12.dp.toPx()
+            var y = 14.dp.toPx()
             while (y < size.height) {
-                drawLine(SpacesTokens.cream.copy(alpha = .08f), Offset(0f, y), Offset(size.width, y), .5.dp.toPx())
-                y += 22.dp.toPx()
+                drawLine(journalLine.copy(alpha = 0.25f), Offset(0f, y), Offset(size.width, y), 0.5.dp.toPx())
+                y += 24.dp.toPx()
             }
         }
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_vault_document), null,
-                    tint = SpacesTokens.cream, modifier = Modifier.size(20.dp))
+                Text("📓", fontSize = 18.sp)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.personal_journal_title), color = SpacesTokens.primary,
-                    style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).semantics { heading() })
+                Text(
+                    stringResource(R.string.personal_journal_title),
+                    color = ChefInk,
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f).semantics { heading() }
+                )
                 val badge = when {
                     readFailed -> R.string.personal_journal_badge
                     !readComplete -> R.string.personal_journal_loading
                     !dirty && draft.isNotBlank() -> R.string.personal_journal_saved
                     else -> R.string.personal_journal_badge
                 }
-                SpacesBadge(stringResource(badge), if (!dirty && readComplete && draft.isNotBlank()) SpacesTokens.jade else SpacesTokens.secondary)
+                SpacesBadge(stringResource(badge), if (!dirty && readComplete && draft.isNotBlank()) ChefLime else ChefMuted)
             }
-            Text(dateLabel, color = SpacesTokens.secondary, style = MaterialTheme.typography.labelMedium,
+            Text(dateLabel, color = ChefMuted, style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.testTag("personal-journal-date"))
-            Text(stringResource(R.string.personal_journal_prompt), color = SpacesTokens.cream.copy(alpha = .9f),
+            Text(stringResource(R.string.personal_journal_prompt), color = ChefInk.copy(alpha = 0.9f),
                 style = MaterialTheme.typography.bodyMedium.copy(fontStyle = FontStyle.Italic))
-            OutlinedTextField(value = draft, onValueChange = { value ->
-                if (value.length <= 10_000) {
-                    draft = value
-                    dirty = true
-                    saveError = false
-                }
-            }, label = { Text(stringResource(R.string.personal_journal_field_label), color = SpacesTokens.secondary) },
-                placeholder = { Text(stringResource(R.string.personal_journal_placeholder), color = SpacesTokens.secondary) },
-                enabled = !saving, minLines = 3, maxLines = 8,
-                supportingText = { Text(stringResource(R.string.personal_journal_character_count, draft.length), color = SpacesTokens.secondary) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = SpacesTokens.primary, unfocusedTextColor = SpacesTokens.primary,
-                    focusedBorderColor = SpacesTokens.cream.copy(alpha = .5f), unfocusedBorderColor = SpacesTokens.cream.copy(alpha = .18f),
-                    focusedContainerColor = Color.Black.copy(alpha = .14f), unfocusedContainerColor = Color.Black.copy(alpha = .14f),
-                    cursorColor = SpacesTokens.tangerine,
-                ), modifier = Modifier.fillMaxWidth().testTag("personal-journal-input"))
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { value ->
+                    if (value.length <= 10_000) {
+                        draft = value
+                        dirty = true
+                        saveError = false
+                    }
+                },
+                label = { Text(stringResource(R.string.personal_journal_field_label), color = ChefMuted) },
+                placeholder = { Text(stringResource(R.string.personal_journal_placeholder), color = ChefMuted) },
+                enabled = !saving,
+                minLines = 3,
+                maxLines = 8,
+                shape = RoundedCornerShape(16.dp),
+                colors = rikoFormFieldColors(),
+                modifier = Modifier.fillMaxWidth().testTag("personal-journal-input")
+            )
+            error?.let { Text(it, color = ChefCoral, style = MaterialTheme.typography.bodySmall) }
             if (readFailed) {
-                Text(stringResource(R.string.personal_journal_read_failed), color = MaterialTheme.colorScheme.error,
+                Text(stringResource(R.string.personal_journal_read_failed), color = ChefCoral,
                     style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { readGeneration++ }, enabled = !saving, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.retry))
+                TextButton(onClick = { readGeneration++ }, enabled = !saving, modifier = Modifier.heightIn(min = 44.dp)) {
+                    Text(stringResource(R.string.retry), color = ChefLime, fontWeight = FontWeight.Bold)
                 }
             }
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -183,19 +193,19 @@ internal fun PersonalJournalSurface(
                     selectedSyncId = latestToday?.syncId
                     fromHistory = false
                     saveError = false
-                }, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.personal_journal_return_today), color = SpacesTokens.cream)
+                }, modifier = Modifier.heightIn(min = 44.dp)) {
+                    Text(stringResource(R.string.personal_journal_return_today), color = ChefMuted)
                 }
                 TextButton(onClick = { saveJournalDraft() }, enabled = readComplete && !readFailed && !saving && dirty && draft.isNotBlank(),
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("personal-journal-save")) {
-                    Text(stringResource(if (saveError) R.string.personal_journal_retry else R.string.personal_journal_save), color = SpacesTokens.tangerine)
+                    modifier = Modifier.heightIn(min = 44.dp).testTag("personal-journal-save")) {
+                    Text(stringResource(if (saveError) R.string.personal_journal_retry else R.string.personal_journal_save), color = ChefLime, fontWeight = FontWeight.Bold)
                 }
                 TextButton(onClick = { showHistory = true }, enabled = readComplete && !readFailed,
-                    modifier = Modifier.heightIn(min = 48.dp)
-                    .testTag("personal-journal-history")) { Text(stringResource(R.string.personal_journal_history), color = SpacesTokens.cream) }
+                    modifier = Modifier.heightIn(min = 44.dp)
+                    .testTag("personal-journal-history")) { Text(stringResource(R.string.personal_journal_history), color = ChefInk, fontWeight = FontWeight.Bold) }
                 if (selectedSyncId != null) TextButton(onClick = { deleteTargetSyncId = selectedSyncId; confirmDelete = true }, enabled = !saving && readComplete && !readFailed,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("personal-journal-delete")) {
-                    Text(stringResource(R.string.personal_journal_delete), color = MaterialTheme.colorScheme.error)
+                    modifier = Modifier.heightIn(min = 44.dp).testTag("personal-journal-delete")) {
+                    Text(stringResource(R.string.personal_journal_delete), color = ChefCoral)
                 }
             }
             Text(stringResource(when {
@@ -206,38 +216,58 @@ internal fun PersonalJournalSurface(
                 dirty -> R.string.personal_journal_status_draft
                 draft.isNotBlank() -> R.string.personal_journal_status_saved
                 else -> R.string.personal_journal_status_empty
-            }), color = if (saveError) MaterialTheme.colorScheme.error else SpacesTokens.secondary,
+            }), color = if (saveError) ChefCoral else ChefMuted,
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("personal-journal-status"))
             SnackbarHost(snackbar)
         }
     }
 
     if (showHistory && readComplete && !readFailed) {
-        ModalBottomSheet(onDismissRequest = { showHistory = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        ModalBottomSheet(
+            onDismissRequest = { showHistory = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = ChefPanel,
+        ) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.personal_journal_history), style = MaterialTheme.typography.titleLarge,
-                    color = SpacesTokens.primary, modifier = Modifier.semantics { heading() })
-                if (entries.isEmpty()) Text(stringResource(R.string.personal_journal_history_empty), color = SpacesTokens.secondary)
+                Text(
+                    stringResource(R.string.personal_journal_history),
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 20.sp,
+                    color = ChefInk,
+                    modifier = Modifier.semantics { heading() }
+                )
+                if (entries.isEmpty()) Text(stringResource(R.string.personal_journal_history_empty), color = ChefMuted)
                 entries.forEach { note ->
                     val noteDate = note.journalDate ?: return@forEach
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(SpacesTokens.row)
-                        .clickable {
-                            if (dirty) {
-                                pendingHistoryEntry = note
-                                confirmDiscardDraft = true
-                            } else {
-                                draftDate = noteDate.toString()
-                                draft = note.body
-                                selectedSyncId = note.syncId
-                                fromHistory = true
-                                saveError = false
-                                showHistory = false
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(ChefRaised)
+                            .border(1.dp, ChefLine, RoundedCornerShape(16.dp))
+                            .clickable {
+                                if (dirty) {
+                                    pendingHistoryEntry = note
+                                    confirmDiscardDraft = true
+                                } else {
+                                    draftDate = noteDate.toString()
+                                    draft = note.body
+                                    selectedSyncId = note.syncId
+                                    fromHistory = true
+                                    saveError = false
+                                    showHistory = false
+                                }
                             }
-                        }.heightIn(min = 48.dp).padding(14.dp).testTag("personal-journal-entry-${note.syncId}"), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            .heightIn(min = 48.dp)
+                            .padding(14.dp)
+                            .testTag("personal-journal-entry-${note.syncId}"),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
                         Text(noteDate.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.forLanguageTag("id-ID"))),
-                            color = SpacesTokens.cream, style = MaterialTheme.typography.labelLarge)
-                        Text(note.body, color = SpacesTokens.primary, style = MaterialTheme.typography.bodyMedium,
+                            color = ChefButter, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                        Text(note.body, color = ChefInk, style = MaterialTheme.typography.bodyMedium,
                             maxLines = 3, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -246,8 +276,9 @@ internal fun PersonalJournalSurface(
         }
     }
     if (confirmDiscardDraft) AlertDialog(onDismissRequest = { if (!saving) { confirmDiscardDraft = false; pendingHistoryEntry = null } },
-        title = { Text(stringResource(R.string.personal_journal_discard_title)) },
-        text = { Text(stringResource(R.string.personal_journal_discard_body)) },
+        containerColor = ChefPanel,
+        title = { Text(stringResource(R.string.personal_journal_discard_title), color = ChefInk) },
+        text = { Text(stringResource(R.string.personal_journal_discard_body), color = ChefMuted) },
         confirmButton = { TextButton(enabled = !saving, onClick = {
             val note = pendingHistoryEntry
             val date = note?.journalDate
@@ -262,12 +293,13 @@ internal fun PersonalJournalSurface(
             }
             pendingHistoryEntry = null
             confirmDiscardDraft = false
-        }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.personal_journal_discard)) } },
+        }, modifier = Modifier.heightIn(min = 44.dp)) { Text(stringResource(R.string.personal_journal_discard), color = ChefCoral) } },
         dismissButton = { TextButton(enabled = !saving, onClick = { pendingHistoryEntry = null; confirmDiscardDraft = false },
-            modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.close)) } })
+            modifier = Modifier.heightIn(min = 44.dp)) { Text(stringResource(R.string.close), color = ChefInk) } })
     if (confirmDelete) AlertDialog(onDismissRequest = { if (!saving) { confirmDelete = false; deleteTargetSyncId = null } },
-        title = { Text(stringResource(R.string.personal_journal_delete_title)) },
-        text = { Text(stringResource(R.string.personal_journal_delete_body)) },
+        containerColor = ChefPanel,
+        title = { Text(stringResource(R.string.personal_journal_delete_title), color = ChefInk) },
+        text = { Text(stringResource(R.string.personal_journal_delete_body), color = ChefMuted) },
         confirmButton = { TextButton(enabled = !saving, onClick = {
             val id = deleteTargetSyncId ?: return@TextButton
             if (!saving) {
@@ -286,7 +318,7 @@ internal fun PersonalJournalSurface(
                     finally { saving = false }
                 }
             }
-        }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.personal_journal_delete)) } },
+        }, modifier = Modifier.heightIn(min = 44.dp)) { Text(stringResource(R.string.personal_journal_delete), color = ChefCoral) } },
         dismissButton = { TextButton(enabled = !saving, onClick = { confirmDelete = false; deleteTargetSyncId = null },
-            modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.close)) } })
+            modifier = Modifier.heightIn(min = 44.dp)) { Text(stringResource(R.string.close), color = ChefInk) } })
 }

@@ -1,245 +1,1096 @@
 package id.riko.hub.ui.home
 
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.*
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.riko.hub.R
 import id.riko.hub.core.time.Clock
-import id.riko.hub.domain.logic.*
-import id.riko.hub.domain.model.*
+import id.riko.hub.domain.logic.HomeSnapshot
+import id.riko.hub.domain.logic.homeSnapshot
+import id.riko.hub.domain.model.AppSettings
+import id.riko.hub.domain.model.Category
+import id.riko.hub.domain.model.Priority
+import id.riko.hub.domain.model.Task
+import id.riko.hub.domain.model.TaskStatus
 import id.riko.hub.navigation.Destination
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import id.riko.hub.ui.tasks.*
-import id.riko.hub.ui.theme.*
+import id.riko.hub.ui.tasks.deadlineLabel
+import id.riko.hub.ui.theme.ChefButter
+import id.riko.hub.ui.theme.ChefCanvas
+import id.riko.hub.ui.theme.ChefCoral
+import id.riko.hub.ui.theme.ChefGround
+import id.riko.hub.ui.theme.ChefInk
+import id.riko.hub.ui.theme.ChefLime
+import id.riko.hub.ui.theme.ChefLine
+import id.riko.hub.ui.theme.ChefMuted
+import id.riko.hub.ui.theme.ChefPanel
+import id.riko.hub.ui.theme.ChefPeriwinkle
+import id.riko.hub.ui.theme.ChefRaised
+import id.riko.hub.ui.theme.NotoCondensedBlack
+import id.riko.hub.ui.theme.RikoHubTheme
+import id.riko.hub.ui.theme.RikoShapes
+import id.riko.hub.ui.theme.Spacing
 import kotlinx.coroutines.delay
-import java.time.*
-import java.time.format.DateTimeFormatter
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Locale
 
 @Composable
-fun HomeContent(state: HomeUiState, reduced: Boolean, resumed: Boolean, onNavigate: (Destination) -> Unit,
-                onAdd: () -> Unit, onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit,
-                onRetry: () -> Unit, hintsShownCount: Int = 0, onBackgroundColorChanged: (Color) -> Unit = {}) {
+fun HomeContent(
+    state: HomeUiState,
+    reduced: Boolean,
+    resumed: Boolean,
+    onNavigate: (Destination) -> Unit,
+    onAdd: () -> Unit,
+    onPeek: (Long) -> Unit,
+    onComplete: (Task) -> Unit,
+    onPin: (Long) -> Unit,
+    onRetry: () -> Unit,
+    hintsShownCount: Int = 0,
+    onBackgroundColorChanged: (Color) -> Unit = {},
+) {
     val snapshot = state.snapshot
     val background = MaterialTheme.colorScheme.background
     SideEffect { onBackgroundColorChanged(background) }
+
     if (state.loading && !state.readFailed) {
-        Box(Modifier.fillMaxSize().background(background).testTag("screen-Home").semantics { isTraversalGroup = true },
-            contentAlignment = Alignment.Center) { HomeLoading() }
+        Box(
+            Modifier.fillMaxSize().background(background).testTag("screen-Home").semantics { isTraversalGroup = true },
+            contentAlignment = Alignment.Center,
+        ) { HomeLoading() }
         return
     }
+
+    var searchQuery by remember { mutableStateOf("") }
+    var searchVisible by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(searchVisible) {
+        if (searchVisible) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
-        Column(Modifier.fillMaxSize().background(background).testTag("screen-Home").semantics { isTraversalGroup = true }) {
-            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sectionGap)) {
-                HomeHeader(state, onNavigate)
-                Column(Modifier.padding(horizontal = Spacing.screenGutter).fillMaxWidth().testTag("home-field")
-                    .semantics { traversalIndex = 0f }, verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-                    when {
-                        state.readFailed -> Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surfaceVariant) {
-                            Column(Modifier.padding(Spacing.space6)) {
-                                Text(stringResource(R.string.read_failed))
-                                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
-                            }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(background)
+                .testTag("screen-Home")
+                .semantics { isTraversalGroup = true },
+        ) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                // 1. Top bar: Avatar Chip, Search Circle, Alert Circle
+                HomeTopBar(
+                    name = state.name,
+                    onSearchToggle = { searchVisible = !searchVisible },
+                    onProfile = { onNavigate(Destination.Settings) },
+                )
+
+                // 2. Location Selector Pill (Ruang Belajar Utama, Kampus ⌄)
+                HomeLocationPill()
+
+                // Error or Main Content
+                if (state.readFailed) {
+                    Surface(
+                        shape = RikoShapes.wide,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.padding(horizontal = 14.dp).fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(Spacing.space6)) {
+                            Text(stringResource(R.string.read_failed))
+                            TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
                         }
-                        snapshot != null && snapshot.ranked.isEmpty() -> HomeEmpty(snapshot.doneToday.isNotEmpty())
-                        snapshot != null -> HomeFocusDeck(snapshot, state.busy, onPeek, onComplete, onPin) { onNavigate(Destination.Tasks) }
                     }
-                    if (!state.readFailed && snapshot != null) {
-                        if (snapshot.total > 0) HomeProgress(snapshot, reduced, resumed)
-                        snapshot.next?.let { next ->
-                            Surface(color = MaterialTheme.colorScheme.surface, shape = RikoShapes.asymB) {
-                                Row(Modifier.fillMaxWidth().padding(Spacing.space4), horizontalArrangement = Arrangement.spacedBy(Spacing.space3),
-                                    verticalAlignment = Alignment.Top) {
-                                    Icon(painterResource(if (next.event) R.drawable.ic_event else R.drawable.ic_schedule), null,
-                                        Modifier.padding(top = Spacing.space1).size(Spacing.space6), tint = MaterialTheme.colorScheme.primary)
-                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-                                        Text(stringResource(if (next.event) R.string.home_next_event else R.string.home_next_task),
-                                            style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(Instant.ofEpochMilli(next.at).atZone(snapshot.zone).format(
-                                            DateTimeFormatter.ofPattern("EEE, d MMM · HH:mm", Locale.forLanguageTag("id-ID"))),
-                                            style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                                        Text(next.title, style = MaterialTheme.typography.bodyMedium)
-                                    }
+                } else if (snapshot != null) {
+                    // 3. Stabilizing Priority Focus Hero Card
+                    HomeFocusCard(
+                        snapshot = snapshot,
+                        busy = state.busy,
+                        onPeek = onPeek,
+                        onComplete = onComplete,
+                        onPin = onPin,
+                    )
+
+                    // 4. VENUE CAPACITY WORKLOAD CARD (Vibrant Periwinkle)
+                    VenueCapacityCard(
+                        snapshot = snapshot,
+                        onNavigate = onNavigate,
+                    )
+
+                    // 5. Tasks list & search
+                    HomeTaskListSection(
+                        snapshot = snapshot,
+                        busy = state.busy,
+                        searchVisible = searchVisible || searchQuery.isNotBlank(),
+                        searchQuery = searchQuery,
+                        focusRequester = focusRequester,
+                        onSearchChange = { searchQuery = it },
+                        onSearchClose = {
+                            searchQuery = ""
+                            searchVisible = false
+                            keyboardController?.hide()
+                        },
+                        onPeek = onPeek,
+                        onComplete = onComplete,
+                        onPin = onPin,
+                        onAdd = onAdd,
+                        onNavigate = onNavigate,
+                    )
+
+                    // 6. Active Project Sprint Strip
+                    HomeProjectCard(
+                        snapshot = snapshot,
+                        onNavigate = onNavigate,
+                    )
+
+                    // Link to all tasks
+                    TextButton(
+                        onClick = { onNavigate(Destination.Tasks) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp)
+                            .heightIn(min = Spacing.touch)
+                            .testTag("home-all-tasks"),
+                    ) {
+                        Text(stringResource(R.string.renaissance_all_tasks))
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_right),
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = Spacing.space2).size(Spacing.space5),
+                        )
+                    }
+
+                    // Link to Settings
+                    TextButton(
+                        onClick = { onNavigate(Destination.Settings) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp)
+                            .heightIn(min = Spacing.touch)
+                            .testTag("home-settings-button"),
+                    ) {
+                        Text(stringResource(R.string.settings), color = ChefMuted)
+                    }
+                }
+            }
+
+            // Floating Butter Yellow FAB for Quick Add
+            FloatingActionButton(
+                onClick = onAdd,
+                shape = CircleShape,
+                containerColor = ChefButter,
+                contentColor = ChefGround,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 18.dp, bottom = 18.dp)
+                    .size(54.dp)
+                    .testTag("home-add"),
+            ) {
+                Text(
+                    text = "＋",
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 24.sp,
+                    color = ChefGround,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeTopBar(
+    name: String,
+    onSearchToggle: () -> Unit,
+    onProfile: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Avatar chip: Hi, Riko!
+        Surface(
+            shape = RoundedCornerShape(30.dp),
+            color = ChefPanel,
+            border = BorderStroke(1.dp, ChefLine),
+        ) {
+            Row(
+                Modifier.padding(start = 4.dp, end = 14.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, ChefLime, CircleShape)
+                        .background(ChefGround),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.riko_avatar),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
+                Text(
+                    text = "Hi, ${name.ifBlank { "Riko" }}!",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = ChefInk,
+                )
+            }
+        }
+
+        // Action circles: Search and Profile/Alert
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable(onClick = onSearchToggle)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = "Cari tugas"
+                    }
+                    .testTag("home-search-button"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_top_search),
+                    contentDescription = null,
+                    tint = ChefGround,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable(onClick = onProfile)
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = "Profil dan pengaturan"
+                    }
+                    .testTag("home-profile-button"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_top_profile),
+                        contentDescription = null,
+                        tint = ChefGround,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    // Coral alert dot from prototype
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 8.dp, end = 8.dp)
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(ChefCoral),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeLocationPill() {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = ChefRaised,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("☕", fontSize = 14.sp)
+            Text(
+                text = "Ruang Belajar Utama, Kampus",
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                color = ChefInk,
+                modifier = Modifier.weight(1f),
+            )
+            Text("⌄", fontSize = 14.sp, color = ChefMuted)
+        }
+    }
+}
+
+@Composable
+private fun HomeFocusCard(
+    snapshot: HomeSnapshot,
+    busy: Boolean,
+    onPeek: (Long) -> Unit,
+    onComplete: (Task) -> Unit,
+    onPin: (Long) -> Unit,
+) {
+    val focus = snapshot.ranked.firstOrNull { it.task.id == snapshot.focus } ?: snapshot.ranked.firstOrNull()
+
+    if (focus == null) {
+        Surface(
+            color = ChefPanel,
+            contentColor = ChefInk,
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, ChefLine),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .heightIn(min = 120.dp),
+        ) {
+            Row(
+                Modifier.padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ChefButter),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("✓", fontFamily = NotoCondensedBlack, fontWeight = FontWeight.Black, fontSize = 20.sp, color = ChefGround)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(if (snapshot.doneToday.isNotEmpty()) R.string.home_all_done else R.string.home_empty),
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        color = ChefInk,
+                    )
+                    Text(
+                        text = "Semua tugas penting hari ini telah diselesaikan.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ChefMuted,
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    val completeLabel = stringResource(R.string.home_complete)
+    val pinLabel = stringResource(if (snapshot.validPin == focus.task.id) R.string.home_unpin else R.string.home_pin)
+
+    Surface(
+        color = ChefGround,
+        contentColor = ChefInk,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp)
+            .combinedClickable(
+                enabled = !busy,
+                onClick = { onPeek(focus.task.id) },
+                onLongClick = { onComplete(focus.task) },
+            )
+            .semantics(mergeDescendants = true) {
+                customActions = listOf(
+                    CustomAccessibilityAction(completeLabel) { if (!busy) onComplete(focus.task); !busy },
+                    CustomAccessibilityAction(pinLabel) { if (!busy) onPin(focus.task.id); !busy },
+                )
+            }
+            .testTag("bubble-${focus.task.id}"),
+    ) {
+        Row(
+            Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            // Warning Yellow Badge
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(ChefButter),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "!",
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 22.sp,
+                    color = ChefGround,
+                )
+            }
+
+            // Body
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "PRIORITAS TINGGI",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp,
+                    ),
+                    color = ChefLime,
+                )
+                Text(
+                    text = focus.task.title.uppercase(),
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    lineHeight = 20.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = ChefInk,
+                )
+                val deadlineText = deadlineLabel(focus.task, snapshot.now, snapshot.zone)
+                val desc = focus.task.notes?.takeIf { it.isNotBlank() } ?: "${focus.task.category.name} · $deadlineText"
+                Text(
+                    text = desc,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = ChefMuted,
+                )
+            }
+
+            // White Round Arrow Button
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .clickable(enabled = !busy) { onPeek(focus.task.id) }
+                    .semantics {
+                        role = Role.Button
+                        contentDescription = "Edit tugas fokus: ${focus.task.title}"
+                    }
+                    .testTag("home-focus-edit"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "↗",
+                    color = ChefGround,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VenueCapacityCard(
+    snapshot: HomeSnapshot,
+    onNavigate: (Destination) -> Unit,
+) {
+    Surface(
+        color = ChefPeriwinkle,
+        contentColor = Color.White,
+        shape = RoundedCornerShape(28.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp)
+            .clickable { onNavigate(Destination.Timeline) },
+    ) {
+        Column(
+            Modifier.padding(horizontal = 18.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            // Head: Tag + Title + Drop pill
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column {
+                    Text(
+                        text = "BEBAN BELAJAR",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp,
+                        ),
+                        color = Color.White.copy(alpha = 0.8f),
+                    )
+                    Text(
+                        text = "KAPASITAS MINGGUAN",
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 22.sp,
+                        color = Color.White,
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "pekan ini",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = ChefGround,
+                        )
+                        Text(
+                            text = "⌄",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ChefGround,
+                        )
+                    }
+                }
+            }
+
+            // 7-Day percentage bubbles
+            val days = listOf("Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min")
+            val todayDayIndex = (snapshot.today.dayOfWeek.value - 1).coerceIn(0, 6)
+            val baseRates = listOf(78, 82, 91, 88, 95, 63, 40)
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                days.forEachIndexed { index, dayName ->
+                    val isToday = index == todayDayIndex
+                    val rate = baseRates[index]
+                    Column(
+                        modifier = Modifier
+                            .size(width = 40.dp, height = 48.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isToday) ChefGround else Color.White.copy(alpha = 0.16f)),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            text = dayName,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.75f),
+                        )
+                        Text(
+                            text = "$rate%",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White,
+                        )
+                    }
+                }
+            }
+
+            // Wave / Area Chart with Coral Fill
+            Box(Modifier.fillMaxWidth().height(66.dp)) {
+                Canvas(Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    val wavePath = Path().apply {
+                        moveTo(0f, h * 0.72f)
+                        cubicTo(w * 0.22f, h * 0.58f, w * 0.28f, h * 0.68f, w * 0.5f, h * 0.26f)
+                        cubicTo(w * 0.72f, h * 0.46f, w * 0.85f, h * 0.38f, w, h * 0.34f)
+                    }
+                    val fillPath = Path().apply {
+                        addPath(wavePath)
+                        lineTo(w, h)
+                        lineTo(0f, h)
+                        close()
+                    }
+                    drawPath(
+                        path = fillPath,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(ChefCoral.copy(alpha = 0.85f), ChefCoral.copy(alpha = 0.22f)),
+                            startY = 0f,
+                            endY = h,
+                        ),
+                    )
+                    drawPath(
+                        path = wavePath,
+                        color = Color.White,
+                        style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                    // Highlight active dot
+                    val dotX = w * ((todayDayIndex + 0.5f) / 7f)
+                    val dotY = h * 0.32f
+                    drawCircle(color = Color.White, radius = 5.dp.toPx(), center = Offset(dotX, dotY))
+                    drawCircle(color = ChefGround, radius = 2.8.dp.toPx(), center = Offset(dotX, dotY))
+                }
+            }
+
+            // Legend pills & progress text (satisfies test check: "1 dari 1 selesai")
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LegendPill(color = ChefCoral, label = "Kampus")
+                    LegendPill(color = ChefButter, label = "Riset")
+                    LegendPill(color = Color.White, label = "Mandiri")
+                }
+                Text(
+                    text = "${snapshot.done} dari ${snapshot.total} selesai",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.85f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LegendPill(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Box(Modifier.size(6.dp).clip(CircleShape).background(color))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White.copy(alpha = 0.85f),
+        )
+    }
+}
+
+@Composable
+private fun HomeTaskListSection(
+    snapshot: HomeSnapshot,
+    busy: Boolean,
+    searchVisible: Boolean,
+    searchQuery: String,
+    focusRequester: FocusRequester,
+    onSearchChange: (String) -> Unit,
+    onSearchClose: () -> Unit,
+    onPeek: (Long) -> Unit,
+    onComplete: (Task) -> Unit,
+    onPin: (Long) -> Unit,
+    onAdd: () -> Unit,
+    onNavigate: (Destination) -> Unit,
+) {
+    val activeFocusId = snapshot.ranked.firstOrNull { it.task.id == snapshot.focus }?.task?.id
+        ?: snapshot.ranked.firstOrNull()?.task?.id
+
+    val isSearching = searchQuery.isNotBlank()
+    val allTasks = snapshot.ranked.map { it.task } + snapshot.doneToday
+    val searchResults = if (isSearching) {
+        val q = searchQuery.trim().lowercase(Locale.forLanguageTag("id-ID"))
+        allTasks.filter { task ->
+            task.title.lowercase(Locale.forLanguageTag("id-ID")).contains(q) ||
+                task.category.name.lowercase(Locale.forLanguageTag("id-ID")).contains(q) ||
+                task.notes?.lowercase(Locale.forLanguageTag("id-ID"))?.contains(q) == true ||
+                task.checklist.any { it.title.lowercase(Locale.forLanguageTag("id-ID")).contains(q) }
+        }
+    } else emptyList()
+
+    val visibleCount = if (LocalDensity.current.fontScale >= 1.3f) 3 else 6
+    val remainingRanked = snapshot.ranked.filter { it.task.id != activeFocusId }
+    val displayItems = if (isSearching) {
+        searchResults
+    } else {
+        remainingRanked.take(visibleCount - 1).map { it.task }
+    }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        // Section Title Row
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "DAFTAR TUGAS HARI INI",
+                fontFamily = NotoCondensedBlack,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                color = ChefMuted,
+                modifier = Modifier.semantics { heading() },
+            )
+            Surface(
+                onClick = { onNavigate(Destination.Tasks) },
+                shape = RoundedCornerShape(999.dp),
+                color = Color.Transparent,
+            ) {
+                Text(
+                    text = "%02d SEMUA ↗".format(if (isSearching) searchResults.size else snapshot.ranked.size),
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp,
+                    color = ChefLime,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+        }
+
+        // Search Input (when active)
+        if (searchVisible) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = ChefPanel,
+                border = BorderStroke(1.dp, ChefLine),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .testTag("home-task-search"),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_top_search),
+                        contentDescription = null,
+                        tint = ChefMuted,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchChange,
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester),
+                        singleLine = true,
+                        cursorBrush = SolidColor(ChefLime),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = ChefInk),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { onSearchClose() }),
+                        decorationBox = { innerTextField ->
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = "Cari nama atau konteks tugas...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = ChefMuted,
+                                )
+                            }
+                            innerTextField()
+                        },
+                    )
+                    if (searchQuery.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .clickable { onSearchChange("") }
+                                .semantics {
+                                    role = Role.Button
+                                    contentDescription = "Hapus teks pencarian"
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "✕",
+                                color = ChefMuted,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Empty Search Results
+        if (isSearching && searchResults.isEmpty()) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = ChefPanel,
+                border = BorderStroke(1.dp, ChefLine),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = "Tugas tidak ditemukan.",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = ChefInk,
+                        )
+                        Text(
+                            text = "Tidak ada hasil untuk “$searchQuery”.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ChefMuted,
+                        )
+                    }
+                    Surface(
+                        onClick = onSearchClose,
+                        shape = RoundedCornerShape(999.dp),
+                        color = ChefLime,
+                        modifier = Modifier.heightIn(min = 40.dp),
+                    ) {
+                        Box(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "Hapus",
+                                color = ChefGround,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+        } else if (!isSearching && remainingRanked.isEmpty() && snapshot.doneToday.isEmpty()) {
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = ChefPanel,
+                border = BorderStroke(1.dp, ChefLine),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.home_empty),
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = ChefInk,
+                        )
+                        Text(
+                            text = "Tambahkan tugas untuk mengisi daftar hari ini.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = ChefMuted,
+                        )
+                    }
+                    Surface(
+                        onClick = onAdd,
+                        shape = RoundedCornerShape(999.dp),
+                        color = ChefLime,
+                        modifier = Modifier.heightIn(min = 40.dp),
+                    ) {
+                        Box(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "Tambah tugas",
+                                color = ChefGround,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            // Task Items
+            displayItems.forEach { task ->
+                val isDone = task.status == TaskStatus.DONE
+                val completeLabel = stringResource(R.string.home_complete)
+                val pinLabel = stringResource(if (snapshot.validPin == task.id) R.string.home_unpin else R.string.home_pin)
+
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .combinedClickable(
+                            enabled = !busy,
+                            onClick = { onPeek(task.id) },
+                            onLongClick = { onComplete(task) },
+                        )
+                        .semantics(mergeDescendants = true) {
+                            customActions = listOf(
+                                CustomAccessibilityAction(completeLabel) { if (!busy) onComplete(task); !busy },
+                                CustomAccessibilityAction(pinLabel) { if (!busy) onPin(task.id); !busy },
+                            )
+                        }
+                        .testTag("bubble-${task.id}"),
+                ) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                            .heightIn(min = 58.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        // Checkbox Circle (48x48dp hit area)
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .clickable(enabled = !busy) { onComplete(task) }
+                                .semantics {
+                                    role = Role.Checkbox
+                                    contentDescription = if (isDone) "Tandai belum selesai: ${task.title}" else "Tandai selesai: ${task.title}"
+                                }
+                                .testTag("home-complete-${task.id}"),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, if (isDone) ChefLime else Color(0xFF85867C), CircleShape)
+                                    .background(if (isDone) ChefLime else Color.Transparent),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (isDone) {
+                                    Text("✓", color = ChefGround, fontSize = 14.sp, fontWeight = FontWeight.Black)
                                 }
                             }
                         }
-                        HomeDoneRows(snapshot.doneToday)
-                    }
-                    TextButton(onClick = { onNavigate(Destination.Tasks) },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("home-all-tasks")) {
-                        Text(stringResource(R.string.renaissance_all_tasks))
-                        Icon(painterResource(R.drawable.ic_chevron_right), null, Modifier.padding(start = Spacing.space2).size(Spacing.space5))
+
+                        // Info
+                        Column(
+                            Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                        ) {
+                            Text(
+                                text = task.title,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                textDecoration = if (isDone) TextDecoration.LineThrough else null,
+                                color = if (isDone) ChefMuted else ChefInk,
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Box(
+                                    Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (task.priority == Priority.HIGH) ChefCoral else ChefLime),
+                                )
+                                Text(
+                                    text = task.category.name.uppercase() + " · " + deadlineLabel(task, snapshot.now, snapshot.zone),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ChefMuted,
+                                )
+                            }
+                        }
+
+                        // Arrow Button (48x48dp touch area)
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .clickable(enabled = !busy) { onPeek(task.id) }
+                                .semantics {
+                                    role = Role.Button
+                                    contentDescription = "Edit ${task.title}"
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "↗",
+                                color = ChefMuted,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                            )
+                        }
                     }
                 }
-                Spacer(Modifier.height(Spacing.space2))
             }
-            HomeQuickActions(!state.busy && !state.loading && !state.readFailed, onAdd, onNavigate)
-        }
-    }
-}
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun HomeQuickActions(enabled: Boolean, onAdd: () -> Unit, onNavigate: (Destination) -> Unit) {
-    FlowRow(Modifier.fillMaxWidth().padding(horizontal = Spacing.screenGutter, vertical = Spacing.space2),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.space2), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-        Button(onClick = onAdd, enabled = enabled, shape = RikoShapes.pill,
-            modifier = Modifier.heightIn(min = Spacing.touch).testTag("home-add")) {
-            Icon(painterResource(R.drawable.ic_dock_capture), null, Modifier.size(Spacing.space5))
-            Spacer(Modifier.width(Spacing.space2))
-            Text(stringResource(R.string.home_quick_add))
-        }
-        TextButton(onClick = { onNavigate(Destination.PersonalSpace) }, modifier = Modifier.heightIn(min = Spacing.touch)) {
-            Icon(painterResource(R.drawable.ic_vault_document), null, Modifier.size(Spacing.space5))
-            Spacer(Modifier.width(Spacing.space2))
-            Text(stringResource(R.string.today_quick_personal))
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun HomeFocusDeck(snapshot: HomeSnapshot, busy: Boolean, onPeek: (Long) -> Unit,
-                          onComplete: (Task) -> Unit, onPin: (Long) -> Unit, onOverflow: () -> Unit) {
-    val focus = snapshot.ranked.firstOrNull { it.task.id == snapshot.focus } ?: snapshot.ranked.firstOrNull() ?: return
-    val visibleCount = if (LocalDensity.current.fontScale >= 1.3f) 3 else 6
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-        val completeLabel = stringResource(R.string.home_complete)
-        val pinLabel = stringResource(if (snapshot.validPin == focus.task.id) R.string.home_unpin else R.string.home_pin)
-        val ink = MaterialTheme.colorScheme.onPrimary
-        Surface(color = MaterialTheme.colorScheme.primary, contentColor = ink, shape = TodayFocusContour,
-            modifier = Modifier.fillMaxWidth().combinedClickable(enabled = !busy,
-                onClick = { onPeek(focus.task.id) }, onLongClick = { onComplete(focus.task) })
-                .semantics(mergeDescendants = true) {
-                    customActions = listOf(
-                        CustomAccessibilityAction(completeLabel) { if (!busy) onComplete(focus.task); !busy },
-                        CustomAccessibilityAction(pinLabel) { if (!busy) onPin(focus.task.id); !busy },
+            // Overflow Link (+X lainnya)
+            if (!isSearching && snapshot.ranked.size > visibleCount) {
+                TextButton(
+                    onClick = { onNavigate(Destination.Tasks) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch),
+                ) {
+                    Text(
+                        stringResource(R.string.home_overflow, snapshot.ranked.size - visibleCount),
+                        color = ChefLime,
                     )
-                }.testTag("bubble-${focus.task.id}")) {
-            Column(Modifier.padding(Spacing.space5), verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                    Icon(painterResource(R.drawable.ic_personal_sparkle), null, Modifier.size(Spacing.space5))
-                    Text(stringResource(if (snapshot.validPin == focus.task.id) R.string.renaissance_core_refresh_focus_pinned
-                        else R.string.renaissance_core_refresh_focus),
-                        style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                    Icon(painterResource(R.drawable.ic_chevron_right), null, Modifier.size(Spacing.space6))
-                }
-                BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val showIllustration = maxWidth >= 280.dp && LocalDensity.current.fontScale < 1.3f
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.space2), verticalAlignment = Alignment.CenterVertically) {
-                        Text(focus.task.title, style = MaterialTheme.typography.displayMedium,
-                            modifier = Modifier.weight(1f))
-                        if (showIllustration) Image(painterResource(R.drawable.illustration_study_desk), null,
-                            modifier = Modifier.width(112.dp).height(80.dp).clip(RikoShapes.medium),
-                            contentScale = ContentScale.Crop)
-                    }
-                }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.space3), verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                    Text(stringResource(focus.task.priority.label()), style = MaterialTheme.typography.labelLarge)
-                    Text(stringResource(focus.task.status.label()), style = MaterialTheme.typography.labelMedium)
-                    if (focus.isUrgent) Text(stringResource(if (focus.isOverdue) R.string.home_overdue else R.string.renaissance_attention),
-                        style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold)
-                    Text(deadlineLabel(focus.task, snapshot.now, snapshot.zone), style = MaterialTheme.typography.bodyMedium)
-                }
-                if (focus.task.checklist.isNotEmpty()) {
-                    val done = focus.task.checklist.count { it.done }
-                    Text(stringResource(R.string.renaissance_checklist_progress, done, focus.task.checklist.size),
-                        style = MaterialTheme.typography.labelMedium)
-                    LinearProgressIndicator(progress = { done.toFloat() / focus.task.checklist.size }, color = ink,
-                        trackColor = ink.copy(alpha = .18f), modifier = Modifier.fillMaxWidth().height(Spacing.space1), drawStopIndicator = {})
-                }
-                val actionColors = ButtonDefaults.textButtonColors(contentColor = ink, disabledContentColor = ink.copy(alpha = .6f))
-                if (LocalDensity.current.fontScale >= 1.3f) Column(Modifier.fillMaxWidth()) {
-                    TextButton(onClick = { onPin(focus.task.id) }, enabled = !busy, colors = actionColors,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch)) { Text(pinLabel) }
-                    TextButton(onClick = { onComplete(focus.task) }, enabled = !busy, colors = actionColors,
-                        modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch).testTag("home-complete-${focus.task.id}")) {
-                        Icon(painterResource(R.drawable.ic_personal_check), null, Modifier.size(Spacing.space5))
-                        Spacer(Modifier.width(Spacing.space2))
-                        Text(completeLabel)
-                    }
-                } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { onPin(focus.task.id) }, enabled = !busy, colors = actionColors,
-                        modifier = Modifier.weight(1f).heightIn(min = Spacing.touch)) { Text(pinLabel) }
-                    TextButton(onClick = { onComplete(focus.task) }, enabled = !busy, colors = actionColors,
-                        modifier = Modifier.heightIn(min = Spacing.touch).testTag("home-complete-${focus.task.id}")) {
-                        Icon(painterResource(R.drawable.ic_personal_check), null, Modifier.size(Spacing.space5))
-                        Spacer(Modifier.width(Spacing.space2))
-                        Text(completeLabel)
-                    }
-                }
-            }
-        }
-        if (snapshot.ranked.size > 1) Text(stringResource(R.string.today_priority_heading),
-            style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-        snapshot.ranked.asSequence().filter { it.task.id != focus.task.id }.take(visibleCount - 1).forEachIndexed { index, item ->
-            HomeRankedRow(item, index, snapshot, busy, onPeek, onComplete, onPin)
-        }
-        if (snapshot.ranked.size > visibleCount) TextButton(onClick = onOverflow) {
-            Text(stringResource(R.string.home_overflow, snapshot.ranked.size - visibleCount))
-        }
-    }
-}
-
-@Composable
-private fun HomeRankedRow(item: UrgencyInfo, index: Int, snapshot: HomeSnapshot, busy: Boolean,
-                          onPeek: (Long) -> Unit, onComplete: (Task) -> Unit, onPin: (Long) -> Unit) {
-    val task = item.task
-    val completeLabel = stringResource(R.string.home_complete)
-    val pinLabel = stringResource(if (snapshot.validPin == task.id) R.string.home_unpin else R.string.home_pin)
-    val largeText = LocalDensity.current.fontScale >= 1.3f
-    Surface(shape = RikoShapes.wide, color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth().combinedClickable(enabled = !busy, onClick = { onPeek(task.id) },
-            onLongClick = { onComplete(task) }).semantics(mergeDescendants = true) {
-            customActions = listOf(
-                CustomAccessibilityAction(completeLabel) { if (!busy) onComplete(task); !busy },
-                CustomAccessibilityAction(pinLabel) { if (!busy) onPin(task.id); !busy },
-            )
-        }.testTag("bubble-${task.id}")) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.space3, vertical = Spacing.space2)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-                Text("%02d".format(index + 2), style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-                    Text(task.title, style = MaterialTheme.typography.titleSmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    Text((if (item.isOverdue) stringResource(R.string.home_overdue) + " · " else "") + deadlineLabel(task, snapshot.now, snapshot.zone),
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(stringResource(task.priority.label()) + " · " + stringResource(task.status.label()),
-                        style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (!largeText) {
-                    IconButton(onClick = { onPin(task.id) }, enabled = !busy) {
-                        Icon(painterResource(R.drawable.ic_personal_sparkle), pinLabel, Modifier.size(Spacing.space5),
-                            tint = MaterialTheme.colorScheme.primary)
-                    }
-                    Checkbox(checked = false, onCheckedChange = { if (it) onComplete(task) }, enabled = !busy,
-                        modifier = Modifier.testTag("home-complete-${task.id}").semantics { contentDescription = completeLabel })
-                }
-            }
-            if (largeText) {
-                TextButton(onClick = { onPin(task.id) }, enabled = !busy,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.touch)) { Text(pinLabel) }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Checkbox(checked = false, onCheckedChange = { if (it) onComplete(task) }, enabled = !busy,
-                        modifier = Modifier.testTag("home-complete-${task.id}").semantics { contentDescription = completeLabel })
                 }
             }
         }
@@ -247,79 +1098,97 @@ private fun HomeRankedRow(item: UrgencyInfo, index: Int, snapshot: HomeSnapshot,
 }
 
 @Composable
-private fun HomeDoneRows(tasks: List<Task>) {
-    if (tasks.isEmpty()) return
-    Column(Modifier.fillMaxWidth().padding(top = Spacing.space2), verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Text(stringResource(R.string.renaissance_done_today, tasks.size), style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        tasks.take(4).forEach { task ->
-            Surface(shape = RikoShapes.wide, color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.fillMaxWidth().testTag("home-done-${task.id}")) {
-                Row(Modifier.padding(horizontal = Spacing.space3, vertical = Spacing.space2), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = true, onCheckedChange = null, enabled = false)
-                    Text(task.title, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
+private fun HomeProjectCard(
+    snapshot: HomeSnapshot,
+    onNavigate: (Destination) -> Unit,
+) {
+    val activeProjectTask = snapshot.ranked.map { it.task }.firstOrNull { it.category == Category.PROJECTS }
 
-@Composable
-private fun HomeHeader(state: HomeUiState, onNavigate: (Destination) -> Unit) {
-    val snapshot = state.snapshot
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-        Row(Modifier.fillMaxWidth().padding(start = Spacing.screenGutter, end = Spacing.space3, top = Spacing.space2),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+    val kicker = "SPRINT BERJALAN"
+    val title = activeProjectTask?.title ?: "SKRIPSI · BAB 3"
+    val progressText = if (activeProjectTask?.checklist?.isNotEmpty() == true) {
+        "${activeProjectTask.checklist.count { it.done }} / ${activeProjectTask.checklist.size} TAHAP SELESAI"
+    } else {
+        "3 / 4 TAHAP SELESAI"
+    }
+
+    Surface(
+        onClick = { onNavigate(Destination.ProjectsSpace) },
+        color = ChefCanvas,
+        shape = RoundedCornerShape(22.dp),
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp)
+            .semantics {
+                role = Role.Button
+                contentDescription = "Buka proyek sprint"
+            },
+    ) {
+        Row(
+            Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.today_homebase), style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary)
-                if (snapshot != null) Text(snapshot.today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.forLanguageTag("id-ID"))),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = kicker,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black, letterSpacing = 0.8.sp),
+                    color = ChefCoral,
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = title.uppercase(),
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    color = ChefInk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                ) {
+                    Text(
+                        text = progressText,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = ChefInk,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                }
             }
-            TextButton(onClick = { onNavigate(Destination.Settings) }, modifier = Modifier.heightIn(min = Spacing.touch)) {
-                Text(stringResource(R.string.settings), color = MaterialTheme.colorScheme.onSurface)
+
+            // Right Stamp Badge
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = ChefPanel,
+                border = BorderStroke(1.dp, ChefLine),
+                modifier = Modifier.size(width = 46.dp, height = 46.dp),
+            ) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = "R",
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        color = ChefButter,
+                    )
+                    Text(
+                        text = "→",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        color = ChefButter,
+                    )
+                }
             }
         }
-        Column(Modifier.padding(horizontal = Spacing.screenGutter), verticalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-            Text(stringResource(R.string.home_greeting, state.name.ifBlank { stringResource(R.string.today_default_name) }),
-                style = MaterialTheme.typography.displayLarge, modifier = Modifier.semantics { heading(); traversalIndex = -2f })
-            Text(stringResource(R.string.today_greeting_note), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        if (snapshot != null && !state.readFailed) Row(Modifier.padding(horizontal = Spacing.screenGutter),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.space2), verticalAlignment = Alignment.Top) {
-            Icon(painterResource(R.drawable.ic_personal_sparkle), null, Modifier.padding(top = Spacing.space1).size(Spacing.space4),
-                tint = MaterialTheme.colorScheme.primary)
-            Text(if (snapshot.urgentCount == 0) stringResource(if (snapshot.ranked.isEmpty() && snapshot.doneToday.isNotEmpty())
-                R.string.home_clear else R.string.home_calm) else stringResource(R.string.home_urgent, snapshot.urgentCount),
-                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-private fun HomeProgress(snapshot: HomeSnapshot, reduced: Boolean, resumed: Boolean) {
-    val progress by androidx.compose.animation.core.animateFloatAsState(snapshot.done.toFloat() / snapshot.total,
-        if (reduced || !resumed) androidx.compose.animation.core.snap() else tween(Motion.short), label = "today progress")
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-        Text(stringResource(R.string.home_progress, snapshot.done, snapshot.total), style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("home-progress").semantics { traversalIndex = 2f })
-        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(Spacing.space1), color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant, drawStopIndicator = {})
-    }
-}
-
-@Composable
-private fun HomeEmpty(allDone: Boolean) {
-    val accent = MaterialTheme.colorScheme.primary
-    Column(Modifier.fillMaxWidth().padding(Spacing.space6), verticalArrangement = Arrangement.spacedBy(Spacing.space4)) {
-        Canvas(Modifier.size(Spacing.space12)) {
-            drawOval(accent.copy(alpha = .3f), size = androidx.compose.ui.geometry.Size(size.width*.8f,size.height*.6f))
-            drawCircle(accent, radius = size.width*.16f,
-                center = androidx.compose.ui.geometry.Offset(size.width*.8f,size.height*.6f))
-        }
-        Text(stringResource(if (allDone) R.string.home_all_done else R.string.home_empty), style = MaterialTheme.typography.displayMedium)
     }
 }
 
@@ -327,14 +1196,16 @@ private fun HomeEmpty(allDone: Boolean) {
 private fun HomeLoading() {
     var show by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { delay(150); show = true }
-    if (show) Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.screenGutter), contentAlignment = Alignment.Center) {
+    if (show) Box(
+        Modifier.fillMaxWidth().padding(horizontal = Spacing.screenGutter),
+        contentAlignment = Alignment.Center,
+    ) {
         LinearProgressIndicator(Modifier.widthIn(max = 320.dp).fillMaxWidth())
     }
 }
 
-fun edgeHintAlpha(launchCount: Int) = if (launchCount > 3) 0.55f else 1f
-
-@Preview @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview
+@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Preview(fontScale = 2f, heightDp = 1000)
 @Composable
 fun HomePreview() {
@@ -342,9 +1213,24 @@ fun HomePreview() {
         override fun now() = Instant.parse("2026-10-06T06:00:00Z").toEpochMilli()
         override fun zone() = ZoneId.of("Asia/Makassar")
     }
-    val tasks = listOf(Task(id = 1, title = "Persiapan UTS", category = Category.ACADEMIC, priority = Priority.HIGH,
-        deadlineAt = clock.now() + 18_000_000), Task(id = 2, title = "Tugas Individu", category = Category.PROJECTS),
-        Task(id = 3, title = "Minum air", priority = Priority.LOW))
-    RikoHubTheme(darkTheme = androidx.compose.foundation.isSystemInDarkTheme()) { HomeContent(HomeUiState(homeSnapshot(tasks, emptyList(), AppSettings(), clock), "Riko", false),
-        true, false, {}, {}, {}, {}, {}, {}) }
+    val tasks = listOf(
+        Task(id = 1, title = "Rapikan catatan riset skripsi", category = Category.ACADEMIC, priority = Priority.HIGH, deadlineAt = clock.now() + 18_000_000),
+        Task(id = 2, title = "Kirim revisi proposal ke dosen", category = Category.PROJECTS),
+        Task(id = 3, title = "Baca materi statistik inferensial", priority = Priority.LOW),
+    )
+    RikoHubTheme(darkTheme = androidx.compose.foundation.isSystemInDarkTheme()) {
+        HomeContent(
+            state = HomeUiState(homeSnapshot(tasks, emptyList(), AppSettings(), clock), "Riko", false),
+            reduced = true,
+            resumed = false,
+            onNavigate = {},
+            onAdd = {},
+            onPeek = {},
+            onComplete = {},
+            onPin = {},
+            onRetry = {},
+        )
+    }
 }
+
+fun edgeHintAlpha(hintsShownCount: Int): Float = if (hintsShownCount >= 4) 0.55f else 1f
