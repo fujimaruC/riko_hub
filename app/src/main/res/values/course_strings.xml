@@ -1,7 +1,8 @@
 <resources>
-    <string name="courses_back_academics">Back to Academics</string>
-    <string name="courses">Ruang kuliah</string>
-    <string name="course_spaces">Ruang kuliah</string>
+    <string name="courses_back_academics">Kembali ke Akademik</string>
+    <string name="courses_eyebrow">BELAJAR TERARAH · AKADEMIK</string>
+    <string name="courses">Mata kuliah.</string>
+    <string name="course_spaces">Mata kuliah</string>
     <string name="course_add">Tambah mata kuliah</string>
     <string name="course_new">Mata kuliah baru</string>
     <string name="course_edit">Edit mata kuliah</string>
@@ -28,7 +29,7 @@
     <string name="course_move_later">Pindah lebih akhir</string>
     <string name="course_move_earlier_accessibility">Pindahkan %1$s ke urutan sebelumnya</string>
     <string name="course_move_later_accessibility">Pindahkan %1$s ke urutan berikutnya</string>
-    <string name="course_empty">Belum ada mata kuliah. Tambahkan mata kuliah untuk mulai.</string>
+    <string name="course_empty">Belum ada mata kuliah.</string>
     <string name="course_archived_empty">Tidak ada mata kuliah yang diarsipkan.</string>
     <string name="course_back_list">Kembali ke daftar</string>
     <string name="course_timetable">Jadwal mingguan</string>

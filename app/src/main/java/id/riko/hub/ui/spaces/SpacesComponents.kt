@@ -2,66 +2,36 @@ package id.riko.hub.ui.spaces
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.riko.hub.R
-import id.riko.hub.ui.theme.RikoTypography
+import id.riko.hub.ui.theme.ChefGround
+import id.riko.hub.ui.theme.ChefInk
+import id.riko.hub.ui.theme.ChefLime
+import id.riko.hub.ui.theme.ChefLine
+import id.riko.hub.ui.theme.ChefMuted
+import id.riko.hub.ui.theme.ChefPanel
+import id.riko.hub.ui.theme.NotoCondensedBlack
 import id.riko.hub.ui.theme.Spacing
-import id.riko.hub.ui.theme.SpacesTokens
 
 @Composable
 fun SpacesTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = darkColorScheme(
-            background = SpacesTokens.canvas,
-            surface = SpacesTokens.surface,
-            surfaceVariant = SpacesTokens.row,
-            onBackground = SpacesTokens.primary,
-            onSurface = SpacesTokens.primary,
-            onSurfaceVariant = SpacesTokens.secondary,
-            inverseSurface = SpacesTokens.row,
-            inverseOnSurface = SpacesTokens.primary,
-            inversePrimary = SpacesTokens.tangerine,
-            secondary = SpacesTokens.jade,
-            onSecondary = SpacesTokens.canvas,
-            secondaryContainer = SpacesTokens.row,
-            onSecondaryContainer = SpacesTokens.primary,
-            primary = SpacesTokens.tangerine,
-            onPrimary = SpacesTokens.canvas,
-            primaryContainer = SpacesTokens.tangerineDim,
-            onPrimaryContainer = SpacesTokens.primary,
-            tertiary = SpacesTokens.cream,
-            onTertiary = SpacesTokens.canvas,
-            tertiaryContainer = SpacesTokens.row,
-            onTertiaryContainer = SpacesTokens.primary,
-            surfaceDim = SpacesTokens.canvas,
-            surfaceBright = SpacesTokens.pressed,
-            surfaceContainerLowest = SpacesTokens.canvas,
-            surfaceContainerLow = SpacesTokens.surface,
-            surfaceContainer = SpacesTokens.row,
-            surfaceContainerHigh = SpacesTokens.pressed,
-            surfaceContainerHighest = SpacesTokens.edge,
-            outline = SpacesTokens.edge,
-            outlineVariant = SpacesTokens.pressed,
-            error = Color(0xFFFF9F91),
-            onError = SpacesTokens.canvas,
-            errorContainer = Color(0xFF512020),
-            onErrorContainer = SpacesTokens.primary,
-        ),
-        typography = RikoTypography,
-        content = content,
-    )
+    content()
 }
 
 @Composable
@@ -71,17 +41,41 @@ fun SpacesPageHeader(
     onBack: () -> Unit,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            SpacesIconButton(R.drawable.ic_chevron_left, stringResource(R.string.spaces_back), onBack)
-            Spacer(Modifier.width(Spacing.space3))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.displayMedium, color = SpacesTokens.primary,
-                    modifier = Modifier.semantics { heading() })
-                subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = SpacesTokens.secondary) }
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(ChefPanel)
+                    .border(1.dp, ChefLine, CircleShape)
+                    .clickable { onBack() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("←", color = ChefInk, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-            trailing?.invoke(this)
+            Column {
+                subtitle?.let {
+                    Text(it.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = ChefMuted)
+                }
+                Text(
+                    title.uppercase(),
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 24.sp,
+                    color = ChefInk,
+                    modifier = Modifier.semantics { heading() }
+                )
+            }
         }
+        trailing?.let { Row { it() } }
     }
 }
 
@@ -97,31 +91,31 @@ fun SpacesSectionHeader(
         if (stacked) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
                 Row(Modifier.fillMaxWidth().heightIn(min = Spacing.touch), verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.Icon(
-                        painter = androidx.compose.ui.res.painterResource(icon), contentDescription = null,
-                        tint = SpacesTokens.tangerine, modifier = Modifier.size(20.dp),
+                    Icon(
+                        painter = painterResource(icon), contentDescription = null,
+                        tint = ChefMuted, modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(Spacing.space2))
                     Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleSmall,
-                        color = SpacesTokens.primary)
+                        color = ChefInk, fontWeight = FontWeight.Bold)
                 }
                 if (actionLabel != null && onAction != null) {
                     TextButton(onClick = onAction, modifier = Modifier.align(Alignment.End).heightIn(min = Spacing.touch)) {
-                        Text(actionLabel, color = SpacesTokens.tangerine)
+                        Text(actionLabel, color = ChefLime, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         } else {
             Row(Modifier.fillMaxWidth().heightIn(min = Spacing.touch), verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.material3.Icon(
-                    painter = androidx.compose.ui.res.painterResource(icon), contentDescription = null,
-                    tint = SpacesTokens.tangerine, modifier = Modifier.size(20.dp),
+                Icon(
+                    painter = painterResource(icon), contentDescription = null,
+                    tint = ChefMuted, modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(Spacing.space2))
                 Text(title, Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.titleSmall,
-                    color = SpacesTokens.primary)
+                    color = ChefInk, fontWeight = FontWeight.Bold)
                 if (actionLabel != null && onAction != null) TextButton(onClick = onAction) {
-                    Text(actionLabel, color = SpacesTokens.tangerine)
+                    Text(actionLabel, color = ChefLime, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -136,13 +130,14 @@ fun SpacesIconButton(
     enabled: Boolean = true,
 ) {
     IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.sizeIn(minWidth = Spacing.touch, minHeight = Spacing.touch)) {
-        Icon(androidx.compose.ui.res.painterResource(icon), contentDescription)
+        Icon(painterResource(icon), contentDescription, tint = ChefInk)
     }
 }
 
 @Composable
-fun SpacesBadge(text: String, tint: Color = SpacesTokens.tangerine) {
-    Text(text, Modifier.clip(CircleShape).background(tint.copy(alpha = .13f))
-        .border(1.dp, tint.copy(alpha = .35f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp),
-        style = MaterialTheme.typography.labelMedium, color = tint)
+fun SpacesBadge(text: String, tint: Color = Color.Unspecified) {
+    val badgeTint = tint.takeUnless { it == Color.Unspecified } ?: ChefLime
+    Text(text, Modifier.clip(CircleShape).background(badgeTint.copy(alpha = 0.15f))
+        .border(1.dp, badgeTint.copy(alpha = 0.35f), CircleShape).padding(horizontal = 12.dp, vertical = 5.dp),
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = badgeTint)
 }

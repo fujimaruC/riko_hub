@@ -1,7 +1,7 @@
 <resources>
-    <string name="personal_title">Personal</string>
-    <string name="personal_subtitle">Ruangmu, caramu.</string>
-    <string name="personal_greeting">Langkah kecil tetap langkah ke depan. Nikmati harimu.</string>
+    <string name="personal_title">Ruang untukmu.</string>
+    <string name="personal_subtitle">Jaga hal di luar kelas.</string>
+    <string name="personal_greeting">Pelan boleh. Berhenti sebentar.</string>
     <string name="personal_today">Niatku Hari Ini</string>
     <string name="personal_show_all">Lihat semua</string>
     <string name="personal_show_today">Lihat hari ini</string>

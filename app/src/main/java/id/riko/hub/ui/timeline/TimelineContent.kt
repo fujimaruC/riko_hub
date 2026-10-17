@@ -1,31 +1,101 @@
 package id.riko.hub.ui.timeline
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.*
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.riko.hub.R
-import id.riko.hub.domain.logic.*
-import id.riko.hub.domain.model.*
-import id.riko.hub.ui.theme.*
+import id.riko.hub.domain.logic.TimelineDay
+import id.riko.hub.domain.logic.TimelineStop
+import id.riko.hub.domain.logic.buildTimeline
+import id.riko.hub.domain.logic.timelineWeek
+import id.riko.hub.domain.model.Category
+import id.riko.hub.domain.model.Event
+import id.riko.hub.ui.theme.ChefButter
+import id.riko.hub.ui.theme.ChefCanvas
+import id.riko.hub.ui.theme.ChefCoral
+import id.riko.hub.ui.theme.ChefGround
+import id.riko.hub.ui.theme.ChefInk
+import id.riko.hub.ui.theme.ChefLime
+import id.riko.hub.ui.theme.ChefLine
+import id.riko.hub.ui.theme.ChefMuted
+import id.riko.hub.ui.theme.ChefPanel
+import id.riko.hub.ui.theme.ChefRaised
+import id.riko.hub.ui.theme.ChefSage
+import id.riko.hub.ui.theme.LocalRikoColors
+import id.riko.hub.ui.theme.NotoCondensedBlack
+import id.riko.hub.ui.theme.RikoHubTheme
+import id.riko.hub.ui.theme.RikoShapes
+import id.riko.hub.ui.theme.Spacing
+import id.riko.hub.ui.theme.rememberReducedMotion
 import kotlinx.coroutines.delay
-import java.time.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -36,9 +106,16 @@ private val dayFormat = DateTimeFormatter.ofPattern("EEEE, d MMM", Locale.forLan
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun TimelineContent(state: TimelineUiState, onWeek: (Long) -> Unit,
-                    onCurrent: () -> Unit, onToggleDayMode: () -> Unit, onOpen: (TimelineStop) -> Unit,
-                    onAdd: () -> Unit, onRetry: () -> Unit, onSelectDay: ((LocalDate) -> Unit)? = null) {
+fun TimelineContent(
+    state: TimelineUiState,
+    onWeek: (Long) -> Unit,
+    onCurrent: () -> Unit,
+    onToggleDayMode: () -> Unit,
+    onOpen: (TimelineStop) -> Unit,
+    onAdd: () -> Unit,
+    onRetry: () -> Unit,
+    onSelectDay: ((LocalDate) -> Unit)? = null,
+) {
     val list = rememberLazyListState()
     val reducedMotion = rememberReducedMotion()
     val largeText = LocalDensity.current.fontScale >= 1.3f
@@ -47,6 +124,7 @@ fun TimelineContent(state: TimelineUiState, onWeek: (Long) -> Unit,
     var positionedWeek by rememberSaveable { mutableStateOf<String?>(null) }
     var cursorRaw by rememberSaveable { mutableStateOf((state.selectedDay ?: state.today).toString()) }
     val cursorDate = runCatching { LocalDate.parse(cursorRaw) }.getOrDefault(state.selectedDay ?: state.today)
+
     LaunchedEffect(state.selectedDay, state.weekStart) {
         cursorRaw = (state.selectedDay ?: state.today.takeIf {
             it >= state.weekStart && it <= state.weekStart.plusDays(6)
@@ -64,157 +142,414 @@ fun TimelineContent(state: TimelineUiState, onWeek: (Long) -> Unit,
             positionedWeek = positionKey
         }
     }
-    Column(Modifier.fillMaxSize().testTag("screen-Timeline")) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.screenGutter),
-            verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                verticalArrangement = Arrangement.spacedBy(Spacing.space1), itemVerticalAlignment = Alignment.CenterVertically) {
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(ChefSage)
+            .testTag("screen-Timeline"),
+    ) {
+        // TOP STAGE (Sage Background with 24h Radial Dial)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Screen Header Bar: Back, Title, Current Week Dropdown
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column {
-                    Text(stringResource(R.string.plan_river_title), style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.semantics { heading() })
-                    if (!largeText) Text(stringResource(R.string.plan_river_subtitle), style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = "OPERASIONAL JADWAL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = ChefGround.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text = "OPERATIONAL TIMING",
+                        fontFamily = NotoCondensedBlack,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 24.sp,
+                        color = ChefGround,
+                        modifier = Modifier.semantics { heading() },
+                    )
                 }
-                TextButton(onClick = { positionedWeek = null; cursorRaw = state.today.toString(); onCurrent() },
-                    enabled = !state.busy, modifier = Modifier.heightIn(min = Spacing.touch)) {
-                    Text(stringResource(if (state.dayMode) R.string.timeline_today_label else R.string.timeline_current_week),
-                        style = MaterialTheme.typography.labelMedium)
+
+                Surface(
+                    onClick = {
+                        positionedWeek = null
+                        cursorRaw = state.today.toString()
+                        onCurrent()
+                    },
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    modifier = Modifier.heightIn(min = 36.dp),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = stringResource(if (state.dayMode) R.string.timeline_today_label else R.string.timeline_current_week),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = ChefGround,
+                        )
+                        Text("⌄", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ChefGround)
+                    }
                 }
             }
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.space2),
-                verticalArrangement = Arrangement.spacedBy(Spacing.space1), itemVerticalAlignment = Alignment.CenterVertically) {
-                if (!largeText) Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_event), null,
-                    tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                if (!largeText) Text(stringResource(R.string.plan_river_map), style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                FilterChip(selected = !state.dayMode, onClick = { if (state.dayMode) onToggleDayMode() },
-                    enabled = !state.busy, label = { Text(stringResource(R.string.timeline_week_mode)) },
-                    modifier = Modifier.testTag("timeline-mode-week"))
-                FilterChip(selected = state.dayMode, onClick = { if (!state.dayMode) onToggleDayMode() },
-                    enabled = !state.busy, label = { Text(stringResource(R.string.timeline_day_mode)) },
-                    modifier = Modifier.testTag("timeline-mode-day"))
+
+            // 24-HOUR CIRCULAR RADIAL DIAL (Exact match full-app-v1.html line 290-330)
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(130.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(Modifier.size(130.dp)) {
+                    val w = size.width
+                    val h = size.height
+                    val cx = w / 2f
+                    val cy = h / 2f
+
+                    // Crosshair tick marks
+                    drawLine(color = Color(0xFF9EA396), start = Offset(cx, 4f), end = Offset(cx, 16f), strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
+                    drawLine(color = Color(0xFF9EA396), start = Offset(w - 4f, cy), end = Offset(w - 16f, cy), strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
+                    drawLine(color = Color(0xFF9EA396), start = Offset(cx, h - 4f), end = Offset(cx, h - 16f), strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
+                    drawLine(color = Color(0xFF9EA396), start = Offset(4f, cy), end = Offset(16f, cy), strokeWidth = 1.5.dp.toPx(), cap = StrokeCap.Round)
+
+                    // Concentric radial circles
+                    drawCircle(color = Color.White.copy(alpha = 0.5f), radius = 54.dp.toPx(), center = Offset(cx, cy), style = Stroke(width = 1.dp.toPx()))
+                    drawCircle(color = Color.White.copy(alpha = 0.7f), radius = 36.dp.toPx(), center = Offset(cx, cy), style = Stroke(width = 1.dp.toPx()))
+
+                    // Coral Peak Wedge (09.00 - 14.00)
+                    val wedgePath = Path().apply {
+                        moveTo(cx, cy)
+                        lineTo(cx, cy - 36.dp.toPx())
+                        arcTo(
+                            rect = androidx.compose.ui.geometry.Rect(cx - 36.dp.toPx(), cy - 36.dp.toPx(), cx + 36.dp.toPx(), cy + 36.dp.toPx()),
+                            startAngleDegrees = -90f,
+                            sweepAngleDegrees = 110f,
+                            forceMoveTo = false,
+                        )
+                        close()
+                    }
+                    drawPath(path = wedgePath, color = ChefCoral.copy(alpha = 0.88f))
+
+                    // White center circle
+                    drawCircle(color = Color.White, radius = 20.dp.toPx(), center = Offset(cx, cy))
+
+                    // Clock hands pointing to ~12:47
+                    drawLine(color = ChefGround, start = Offset(cx, cy), end = Offset(cx + 22.dp.toPx(), cy - 20.dp.toPx()), strokeWidth = 2.8.dp.toPx(), cap = StrokeCap.Round)
+                    drawLine(color = ChefGround, start = Offset(cx, cy), end = Offset(cx, cy - 30.dp.toPx()), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+                    drawCircle(color = ChefCoral, radius = 3.5.dp.toPx(), center = Offset(cx, cy))
+                }
             }
-            if (!largeText) TimelineRiverHorizon(MaterialTheme.colorScheme.primary)
-            WeekSwitcher(state, onWeek = { direction ->
-                onWeek(direction)
-                cursorRaw = cursorDate.plusDays(if (state.dayMode) direction else direction * 7).toString()
-            })
+
+            // Mode switcher chips (Week vs Day) and Week navigation
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(
+                        selected = !state.dayMode,
+                        onClick = { if (state.dayMode) onToggleDayMode() },
+                        enabled = !state.busy,
+                        label = { Text(stringResource(R.string.timeline_week_mode), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                        modifier = Modifier.testTag("timeline-mode-week"),
+                        shape = CircleShape,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = ChefGround,
+                            selectedLabelColor = Color.White,
+                            containerColor = Color.White.copy(alpha = 0.5f),
+                            labelColor = ChefGround,
+                        ),
+                    )
+                    FilterChip(
+                        selected = state.dayMode,
+                        onClick = { if (!state.dayMode) onToggleDayMode() },
+                        enabled = !state.busy,
+                        label = { Text(stringResource(R.string.timeline_day_mode), fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                        modifier = Modifier.testTag("timeline-mode-day"),
+                        shape = CircleShape,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = ChefGround,
+                            selectedLabelColor = Color.White,
+                            containerColor = Color.White.copy(alpha = 0.5f),
+                            labelColor = ChefGround,
+                        ),
+                    )
+                }
+
+                WeekSwitcher(
+                    state = state,
+                    onWeek = { direction ->
+                        onWeek(direction)
+                        cursorRaw = cursorDate.plusDays(if (state.dayMode) direction else direction * 7).toString()
+                    },
+                    onCurrent = onCurrent,
+                )
+            }
+
+            // Day Selector Strip
+            if (state.days.isNotEmpty()) {
+                TimelineDayStrip(state, cursorDate, !state.busy) { date ->
+                    if (onSelectDay != null) onSelectDay(date) else {
+                        val offset = ChronoUnit.DAYS.between(if (state.dayMode) state.selectedDay ?: cursorDate else state.weekStart, date)
+                        if (!state.dayMode) onToggleDayMode()
+                        onWeek(offset)
+                    }
+                    cursorRaw = date.toString()
+                    positionedWeek = null
+                }
+            }
         }
-        if (state.days.isNotEmpty()) TimelineDayStrip(state, cursorDate, !state.busy) { date ->
-            if (onSelectDay != null) onSelectDay(date) else {
-                // Compatibility for standalone previews/callers; production uses an absolute date setter.
-                val offset = ChronoUnit.DAYS.between(if (state.dayMode) state.selectedDay ?: cursorDate else state.weekStart, date)
-                if (!state.dayMode) onToggleDayMode()
-                onWeek(offset)
-            }
-            cursorRaw = date.toString()
-            positionedWeek = null
-        }
-        LazyColumn(state = list, modifier = Modifier.weight(1f).testTag("timeline-list"),
-            contentPadding = PaddingValues(horizontal = Spacing.screenGutter, vertical = 0.dp)) {
-            when {
-                state.readFailed -> item {
-                    Text(stringResource(R.string.read_failed))
-                    TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+
+        // DARK SLIDING BOTTOM SHEET (Panel with rounded top corners)
+        Surface(
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            color = ChefCanvas,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        ) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 12.dp),
+            ) {
+                // Sliding Sheet Handle Bar
+                Box(
+                    Modifier
+                        .size(width = 36.dp, height = 4.dp)
+                        .clip(CircleShape)
+                        .background(ChefLine)
+                        .align(Alignment.CenterHorizontally),
+                )
+
+                // Timing Legend Row (Jam Puncak coral dot + Waktu Mandiri white dot)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(Modifier.size(7.dp).clip(CircleShape).background(ChefCoral))
+                        Text(
+                            text = "Jam Puncak (09.00 - 14.00)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ChefMuted,
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White))
+                        Text(
+                            text = "Waktu Mandiri",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ChefMuted,
+                        )
+                    }
                 }
-                state.loading -> item { TimelineLoading() }
-                state.days.all { it.stops.isEmpty() } -> item(key = "timeline-empty") { TimelineEmpty() }
-                else -> {
-                    state.days.forEach { day ->
-                        item(key = "day-${day.date}") {
-                            TimelineDayIsland(day, cursorDate, state.today)
+
+                // Agenda List
+                LazyColumn(
+                    state = list,
+                    modifier = Modifier.weight(1f).testTag("timeline-list"),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    when {
+                        state.readFailed -> item {
+                            Column(Modifier.padding(16.dp)) {
+                                Text(stringResource(R.string.read_failed), color = ChefMuted)
+                                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry), color = ChefLime) }
+                            }
                         }
-                        itemsIndexed(day.stops, key = { _, stop -> "${day.date}-${stop.key}" }) { index, stop ->
-                            TimelineStopRow(stop, index, day.stops.size > 6, state.now, state.zone, !state.busy) { onOpen(stop) }
+                        state.loading -> item { TimelineLoading() }
+                        state.days.all { it.stops.isEmpty() } -> item(key = "timeline-empty") { TimelineEmpty() }
+                        else -> {
+                            state.days.forEach { day ->
+                                item(key = "day-${day.date}") {
+                                    TimelineDayIsland(day, cursorDate, state.today)
+                                }
+                                itemsIndexed(day.stops, key = { _, stop -> "${day.date}-${stop.key}" }) { index, stop ->
+                                    TimelineStopRow(stop, index, day.stops.size > 6, state.now, state.zone, !state.busy) { onOpen(stop) }
+                                }
+                            }
                         }
+                    }
+                }
+
+                // Bottom Action Button: ＋ JADWALKAN BLOK WAKTU BARU
+                Surface(
+                    onClick = onAdd,
+                    enabled = !state.loading && !state.busy,
+                    shape = RoundedCornerShape(999.dp),
+                    color = ChefPanel,
+                    border = BorderStroke(1.dp, ChefLine),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .height(52.dp)
+                        .testTag("timeline-add"),
+                ) {
+                    Row(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "＋ JADWALKAN BLOK WAKTU BARU",
+                            fontFamily = NotoCondensedBlack,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp,
+                            letterSpacing = 0.5.sp,
+                            color = ChefInk,
+                        )
+                        Text(
+                            text = "↗",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 18.sp,
+                            color = ChefLime,
+                        )
                     }
                 }
             }
         }
-        Button(onClick = onAdd, enabled = !state.loading && !state.busy, shape = RikoShapes.pill,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.screenGutter, vertical = Spacing.space2).heightIn(min = Spacing.touch)
-                .testTag("timeline-add")) { Text(stringResource(R.string.timeline_add_event)) }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TimelineDayIsland(day: TimelineDay, cursorDate: LocalDate, today: LocalDate) {
-    val largeText = LocalDensity.current.fontScale >= 1.3f
-    val riverX = if (largeText) 12.dp else 60.dp
-    val gutter = if (largeText) 32.dp else 76.dp
-    val palette = LocalRikoColors.current
-    val trackColors = day.stops.map { stop ->
-        when (stop.event?.category ?: requireNotNull(stop.task).category) {
-            Category.ACADEMIC -> palette.academic.color
-            Category.ORGANIZATION -> palette.organization.color
-            Category.PERSONAL -> palette.personal.color
-            Category.PROJECTS -> palette.projects.color
-        }
-    }.distinct().ifEmpty { listOf(MaterialTheme.colorScheme.primary) }
-    val accent = trackColors.first()
     val selected = day.date == cursorDate
-    Box(Modifier.fillMaxWidth().testTag("day-${day.date}")) {
-        Canvas(Modifier.matchParentSize()) {
-            drawTimeRiver(trackColors, riverX.toPx(), 2.dp.toPx())
-            drawCircle(accent, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(riverX.toPx() + 2.dp.toPx(), 28.dp.toPx()))
-        }
-        Column(Modifier.fillMaxWidth().padding(start = gutter, top = 16.dp, bottom = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                Text(day.date.format(dayFormat), style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.semantics { heading() })
-                if (day.date == today) Surface(shape = RikoShapes.pill,
-                    color = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer) {
-                    Text(stringResource(R.string.timeline_today_marker), style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) ChefRaised else ChefPanel,
+        border = BorderStroke(1.dp, if (selected) ChefLime.copy(alpha = 0.5f) else ChefLine),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("day-${day.date}"),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = day.date.format(dayFormat).uppercase(),
+                    fontFamily = NotoCondensedBlack,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp,
+                    color = ChefInk,
+                    modifier = Modifier.semantics { heading() },
+                )
+                if (day.stops.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.plan_river_quiet_day),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ChefMuted,
+                    )
                 }
             }
-            if (selected) HorizontalDivider(color = accent.copy(alpha = .6f), modifier = Modifier.width(32.dp))
-            if (day.stops.isEmpty()) Text(stringResource(R.string.plan_river_quiet_day),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            if (day.date == today) {
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = ChefLime,
+                ) {
+                    Text(
+                        text = stringResource(R.string.timeline_today_marker),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
+                        color = ChefGround,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    )
+                }
+            } else {
+                Text(
+                    text = "${day.stops.size} agenda",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ChefMuted,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun TimelineDayStrip(state: TimelineUiState, cursorDate: LocalDate, enabled: Boolean, onSelect: (LocalDate) -> Unit) {
-    val largeText = LocalDensity.current.fontScale >= 1.3f
-    val selectedInk = MaterialTheme.colorScheme.onPrimary
-    val stripInk = MaterialTheme.colorScheme.onSurfaceVariant
+private fun TimelineDayStrip(
+    state: TimelineUiState,
+    cursorDate: LocalDate,
+    enabled: Boolean,
+    onSelect: (LocalDate) -> Unit,
+) {
     val dates = (0..6).map { state.weekStart.plusDays(it.toLong()) }
-    LazyRow(Modifier.fillMaxWidth().testTag("timeline-day-strip"),
-        contentPadding = PaddingValues(horizontal = Spacing.screenGutter), horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
+    LazyRow(
+        Modifier.fillMaxWidth().testTag("timeline-day-strip"),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
         items(dates, key = { it.toString() }) { date ->
             val day = state.days.firstOrNull { it.date == date }
             val selected = date == cursorDate
-            val todayLabel = if (date == state.today) stringResource(R.string.timeline_today_marker) else ""
-            val agendaLabel = day?.let { stringResource(if (it.stops.isEmpty()) R.string.renaissance_day_empty
-                else R.string.renaissance_day_stops, it.stops.size) }.orEmpty()
-            Surface(onClick = { onSelect(date) }, enabled = enabled, shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 20.dp, topEnd = 8.dp, bottomEnd = 20.dp, bottomStart = 8.dp),
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                border = if (date == state.today) androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
-                    else null,
-                modifier = Modifier.widthIn(min = Spacing.touch).heightIn(min = Spacing.touch)
-                    .testTag("timeline-day-$date").semantics { this.selected = selected; stateDescription = listOf(todayLabel, agendaLabel).filter { it.isNotEmpty() }.joinToString(", ") }) {
-                Column(Modifier.padding(horizontal = Spacing.space3, vertical = Spacing.space2),
-                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-                    Text(date.format(DateTimeFormatter.ofPattern("EE", Locale.forLanguageTag("id-ID"))),
-                        style = MaterialTheme.typography.labelSmall)
-                    Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.titleSmall)
-                    Canvas(Modifier.size(8.dp)) {
-                        val dot = if (selected) selectedInk else stripInk
-                        if (day != null) {
-                            if (day.stops.isNotEmpty()) drawCircle(dot)
-                            else drawCircle(dot.copy(alpha = .5f), style = Stroke(1.dp.toPx()))
-                        }
-                    }
-                    if (!largeText) day?.let {
-                        Text(stringResource(if (it.stops.isEmpty()) R.string.renaissance_day_empty else R.string.renaissance_day_stops, it.stops.size),
-                            style = MaterialTheme.typography.labelSmall)
-                    }
+            val isToday = date == state.today
+
+            Surface(
+                onClick = { onSelect(date) },
+                enabled = enabled,
+                shape = RoundedCornerShape(16.dp),
+                color = when {
+                    selected -> ChefGround
+                    isToday -> Color.White
+                    else -> Color.White.copy(alpha = 0.5f)
+                },
+                contentColor = if (selected) Color.White else ChefGround,
+                border = if (isToday && !selected) BorderStroke(1.5.dp, ChefGround) else null,
+                modifier = Modifier
+                    .width(44.dp)
+                    .height(54.dp)
+                    .testTag("timeline-day-$date")
+                    .semantics {
+                        this.selected = selected
+                    },
+            ) {
+                Column(
+                    Modifier.fillMaxSize().padding(vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = date.format(DateTimeFormatter.ofPattern("EE", Locale.forLanguageTag("id-ID"))).uppercase(),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = date.dayOfMonth.toString(),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Box(
+                        Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(if (day?.stops?.isNotEmpty() == true) ChefCoral else Color.Transparent),
+                    )
                 }
             }
         }
@@ -222,37 +557,67 @@ private fun TimelineDayStrip(state: TimelineUiState, cursorDate: LocalDate, enab
 }
 
 @Composable
-private fun WeekSwitcher(state: TimelineUiState, onWeek: (Long) -> Unit) {
-    val weekEnd = state.weekStart.plusDays(6)
-    val format = if (state.weekStart.year == state.today.year && weekEnd.year == state.today.year) weekDateFormat else timelineDateFormat
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(enabled = !state.busy, onClick = { onWeek(-1) }, modifier = Modifier.size(Spacing.touch).testTag("timeline-previous")) {
-            Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_chevron_left), stringResource(
-                if (state.dayMode) R.string.timeline_previous_day else R.string.timeline_previous_week))
+private fun WeekSwitcher(state: TimelineUiState, onWeek: (Long) -> Unit, onCurrent: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        val currentWeek = state.today.minusDays(state.today.dayOfWeek.value.toLong() - 1)
+        if (state.weekStart != currentWeek) {
+            TextButton(
+                onClick = onCurrent,
+                enabled = !state.busy,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text(
+                    stringResource(R.string.timeline_current_week),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ChefGround,
+                )
+            }
         }
-        Text(if (state.dayMode) state.selectedDay?.format(dayFormat).orEmpty() else
-            stringResource(R.string.timeline_week_range, state.weekStart.format(format), weekEnd.format(format)),
-            style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f).padding(horizontal = Spacing.space1))
-        IconButton(enabled = !state.busy, onClick = { onWeek(1) }, modifier = Modifier.size(Spacing.touch).testTag("timeline-next")) {
-            Icon(androidx.compose.ui.res.painterResource(R.drawable.ic_chevron_right), stringResource(
-                if (state.dayMode) R.string.timeline_next_day else R.string.timeline_next_week))
+        IconButton(
+            enabled = !state.busy,
+            onClick = { onWeek(-1) },
+            modifier = Modifier.size(36.dp).testTag("timeline-previous"),
+        ) {
+            Text("‹", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ChefGround)
+        }
+        IconButton(
+            enabled = !state.busy,
+            onClick = { onWeek(1) },
+            modifier = Modifier.size(36.dp).testTag("timeline-next"),
+        ) {
+            Text("›", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = ChefGround)
         }
     }
 }
 
 @Composable
 private fun TimelineEmpty() {
-    val accent = MaterialTheme.colorScheme.primary
-    Column(Modifier.fillMaxWidth().padding(vertical = Spacing.space6),
-        verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-        TimelineRiverHorizon(accent)
-        Surface(shape = RikoShapes.asymA, color = MaterialTheme.colorScheme.surfaceVariant) {
-            Column(Modifier.fillMaxWidth().padding(Spacing.space6), verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-                Text(stringResource(R.string.timeline_empty), style = MaterialTheme.typography.titleLarge)
-                Text(stringResource(R.string.timeline_empty_hint), style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = ChefPanel,
+        border = BorderStroke(1.dp, ChefLine),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+    ) {
+        Column(
+            Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                stringResource(R.string.timeline_empty),
+                fontFamily = NotoCondensedBlack,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                color = ChefInk,
+            )
+            Text(
+                stringResource(R.string.timeline_empty_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = ChefMuted,
+            )
         }
     }
 }
@@ -261,20 +626,39 @@ private fun TimelineEmpty() {
 private fun TimelineLoading() {
     var show by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { delay(150); show = true }
-    if (show) Column(verticalArrangement = Arrangement.spacedBy(Spacing.space3)) {
-        repeat(3) { Surface(Modifier.fillMaxWidth().height(Spacing.row), shape = RikoShapes.wide,
-            color = MaterialTheme.colorScheme.surfaceVariant) {} }
+    if (show) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        repeat(3) {
+            Surface(
+                Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = ChefPanel,
+            ) {}
+        }
     }
 }
 
-@Preview @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, fontScale = 2f)
+@Preview
+@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, fontScale = 2f)
 @Composable
 private fun TimelinePreview() {
     val zone = ZoneId.of("Asia/Makassar")
-    val today = LocalDate.of(2026,10,6)
-    val at = today.atTime(9,0).atZone(zone).toInstant().toEpochMilli()
-    val event = Event(id = 1, title = "Diskusi kelompok", startAt = at, endAt = at+7_200_000)
+    val today = LocalDate.of(2026, 10, 6)
+    val at = today.atTime(9, 0).atZone(zone).toInstant().toEpochMilli()
+    val event = Event(id = 1, title = "Diskusi kelompok", startAt = at, endAt = at + 7_200_000)
     val days = buildTimeline(emptyList(), listOf(event), timelineWeek(today), zone)
-    RikoHubTheme { Surface { TimelineContent(TimelineUiState(timelineWeek(today), today = today, now = at, zone = zone,
-        days = days, loading = false), {}, {}, {}, {}, {}, {}, {}) } }
+    RikoHubTheme {
+        Surface {
+            TimelineContent(
+                TimelineUiState(
+                    timelineWeek(today),
+                    today = today,
+                    now = at,
+                    zone = zone,
+                    days = days,
+                    loading = false,
+                ),
+                {}, {}, {}, {}, {}, {}, {},
+            )
+        }
+    }
 }

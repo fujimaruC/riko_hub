@@ -2,12 +2,17 @@ package id.riko.hub.ui.tasks
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
@@ -15,8 +20,10 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import id.riko.hub.R
 import id.riko.hub.domain.model.*
 import id.riko.hub.ui.theme.*
@@ -35,6 +42,9 @@ fun TaskRow(task: Task, index: Int, showCategory: Boolean, now: Long, zone: Zone
     }
     val swipe = rememberSwipeToDismissBoxState()
     val scope = rememberCoroutineScope()
+    val isDone = task.status == TaskStatus.DONE
+    val isHighPriority = task.priority == Priority.HIGH && !isDone
+
     SwipeToDismissBox(state = swipe, gesturesEnabled = enabled, onDismiss = { value ->
         if (value != SwipeToDismissBoxValue.Settled) scope.launch {
             swipe.snapTo(SwipeToDismissBoxValue.Settled)
@@ -46,49 +56,79 @@ fun TaskRow(task: Task, index: Int, showCategory: Boolean, now: Long, zone: Zone
         }
     },
         backgroundContent = {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant, RikoShapes.pill)
+            Box(Modifier.fillMaxSize().background(PreviewRaised, RoundedCornerShape(16.dp))
                 .padding(Spacing.space4), contentAlignment = if (swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd)
                 Alignment.CenterStart else Alignment.CenterEnd) {
-                Text(stringResource(if (swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd) R.string.done else R.string.delete_task))
+                Text(stringResource(if (swipe.dismissDirection == SwipeToDismissBoxValue.StartToEnd) R.string.done else R.string.delete_task),
+                    color = PreviewInk)
             }
         }) {
-        Surface(onClick = onEdit, enabled = enabled, shape = if (index % 2 == 0) RikoShapes.asymA else RikoShapes.asymB,
-            color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth().testTag("task-${task.id}")) {
-            Row(Modifier.heightIn(min = Spacing.row).padding(Spacing.space3), verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = task.status == TaskStatus.DONE, onCheckedChange = complete, enabled = enabled,
-                    modifier = Modifier.semantics { contentDescription = checkboxLabel }.testTag("check-${task.id}"))
-                TaskRowText(task, showCategory, now, zone, Modifier.weight(1f))
-                if (task.priority == Priority.HIGH) PriorityFlag()
+        Surface(
+            onClick = onEdit,
+            enabled = enabled,
+            shape = RoundedCornerShape(16.dp),
+            color = if (isHighPriority) PreviewOrange else PreviewPanel,
+            contentColor = if (isHighPriority) PreviewGround else PreviewInk,
+            border = if (isHighPriority) null else androidx.compose.foundation.BorderStroke(1.dp, PreviewLine.copy(alpha = .6f)),
+            modifier = Modifier.fillMaxWidth().testTag("task-${task.id}"),
+        ) {
+            Row(
+                Modifier.heightIn(min = 68.dp).padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                IconButton(
+                    onClick = { complete(!isDone) },
+                    enabled = enabled,
+                    modifier = Modifier.size(28.dp).semantics { contentDescription = checkboxLabel }.testTag("check-${task.id}"),
+                ) {
+                    Box(
+                        Modifier.size(22.dp).clip(CircleShape)
+                            .background(if (isDone) PreviewLime else Color.Transparent)
+                            .border(1.5.dp, if (isDone) PreviewLime else if (isHighPriority) PreviewGround else Color(0xFFA0A197), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isDone) Text("✓", color = PreviewGround, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                TaskRowText(task, showCategory, isHighPriority, isDone, now, zone, Modifier.weight(1f))
+                Box(
+                    Modifier.size(28.dp).clip(CircleShape)
+                        .background(if (isHighPriority) PreviewGround else Color(0xFF474841)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("↗", color = if (isHighPriority) PreviewOrange else PreviewInk, style = MaterialTheme.typography.labelMedium)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun TaskRowText(task: Task, showCategory: Boolean, now: Long, zone: ZoneId, modifier: Modifier) {
-    val colors = LocalRikoColors.current
-    val accent = when (task.category) {
-        Category.ACADEMIC -> colors.academic
-        Category.ORGANIZATION -> colors.organization
-        Category.PERSONAL -> colors.personal
-        Category.PROJECTS -> colors.projects
-    }
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(Spacing.space1)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-            Canvas(Modifier.size(Spacing.space2)) { drawCircle(accent.color) }
-            Text(task.title, style = MaterialTheme.typography.titleMedium,
-                maxLines = if (LocalDensity.current.fontScale >= 1.3f) Int.MAX_VALUE else 1, overflow = TextOverflow.Ellipsis)
-        }
-        Text(deadlineLabel(task, now, zone), style = MaterialTheme.typography.bodyMedium)
-        if (task.checklist.isNotEmpty()) {
-            Text(stringResource(R.string.task_checklist_progress,
-                task.checklist.count { it.done }, task.checklist.size), style = MaterialTheme.typography.labelMedium)
-        }
-        if (showCategory) Text(stringResource(task.category.label()), style = MaterialTheme.typography.labelMedium)
-        if (task.status == TaskStatus.IN_PROGRESS) Row(verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.space2)) {
-            Canvas(Modifier.size(Spacing.space3)) { drawArc(accent.color, 90f, 180f, useCenter = true) }
-            Text(stringResource(R.string.task_in_progress), style = MaterialTheme.typography.labelMedium)
+private fun TaskRowText(task: Task, showCategory: Boolean, isHighPriority: Boolean, isDone: Boolean, now: Long, zone: ZoneId, modifier: Modifier) {
+    val metaColor = if (isHighPriority) PreviewGround.copy(alpha = .75f) else PreviewMuted
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            task.title,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (isHighPriority) PreviewGround else PreviewInk,
+            textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
+            maxLines = if (LocalDensity.current.fontScale >= 1.3f) Int.MAX_VALUE else 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (showCategory) {
+                Text(
+                    stringResource(task.category.label()).uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = metaColor,
+                )
+                Text("·", style = MaterialTheme.typography.labelSmall, color = metaColor)
+            }
+            Text(deadlineLabel(task, now, zone), style = MaterialTheme.typography.labelSmall, color = metaColor)
         }
     }
 }

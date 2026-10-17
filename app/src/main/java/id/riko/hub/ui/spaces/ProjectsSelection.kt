@@ -21,6 +21,12 @@ internal fun visibleProjects(projects: List<Task>, filter: ProjectFilter): List<
     ProjectFilter.DONE -> projects.filter { it.status == TaskStatus.DONE }
 }
 
+internal fun projectDeckIndex(index: Int, count: Int): Int =
+    if (count <= 0) 0 else Math.floorMod(index, count)
+
+internal fun nextProjectDeckIndex(index: Int, direction: Int, count: Int): Int =
+    if (count <= 1) projectDeckIndex(index, count) else Math.floorMod(index + direction, count)
+
 internal fun projectMilestoneFraction(task: Task): Float? = task.checklist.takeIf { it.isNotEmpty() }
     ?.let { items -> items.count { it.done }.toFloat() / items.size }
 

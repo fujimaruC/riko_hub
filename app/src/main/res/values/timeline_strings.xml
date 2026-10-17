@@ -4,6 +4,7 @@
     <string name="timeline_next_week">Minggu berikutnya</string>
     <string name="timeline_current_week">Minggu ini</string>
     <string name="timeline_week_range">%1$s–%2$s</string>
+    <string name="timeline_period_count">%1$s · %2$d agenda</string>
     <string name="timeline_today_marker">Hari ini</string>
     <string name="timeline_now">Sekarang</string>
     <string name="timeline_deadline_stop">Deadline tugas</string>

@@ -66,21 +66,18 @@ fun RikoHub(openTaskId: Long? = null, onTaskOpenConsumed: () -> Unit = {}, onDar
         runAttempt()
     }
     val mode = settings.themeMode
-    var spacesVisible by remember { mutableStateOf(false) }
     val dark = when (mode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
         ThemeMode.DARK -> true
     }
-    // Spaces has a scoped dark canvas; keep system-bar icons legible without changing the user's theme.
-    SideEffect { onDarkThemeChanged(dark || spacesVisible) }
+    SideEffect { onDarkThemeChanged(dark) }
     RikoHubTheme(dark) {
         RikoNavHost(settings, onTheme = { selected -> persist(SettingsPreference.THEME) { settingsStore.setTheme(selected) } },
             onDisplayName = { value -> persist(SettingsPreference.DISPLAY_NAME) { settingsStore.setDisplayName(value) } },
             settingsWriteFailure = writes.earliestFailure(),
             onSettingsFailureDismissed = writes::dismiss,
             backupContent = { id.riko.hub.ui.settings.BackupSettingsSection((context as RikoHubApp).container.backups) },
-            openTaskId = openTaskId, onTaskOpenConsumed = onTaskOpenConsumed,
-            onSpacesVisibilityChanged = { spacesVisible = it })
+            openTaskId = openTaskId, onTaskOpenConsumed = onTaskOpenConsumed)
     }
 }

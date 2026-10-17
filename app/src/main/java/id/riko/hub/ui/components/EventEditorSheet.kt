@@ -49,8 +49,10 @@ fun EventEditorSheet(
     ModalBottomSheet(
         onDismissRequest = { if (!busy) onDismiss() },
         shape = RikoShapes.sheet,
+        containerColor = androidx.compose.ui.graphics.Color(0xFF222320),
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
+      MaterialTheme(colorScheme = rikoFormColorScheme()) {
         Column(Modifier.fillMaxWidth().imePadding()) {
             SnackbarHost(snackbar)
             Column(
@@ -58,10 +60,11 @@ fun EventEditorSheet(
                     .padding(horizontal = Spacing.space5).padding(bottom = Spacing.space6),
                 verticalArrangement = Arrangement.spacedBy(Spacing.space4),
             ) {
-                Text(
-                    stringResource(if (event.id == 0L) R.string.event_new else R.string.event_edit),
-                    style = MaterialTheme.typography.titleLarge,
-                )
+                Surface(shape = RikoShapes.wide, color = MaterialTheme.colorScheme.surface) {
+                    Text(stringResource(if (event.id == 0L) R.string.event_new else R.string.event_edit),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.fillMaxWidth().padding(Spacing.space4))
+                }
                 EventTitle(event, busy, onChange, onSave)
                 TaskChoices(stringResource(R.string.event_kind), EventKind.entries, event.kind, { it.eventKindLabel() }, !busy) {
                     onChange(event.copy(kind = it))
@@ -123,6 +126,7 @@ fun EventEditorSheet(
                     onValueChange = { onChange(event.copy(location = it)) },
                     label = { Text(stringResource(R.string.event_location)) },
                     enabled = !busy,
+                    colors = rikoFormFieldColors(),
                     modifier = Modifier.fillMaxWidth().testTag("event-location"),
                 )
                 val notesInvalid = (event.notes?.length ?: 0) > 2000
@@ -131,6 +135,7 @@ fun EventEditorSheet(
                     onValueChange = { onChange(event.copy(notes = it)) },
                     label = { Text(stringResource(R.string.event_notes)) },
                     enabled = !busy,
+                    colors = rikoFormFieldColors(),
                     isError = notesInvalid,
                     supportingText = {
                         Text(stringResource(if (notesInvalid) R.string.event_notes_too_long else R.string.event_notes_help))
@@ -160,6 +165,7 @@ fun EventEditorSheet(
                 ) { Text(stringResource(R.string.close)) }
             }
         }
+      }
     }
 }
 
@@ -183,6 +189,7 @@ private fun EventTitle(event: Event, busy: Boolean, onChange: (Event) -> Unit, o
         onValueChange = { onChange(event.copy(title = it)) },
         enabled = !busy,
         label = { Text(stringResource(R.string.event_title)) },
+        colors = rikoFormFieldColors(),
         isError = titleLength !in 1..120,
         supportingText = { Text(stringResource(titleMessage)) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
