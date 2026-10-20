@@ -1,0 +1,1189 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#222320">
+  <title>Riko Hub · Full App Prototype</title>
+  <link rel="stylesheet" href="full-app-v1.css">
+  <script src="full-app-v1.js" defer></script>
+</head>
+<body>
+  <div class="gallery">
+    <!-- Desktop Left Route Index Navigation -->
+    <aside class="route-index" aria-label="Indeks layar prototype">
+      <a class="wordmark" href="#home" data-go="home">
+        <span class="brand-stamp">R</span>
+        <span>RIKO HUB<small>M-CHEF ADAPTATION</small></span>
+      </a>
+      <div class="index-note">
+        <span class="live-dot"></span>SISTEM DESAIN TARGET
+        <br><strong>13 layar · visual referensi penuh</strong>
+      </div>
+      <div class="index-label">NAVIGASI PROTOTIPE</div>
+      <nav class="route-list" aria-label="Semua layar">
+        <button data-go="home" aria-current="page"><b>01</b>Hari ini (Home) <span>↗</span></button>
+        <button data-go="tasks"><b>02</b>Tugas (Tasks) <span>↗</span></button>
+        <button data-go="plan"><b>03</b>Rencana (Timing Dial) <span>↗</span></button>
+        <button data-go="capture"><b>04</b>Catat (AI Assistant) <span>↗</span></button>
+        <button data-go="vault"><b>05</b>Materi (Reports) <span>↗</span></button>
+        <button data-go="spaces"><b>06</b>Ruang (Categories Deck) <span>↗</span></button>
+        <button data-go="academics"><b>07</b>Akademik <span>↗</span></button>
+        <button data-go="courses"><b>08</b>Mata kuliah <span>↗</span></button>
+        <button data-go="projects"><b>09</b>Proyek (Revenue Sprint) <span>↗</span></button>
+        <button data-go="personal"><b>10</b>Personal <span>↗</span></button>
+        <button data-go="devices"><b>11</b>Perangkat (Integrations) <span>↗</span></button>
+        <button data-go="sync"><b>12</b>Sinkronisasi <span>↗</span></button>
+        <button data-go="settings"><b>13</b>Pengaturan <span>↗</span></button>
+      </nav>
+      <p class="index-foot">Adaptasi visual M-CHEF untuk Riko Hub.<br>Setiap layar mengadopsi struktur referensi asli.</p>
+    </aside>
+
+    <!-- Phone Stage Viewport -->
+    <div class="stage-wrap">
+      <div class="stage-caption"><span>RIKO HUB / TARGET PREVIEW</span><span>390 × 844 DP</span></div>
+      <div class="phone-stage" id="phone-stage">
+        <!-- Dynamic Island Phone Notch -->
+        <div class="camera-island" aria-hidden="true"><i></i><i></i></div>
+
+        <main class="screen-stack" id="screen-stack" aria-live="polite">
+
+          <!-- =================================================================
+               01 HARI INI (HOME SCREEN) - REVENUE & VENUE CAPACITY STYLE
+               ================================================================= -->
+          <section class="screen home-screen is-active" id="home" data-screen="home" aria-labelledby="home-heading">
+            <!-- Top Bar: Avatar, Greeting, Search & Alert -->
+            <div class="home-top-bar">
+              <div class="avatar-chip">
+                <img src="assets/riko-avatar.png" alt="" class="avatar-small">
+                <span>Hi, Riko!</span>
+              </div>
+              <div class="top-circle-actions">
+                <button class="circle-btn" data-go="tasks" aria-label="Cari">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                </button>
+                <button class="circle-btn has-dot" data-action="feedback" aria-label="Pemberitahuan">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                  <i class="alert-dot"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Location Selector Pill -->
+            <div class="location-drop-pill">
+              <span class="store-icon">☕</span>
+              <span class="location-name">Ruang Belajar Utama, Kampus</span>
+              <span class="chevron">⌄</span>
+            </div>
+
+            <!-- Stabilizing Priority Hero Card (from reference Image 2) -->
+            <article class="stabilizing-card" data-action="open-context-sheet" data-sheet="task">
+              <div class="card-warning-icon">!</div>
+              <div class="stabilizing-body">
+                <span class="micro-title">PRIORITAS TINGGI</span>
+                <h3>SELESAIKAN PROPOSAL BAB 3</h3>
+                <p>Revisi metodologi harus dikirim ke Dr. Ratna sebelum 14.00.</p>
+              </div>
+              <button class="round-arrow-btn" aria-label="Lihat detail">↗</button>
+            </article>
+
+            <!-- VENUE CAPACITY WORKLOAD CARD (Vibrant Periwinkle from reference Image 1 & 2) -->
+            <article class="venue-capacity-card">
+              <div class="venue-card-head">
+                <div>
+                  <span class="venue-tag">BEBAN BELAJAR</span>
+                  <h3>KAPASITAS MINGGUAN</h3>
+                </div>
+                <div class="white-drop-pill">
+                  <span>pekan ini</span>
+                  <small>⌄</small>
+                </div>
+              </div>
+
+              <!-- 7 Day Percentage Circles -->
+              <div class="venue-day-bubbles">
+                <div class="day-bubble"><small>Sen</small><b>78%</b></div>
+                <div class="day-bubble"><small>Sel</small><b>82%</b></div>
+                <div class="day-bubble is-highlight"><small>Rab</small><b>91%</b></div>
+                <div class="day-bubble"><small>Kam</small><b>88%</b></div>
+                <div class="day-bubble"><small>Jum</small><b>95%</b></div>
+                <div class="day-bubble"><small>Sab</small><b>63%</b></div>
+                <div class="day-bubble"><small>Min</small><b>40%</b></div>
+              </div>
+
+              <!-- Wave / Area Chart (Coral wave with SVG fill) -->
+              <div class="venue-wave-container">
+                <svg viewBox="0 0 320 70" preserveAspectRatio="none" class="venue-wave-svg" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="coral-fill-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#FF5A43" stop-opacity="0.85"/>
+                      <stop offset="100%" stop-color="#FF5A43" stop-opacity="0.25"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,50 Q40,40 80,48 T160,18 T240,32 T320,24 L320,70 L0,70 Z" fill="url(#coral-fill-grad)"/>
+                  <path d="M0,50 Q40,40 80,48 T160,18 T240,32 T320,24" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+                  <circle cx="160" cy="18" r="4.5" fill="#1A1B18" stroke="#FFFFFF" stroke-width="2.5"/>
+                </svg>
+              </div>
+
+              <!-- Legend Pills at Bottom -->
+              <div class="venue-legend-row">
+                <span class="legend-pill"><i class="dot-coral-full"></i> Kampus</span>
+                <span class="legend-pill"><i class="dot-yellow-full"></i> Riset Skripsi</span>
+                <span class="legend-pill"><i class="dot-white-full"></i> Mandiri</span>
+              </div>
+            </article>
+
+            <!-- Today's Tasks Section -->
+            <div class="section-title-row">
+              <h2>DAFTAR TUGAS HARI INI</h2>
+              <button class="count-tag-btn" data-go="tasks">03 SEMUA ↗</button>
+            </div>
+            <div class="task-items-stack">
+              <div class="task-row-card">
+                <button class="checkbox-circle" data-action="complete-task" aria-label="Selesai"></button>
+                <div class="task-row-info">
+                  <b>Kirim revisi proposal ke dosen</b>
+                  <small>SKRIPSI · 14.00 · PRIORITAS</small>
+                </div>
+                <span class="task-action-arrow">↗</span>
+              </div>
+              <div class="task-row-card">
+                <button class="checkbox-circle" data-action="complete-task" aria-label="Selesai"></button>
+                <div class="task-row-info">
+                  <b>Baca artikel statistik inferensial bab 4</b>
+                  <small>STATISTIKA · 16.30</small>
+                </div>
+                <span class="task-action-arrow">↗</span>
+              </div>
+            </div>
+
+            <!-- Active Project Strip -->
+            <article class="project-summary-strip" data-go="projects">
+              <div class="strip-left">
+                <span class="micro-title">SPRINT BERJALAN</span>
+                <h3>SKRIPSI · BAB 3</h3>
+                <span class="sprint-progress-pill">3 / 4 TAHAP SELESAI</span>
+              </div>
+              <div class="strip-right-badge">
+                <span>R</span>
+                <b>→</b>
+              </div>
+            </article>
+          </section>
+
+
+          <!-- =================================================================
+               02 TUGAS (TASKS SCREEN) - REFERENCE LIST STYLE
+               ================================================================= -->
+          <section class="screen" id="tasks" data-screen="tasks" aria-labelledby="tasks-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+              <h1 id="tasks-heading">TUGAS</h1>
+              <button class="circle-btn" data-action="open-context-sheet" data-sheet="task" aria-label="Tambah tugas">＋</button>
+            </div>
+
+            <!-- Search Pill with Audio Waveform (from Reports screen) -->
+            <div class="search-pill-bar">
+              <span class="search-lens">⌕</span>
+              <input id="task-search-input" type="search" placeholder="Cari nama atau konteks tugas..." aria-label="Cari tugas">
+              <button class="mic-wave-btn" aria-label="Suara">||||</button>
+            </div>
+
+            <!-- Joined Double Pill Filter (from reference Image 3) -->
+            <div class="joined-pill-filter">
+              <button class="joined-half">
+                <span>Semua Kategori</span>
+                <small>⌄</small>
+              </button>
+              <span class="joined-sep"></span>
+              <button class="joined-half">
+                <span>Semua Prioritas</span>
+                <small>⌄</small>
+              </button>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="filter-chips-list" role="tablist">
+              <button class="pill-chip is-selected" data-action="toggle-filter" data-filter="semua">SEMUA (08)</button>
+              <button class="pill-chip" data-action="toggle-filter" data-filter="prioritas">PRIORITAS</button>
+              <button class="pill-chip" data-action="toggle-filter" data-filter="selesai">SELESAI</button>
+            </div>
+
+            <!-- Featured Urgent Task Card (Orange/Coral) -->
+            <article class="featured-priority-card" data-action="open-context-sheet" data-sheet="task">
+              <div class="feat-badge-row">
+                <span class="feat-star">★ PRIORITAS TINGGI</span>
+                <span class="feat-time">14.00</span>
+              </div>
+              <h2>Kirim revisi proposal ke Dr. Ratna</h2>
+              <p>Periksa kembali instrumen penelitian dan kerangka konseptual di bab 3.</p>
+              <div class="feat-foot">
+                <span class="badge-white-pill">SKRIPSI</span>
+                <button class="round-arrow-btn" aria-label="Detail">↗</button>
+              </div>
+            </article>
+
+            <!-- Grouped Tasks -->
+            <div class="task-section-group">
+              <div class="section-label-bar">
+                <span>HARI INI</span>
+                <span>2 TUGAS</span>
+              </div>
+              <div class="task-card-item">
+                <button class="checkbox-circle" data-action="complete-task" aria-label="Selesai"></button>
+                <div class="task-card-copy">
+                  <b>Baca statistik inferensial bab 4</b>
+                  <small>STATISTIKA · 16.30</small>
+                </div>
+                <span class="card-arrow-icon">↗</span>
+              </div>
+              <div class="task-card-item">
+                <button class="checkbox-circle" data-action="complete-task" aria-label="Selesai"></button>
+                <div class="task-card-copy">
+                  <b>Susun 5 pertanyaan bimbingan</b>
+                  <small>SKRIPSI · 18.00</small>
+                </div>
+                <span class="card-arrow-icon">↗</span>
+              </div>
+            </div>
+
+            <div class="task-section-group">
+              <div class="section-label-bar">
+                <span>BESOK & BERIKUTNYA</span>
+                <span>3 TUGAS</span>
+              </div>
+              <div class="task-card-item">
+                <button class="checkbox-circle" data-action="complete-task" aria-label="Selesai"></button>
+                <div class="task-card-copy">
+                  <b>Review jurnal metodologi sampling</b>
+                  <small>METODOLOGI · JUMAT 09.00</small>
+                </div>
+                <span class="card-arrow-icon">↗</span>
+              </div>
+              <div class="task-card-item is-done">
+                <button class="checkbox-circle checked" data-action="complete-task" aria-label="Selesai">✓</button>
+                <div class="task-card-copy">
+                  <b>Unduh template jurnal publikasi</b>
+                  <small>RISET · SELESAI 08.45</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Big Bottom Add Action -->
+            <button class="full-pill-action-btn" data-action="open-context-sheet" data-sheet="task">
+              <span>＋ TAMBAH TUGAS BARU</span>
+              <span>↗</span>
+            </button>
+          </section>
+
+
+          <!-- =================================================================
+               03 RENCANA (PLAN) - OPERATIONAL TIMING DIAL SCREEN (Image 1 & 2)
+               ================================================================= -->
+          <section class="screen operational-timing-screen" id="plan" data-screen="plan" aria-labelledby="plan-heading" hidden>
+            <!-- Sage Header Area -->
+            <div class="sage-top-stage">
+              <div class="screen-header-bar clean-header">
+                <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+                <h1 id="plan-heading">OPERATIONAL TIMING</h1>
+                <button class="circle-btn" data-action="open-context-sheet" data-sheet="event" aria-label="Tambah agenda">＋</button>
+              </div>
+
+              <!-- Radial 24h Clock Dial (Exact reproduction of reference Image 2 & 4) -->
+              <div class="radial-clock-wrapper">
+                <svg viewBox="0 0 220 220" class="mchef-dial-svg" aria-label="Dial Jam Operasional">
+                  <!-- Dial Face Plate -->
+                  <circle cx="110" cy="110" r="100" fill="#FFFFFF" filter="drop-shadow(0 6px 16px rgba(0,0,0,0.08))"/>
+
+                  <!-- Fine sunburst tick marks around circumference -->
+                  <g stroke="#C0C2B8" stroke-width="1.2">
+                    <line x1="110" y1="12" x2="110" y2="24"/>
+                    <line x1="208" y1="110" x2="196" y2="110"/>
+                    <line x1="110" y1="208" x2="110" y2="196"/>
+                    <line x1="12" y1="110" x2="24" y2="110"/>
+                  </g>
+
+                  <!-- Concentric radial markings -->
+                  <circle cx="110" cy="110" r="75" fill="none" stroke="#E5E7DE" stroke-width="1" stroke-dasharray="3 3"/>
+                  <circle cx="110" cy="110" r="50" fill="none" stroke="#E5E7DE" stroke-width="1"/>
+
+                  <!-- Saturated Coral Peak Wedge (9:00 to 14:00 peak hours) -->
+                  <path d="M110,110 L110,60 A50,50 0 0,1 154,135 Z" fill="#FF5A43" opacity="0.88"/>
+                  <circle cx="110" cy="110" r="28" fill="#FFFFFF"/>
+
+                  <!-- Dial Hour Numbers (Condensed Bold) -->
+                  <text x="110" y="32" text-anchor="middle" font-size="11" font-weight="900" fill="#1A1B18">12</text>
+                  <text x="190" y="114" text-anchor="middle" font-size="11" font-weight="900" fill="#1A1B18">3</text>
+                  <text x="110" y="196" text-anchor="middle" font-size="11" font-weight="900" fill="#1A1B18">6</text>
+                  <text x="30" y="114" text-anchor="middle" font-size="11" font-weight="900" fill="#1A1B18">9</text>
+
+                  <!-- Clock hands pointing to 12:47 -->
+                  <line x1="110" y1="110" x2="142" y2="78" stroke="#1A1B18" stroke-width="3.5" stroke-linecap="round"/>
+                  <line x1="110" y1="110" x2="110" y2="48" stroke="#1A1B18" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="110" cy="110" r="4.5" fill="#FF5A43"/>
+                </svg>
+
+                <div class="dial-micro-footer">
+                  <span class="micro-utc">WIB (UTC+7)</span>
+                  <span class="micro-clock">12:47:33</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dark Bottom Sliding Sheet Area (from reference) -->
+            <div class="timing-dark-panel">
+              <div class="timing-panel-handle"></div>
+
+              <!-- Legend Row -->
+              <div class="timing-legend-row">
+                <span><i class="dot-coral-full"></i> Jam Puncak (09.00 - 14.00)</span>
+                <span><i class="dot-white-full"></i> Waktu Mandiri</span>
+              </div>
+
+              <!-- Time Slot Cards -->
+              <div class="timing-cards-list">
+                <article class="time-slot-card">
+                  <div class="slot-time-col">
+                    <b>09.00</b>
+                    <small>PAGI</small>
+                  </div>
+                  <div class="slot-info-col">
+                    <h4>Seminar Metodologi Riset</h4>
+                    <p>Ruang B-204 · Dr. Ratna P., M.Pd. Bimbingan bab 3.</p>
+                    <div class="slot-tags">
+                      <span class="tag-pill">Kuliah Utama</span>
+                      <span class="tag-pill">Ruang B-204</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="time-slot-card">
+                  <div class="slot-time-col">
+                    <b>12.30</b>
+                    <small>SIANG</small>
+                  </div>
+                  <div class="slot-info-col">
+                    <h4>Rehat & Kajian Literatur</h4>
+                    <p>Perpustakaan Pusat Lantai 2 · Fokus mandiri 45 menit.</p>
+                    <div class="slot-tags">
+                      <span class="tag-pill">Mandiri</span>
+                      <span class="tag-pill">Perpustakaan</span>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="time-slot-card slot-highlight">
+                  <div class="slot-time-col">
+                    <b>14.00</b>
+                    <small>DEADLINE</small>
+                  </div>
+                  <div class="slot-info-col">
+                    <h4>Kirim Draf Skripsi Bab 3</h4>
+                    <p>Batas akhir pengumpulan revisi bab metodologi penelitian.</p>
+                    <div class="slot-tags">
+                      <span class="tag-pill tag-urgent">Tenggat Penting</span>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <button class="full-pill-action-btn" data-action="open-context-sheet" data-sheet="event">
+                <span>＋ JADWALKAN BLOK WAKTU BARU</span>
+                <span>↗</span>
+              </button>
+            </div>
+          </section>
+
+
+          <!-- =================================================================
+               04 TANGKAP CEPAT (CAPTURE) - AI OPERATIONS LEAD (Image 1 & 2)
+               ================================================================= -->
+          <section class="screen ai-assistant-screen" id="capture" data-screen="capture" aria-labelledby="capture-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+              <h1 id="capture-heading">AI OPERATIONS LEAD</h1>
+              <button class="circle-btn" data-action="feedback" aria-label="Pengaturan AI">↗</button>
+            </div>
+
+            <!-- Assistant Chat Bubble Box -->
+            <div class="chat-lead-card">
+              <div class="lead-speaker-row">
+                <img src="assets/riko-avatar.png" alt="" class="lead-avatar">
+                <div class="lead-speaker-text">
+                  <b>Riko AI Assistant</b>
+                  <small>Lokal di perangkat · Port 8080</small>
+                </div>
+              </div>
+              <div class="lead-speech-bubble">
+                <p>Halo, Riko! Draf Skripsi Bab 3 harus diserahkan sebelum 14.00. Dua tugas prioritas masih menunggu tindakanmu. Mau saya catatkan ide baru, to-do, atau jadwal bimbingan?</p>
+              </div>
+
+              <!-- Quick Suggestion Prompt Chips (Cyan & Sage pills from reference) -->
+              <div class="lead-suggestion-chips">
+                <button class="chip-teal-btn" data-action="suggest-prompt" data-text="Cek tenggat revisi bab 3 skripsi">
+                  <span class="chip-icon">Hi!</span> ⌕ Cek batas waktu skripsi
+                </button>
+                <button class="chip-sage-btn" data-action="suggest-prompt" data-text="Buat checklist persiapan bimbingan dosen">
+                  <span class="chip-icon">📁</span> Buat checklist bimbingan
+                </button>
+                <button class="chip-yellow-btn" data-action="suggest-prompt" data-text="Catat ide sampling kuantitatif 30 responden">
+                  <span class="chip-icon">✳</span> Catat ide sampling riset
+                </button>
+              </div>
+            </div>
+
+            <!-- Bottom Floating Prompt Bar (Coral + circle, input, waveform) -->
+            <div class="mchef-prompt-input-bar">
+              <button class="prompt-coral-plus" data-action="open-context-sheet" data-sheet="note" aria-label="Tambah cepat">＋</button>
+              <input id="quick-prompt-input" type="text" placeholder="Tulis ide atau tugas cepat...">
+              <button class="prompt-mic-btn" data-action="save-quick-prompt" aria-label="Simpan">||||</button>
+            </div>
+
+            <!-- Recent Quick Captures -->
+            <div class="section-title-row" style="margin-top: 14px;">
+              <h2>CATATAN TERAKHIR DITANGKAP</h2>
+              <span class="micro-note">LOKAL</span>
+            </div>
+            <div class="recent-captures-stack">
+              <div class="recent-capture-card">
+                <span class="cap-time">09.12</span>
+                <p>Ide: gunakan metode purposive sampling untuk 30 guru responden bab 3.</p>
+                <span class="cap-badge tag-coral">IDE SKRIPSI</span>
+              </div>
+              <div class="recent-capture-card">
+                <span class="cap-time">08.50</span>
+                <p>Bawa fotokopi lembar instrumen ke ruang bimbingan B-204.</p>
+                <span class="cap-badge tag-lime">TUGAS</span>
+              </div>
+            </div>
+          </section>
+
+
+          <!-- =================================================================
+               05 GUDANG MATERI (VAULT) - REPORTS STYLE (Image 1 & 2)
+               ================================================================= -->
+          <section class="screen vault-reports-screen" id="vault" data-screen="vault" aria-labelledby="vault-heading" hidden>
+            <!-- Sage Top Stage with Whimsical Illustration -->
+            <div class="sage-top-stage reports-top">
+              <div class="screen-header-bar clean-header">
+                <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+                <h1 id="vault-heading">REPORTS</h1>
+                <div class="white-drop-pill">
+                  <span>semua</span>
+                  <small>⌄</small>
+                </div>
+              </div>
+
+              <!-- Whimsical Character Cook Illustration (Reproduction of reference art) -->
+              <div class="reports-art-stage">
+                <svg viewBox="0 0 200 130" class="reports-cook-svg" aria-hidden="true">
+                  <!-- Decorative oven character box -->
+                  <rect x="55" y="30" width="90" height="70" rx="16" fill="#F5CB58" stroke="#1A1B18" stroke-width="2.5"/>
+                  <rect x="65" y="40" width="70" height="35" rx="8" fill="#1A1B18"/>
+                  <text x="100" y="62" text-anchor="middle" fill="#D9F35B" font-size="12" font-weight="900">MATERI</text>
+                  <!-- Dial knobs -->
+                  <circle cx="75" cy="88" r="6" fill="#FF5A43" stroke="#1A1B18" stroke-width="1.5"/>
+                  <circle cx="95" cy="88" r="6" fill="#FFFFFF" stroke="#1A1B18" stroke-width="1.5"/>
+                  <circle cx="115" cy="88" r="6" fill="#4CD964" stroke="#1A1B18" stroke-width="1.5"/>
+                  <!-- Antennae & tree bush -->
+                  <path d="M70,30 Q60,10 50,15" fill="none" stroke="#1A1B18" stroke-width="2"/>
+                  <circle cx="50" cy="15" r="8" fill="#FF5A43"/>
+                  <path d="M130,30 Q145,8 155,18" fill="none" stroke="#1A1B18" stroke-width="2"/>
+                  <circle cx="155" cy="18" r="9" fill="#222320"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Dark Sliding Bottom Sheet for Material Cards -->
+            <div class="reports-dark-sheet">
+              <div class="search-pill-bar">
+                <span class="search-lens">⌕</span>
+                <input placeholder="Cari laporan atau materi..." aria-label="Cari materi">
+                <button class="mic-wave-btn">||||</button>
+              </div>
+
+              <div class="reports-count-row">
+                <span>101 materi & laporan tersimpan</span>
+                <button class="filter-link">URUTKAN ⌄</button>
+              </div>
+
+              <!-- PRIME COST REPORT Styled Cards from Reference -->
+              <div class="reports-cards-list">
+                <article class="prime-cost-card" data-action="feedback">
+                  <div class="report-icon-square red-sq">PDF</div>
+                  <div class="report-card-details">
+                    <h4>METODOLOGI PENELITIAN · BAB 2</h4>
+                    <p>Ringkasan kerangka teoritis, kajian pustaka, dan hipotesis.</p>
+                    <div class="report-pill-tags">
+                      <span class="report-tag">Skripsi</span>
+                      <span class="report-tag">Metodologi</span>
+                    </div>
+                  </div>
+                  <button class="round-arrow-btn" aria-label="Buka">↗</button>
+                </article>
+
+                <article class="prime-cost-card" data-action="feedback">
+                  <div class="report-icon-square yellow-sq">TXT</div>
+                  <div class="report-card-details">
+                    <h4>CATATAN KULIAH STATISTIKA</h4>
+                    <p>Formula regresi linear berganda & interpretasi p-value.</p>
+                    <div class="report-pill-tags">
+                      <span class="report-tag">Statistika</span>
+                      <span class="report-tag">Kuliah</span>
+                    </div>
+                  </div>
+                  <button class="round-arrow-btn" aria-label="Buka">↗</button>
+                </article>
+
+                <article class="prime-cost-card" data-action="feedback">
+                  <div class="report-icon-square sage-sq">CSV</div>
+                  <div class="report-card-details">
+                    <h4>TABULASI DATA KUISIONER</h4>
+                    <p>Dataset mentah 30 responden uji validitas instrumen.</p>
+                    <div class="report-pill-tags">
+                      <span class="report-tag">Dataset</span>
+                      <span class="report-tag">Riset</span>
+                    </div>
+                  </div>
+                  <button class="round-arrow-btn" aria-label="Buka">↗</button>
+                </article>
+              </div>
+
+              <!-- Floating Yellow Plus Button (from reference Reports screen) -->
+              <button class="floating-yellow-plus" data-action="open-context-sheet" data-sheet="note" aria-label="Tambah berkas">＋</button>
+            </div>
+          </section>
+
+
+          <!-- =================================================================
+               06 RUANG KERJA (SPACES) - CATEGORIES STEPPED STACKED DECK (Image 4)
+               ================================================================= -->
+          <section class="screen spaces-categories-screen" id="spaces" data-screen="spaces" aria-labelledby="spaces-heading" hidden>
+            <div class="screen-header-bar clean-header">
+              <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+              <h1 id="spaces-heading">CATEGORIES</h1>
+              <button class="circle-btn" data-action="feedback" aria-label="Kelola ruang">＋</button>
+            </div>
+
+            <!-- Stepped Stacked Categories Deck (Exact match of reference Image 4) -->
+            <div class="categories-stepped-deck" id="categories-deck">
+              <!-- Top Peeking Card (04 / PERANGKAT - Coral) -->
+              <div class="peek-tab-card tab-coral" data-switch-space="devices">
+                <span class="peek-tab-title">04 / PERANGKAT</span>
+              </div>
+
+              <!-- Second Peeking Card (03 / PERSONAL - Dark Charcoal) -->
+              <div class="peek-tab-card tab-dark" data-switch-space="personal">
+                <span class="peek-tab-title">03 / PERSONAL</span>
+              </div>
+
+              <!-- Third Peeking Card (02 / PROYEK - Light Sage) -->
+              <div class="peek-tab-card tab-sage" data-switch-space="projects">
+                <span class="peek-tab-title">02 / PROYEK</span>
+              </div>
+
+              <!-- Active Front Hero Card (Mustard Yellow by default) -->
+              <article class="category-hero-card" id="spaces-hero-card">
+                <div class="hero-card-header">
+                  <div class="hero-title-group">
+                    <span class="hero-category-kicker" id="hero-kicker">01 / AKADEMIK</span>
+                    <h2 id="hero-title">KAMPUS<br>BERGERAK</h2>
+                  </div>
+                  <button class="round-arrow-btn black-circle" id="hero-action-circle" data-go="academics" aria-label="Masuk ruang">↗</button>
+                </div>
+
+                <!-- Two Badge Pills (like < 20 seats, < 5 workers in reference) -->
+                <div class="category-badge-pills" id="hero-badges-container">
+                  <span class="cat-badge-pill pill-red-dot">
+                    <i class="dot-red-full"></i> 12 SKS Aktif
+                  </span>
+                  <span class="cat-badge-pill pill-blue-dot">
+                    <i class="dot-blue-full"></i> 4 Mata Kuliah
+                  </span>
+                </div>
+
+                <!-- Whimsical Van/Dome Illustration from Reference Image 4 -->
+                <div class="category-illustration-box">
+                  <svg viewBox="0 0 240 180" class="mchef-van-svg" aria-hidden="true">
+                    <!-- Tree foliage on top -->
+                    <circle cx="70" cy="50" r="28" fill="#E8EAE0" stroke="#1A1B18" stroke-width="2"/>
+                    <circle cx="170" cy="48" r="26" fill="#E8EAE0" stroke="#1A1B18" stroke-width="2"/>
+                    <circle cx="120" cy="35" r="32" fill="#CBD7C9" stroke="#1A1B18" stroke-width="2"/>
+                    <!-- Red dome vehicle body -->
+                    <path d="M40,130 C40,70 200,70 200,130 Z" fill="#FF5A43" stroke="#1A1B18" stroke-width="3"/>
+                    <!-- White cabin window -->
+                    <rect x="75" y="80" width="90" height="45" rx="14" fill="#FFFFFF" stroke="#1A1B18" stroke-width="2.5"/>
+                    <!-- Character with headphones inside -->
+                    <circle cx="110" cy="98" r="14" fill="#F5CB58" stroke="#1A1B18" stroke-width="2"/>
+                    <rect x="100" y="105" width="20" height="18" rx="4" fill="#CBD7C9"/>
+                    <!-- Wheels & chassis -->
+                    <rect x="35" y="130" width="170" height="16" rx="8" fill="#FDFCFA" stroke="#1A1B18" stroke-width="3"/>
+                    <circle cx="120" cy="138" r="5" fill="#1A1B18"/>
+                  </svg>
+                </div>
+
+                <!-- Bottom Button to Enter Space -->
+                <button class="enter-space-action-btn" id="hero-enter-btn" data-go="academics">
+                  <span>MASUK RUANG AKADEMIK</span>
+                  <span>↗</span>
+                </button>
+              </article>
+            </div>
+
+            <!-- Quick Space Switcher Tabs -->
+            <div class="spaces-quick-tabs">
+              <button class="space-quick-btn is-active" data-switch-space="academics">Akademik</button>
+              <button class="space-quick-btn" data-switch-space="projects">Proyek</button>
+              <button class="space-quick-btn" data-switch-space="personal">Personal</button>
+              <button class="space-quick-btn" data-switch-space="devices">Perangkat</button>
+            </div>
+          </section>
+
+
+          <!-- =================================================================
+               07 AKADEMIK (ACADEMICS SPACE)
+               ================================================================= -->
+          <section class="screen" id="academics" data-screen="academics" aria-labelledby="academics-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="spaces" aria-label="Kembali ke Ruang">←</button>
+              <h1 id="academics-heading">AKADEMIK</h1>
+              <button class="circle-btn" data-go="courses" aria-label="Daftar mata kuliah">↗</button>
+            </div>
+
+            <div class="semester-pill-strip">
+              <span>SEMESTER 5 GANJIL</span>
+              <span>2026/2027</span>
+              <b>12 SKS</b>
+            </div>
+
+            <!-- Featured Course Card (Orange) -->
+            <article class="featured-priority-card" data-go="courses">
+              <div class="feat-badge-row">
+                <span class="feat-star">MATA KULIAH UTAMA</span>
+                <span class="feat-time">3 SKS</span>
+              </div>
+              <h2>METODOLOGI PENELITIAN</h2>
+              <p>Dosen Pengampu: Dr. Ratna P., M.Pd. Bimbingan skripsi & proposal.</p>
+              <div class="feat-foot">
+                <span class="badge-white-pill">SENIN & KAMIS</span>
+                <span class="badge-white-pill">2 TUGAS AKTIF</span>
+                <button class="round-arrow-btn" aria-label="Buka">↗</button>
+              </div>
+            </article>
+
+            <!-- Exam Countdown & Deadline Grid -->
+            <div class="academic-grid-cards">
+              <div class="grid-card coral-bg">
+                <span class="micro-title">UJIAN TERDEKAT</span>
+                <h3>28 OKT</h3>
+                <p>UTS Statistika Inferensial · 13 hari lagi</p>
+              </div>
+              <div class="grid-card dark-bg">
+                <span class="micro-title">TENGGAT PEKAN INI</span>
+                <h3>03</h3>
+                <p>Tugas skripsi & analisis data menunggu</p>
+              </div>
+            </div>
+
+            <button class="full-pill-action-btn" data-go="courses">
+              <span>SEMUA MATA KULIAH & JADWAL</span>
+              <span>↗</span>
+            </button>
+          </section>
+
+
+          <!-- =================================================================
+               08 MATA KULIAH (COURSES)
+               ================================================================= -->
+          <section class="screen" id="courses" data-screen="courses" aria-labelledby="courses-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="academics" aria-label="Kembali">←</button>
+              <h1 id="courses-heading">MATA KULIAH</h1>
+              <button class="circle-btn" data-action="open-context-sheet" data-sheet="course" aria-label="Tambah mata kuliah">＋</button>
+            </div>
+
+            <div class="course-list-stack">
+              <div class="course-card-row orange-bg" data-action="feedback">
+                <div class="course-monogram-sq">MP</div>
+                <div class="course-info-col">
+                  <b>Metodologi Penelitian</b>
+                  <small>3 SKS · SENIN & KAMIS 09.00</small>
+                </div>
+                <span class="round-arrow-btn">↗</span>
+              </div>
+
+              <div class="course-card-row coral-bg" data-action="feedback">
+                <div class="course-monogram-sq">SI</div>
+                <div class="course-info-col">
+                  <b>Statistika Inferensial</b>
+                  <small>3 SKS · SELASA 09.00</small>
+                </div>
+                <span class="round-arrow-btn">↗</span>
+              </div>
+
+              <div class="course-card-row sage-bg" data-action="feedback">
+                <div class="course-monogram-sq">PB</div>
+                <div class="course-info-col">
+                  <b>Psikologi Belajar</b>
+                  <small>2 SKS · RABU 10.30</small>
+                </div>
+                <span class="round-arrow-btn">↗</span>
+              </div>
+
+              <div class="course-card-row butter-bg" data-action="feedback">
+                <div class="course-monogram-sq">ED</div>
+                <div class="course-info-col">
+                  <b>Evaluasi Pendidikan</b>
+                  <small>4 SKS · JUMAT 13.00</small>
+                </div>
+                <span class="round-arrow-btn">↗</span>
+              </div>
+            </div>
+          </section>
+
+
+          <!-- =================================================================
+               09 PROYEK (PROJECTS) - REVENUE SPRINT MILESTONE DASHBOARD (Image 1 & 2)
+               ================================================================= -->
+          <section class="screen projects-revenue-screen" id="projects" data-screen="projects" aria-labelledby="projects-heading" hidden>
+            <!-- Header Bar -->
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+              <h1 id="projects-heading">REVENUE</h1>
+              <button class="circle-btn" data-action="open-context-sheet" data-sheet="task" aria-label="Tambah proyek">＋</button>
+            </div>
+
+            <!-- Joined Double Pill Filter (from reference Image 1 & 2) -->
+            <div class="joined-pill-filter">
+              <button class="joined-half">
+                <span>Skripsi Utama</span>
+                <small>⌄</small>
+              </button>
+              <span class="joined-sep"></span>
+              <button class="joined-half">
+                <span>Sprint 42 ⌄</span>
+              </button>
+            </div>
+
+            <!-- MASSIVE CORAL HERO REVENUE CARD (Exact match from reference Image 1 & 2) -->
+            <article class="revenue-hero-card">
+              <!-- Top Row: Gross Revenue label & +7.5% pill -->
+              <div class="rev-row-between">
+                <span class="rev-small-label">GROSS REVENUE / SPRINT</span>
+                <span class="rev-growth-pill">+7.5%</span>
+              </div>
+              <h2 class="rev-big-number">SKRIPSI · BAB 3</h2>
+
+              <!-- Second Row: Avg. Order Value & +2.4% -->
+              <div class="rev-row-between" style="margin-top: 10px;">
+                <span class="rev-small-label">TARGET PENYELESAIAN</span>
+                <span class="rev-growth-pill">+2.4%</span>
+              </div>
+              <div class="rev-value-subline">
+                <h3>18 OKT 2026</h3>
+                <small>Batas Bimbingan Dosen</small>
+              </div>
+
+              <!-- Striped Hatched Burndown Bar Chart -->
+              <div class="rev-striped-chart-stage">
+                <!-- Floating active pill above bar -->
+                <div class="rev-floating-val-pill">3/4 SPRINT</div>
+
+                <div class="rev-chart-bars-row">
+                  <div class="rev-bar done"><div class="fill" style="height: 75%;"></div><small>M1</small></div>
+                  <div class="rev-bar done"><div class="fill" style="height: 85%;"></div><small>M2</small></div>
+                  <div class="rev-bar active"><div class="fill" style="height: 90%;"></div><small>M3</small></div>
+                  <div class="rev-bar next"><div class="fill" style="height: 40%;"></div><small>M4</small></div>
+                  <div class="rev-bar next"><div class="fill" style="height: 20%;"></div><small>M5</small></div>
+                </div>
+              </div>
+            </article>
+
+            <!-- Tilted Deliverables Cards (INTEGRATIONS Style from Reference Image 3) -->
+            <div class="section-title-row" style="margin-top: 18px;">
+              <h2>BERKAS DELIVERABLE PROYEK</h2>
+              <span class="micro-note">3 DOKUMEN</span>
+            </div>
+
+            <div class="tilted-deliverables-stack">
+              <!-- Coral Tilted Card (QuickBooks style, rotated -3.5 deg) -->
+              <div class="tilted-card card-coral-tilt">
+                <div class="tilted-card-info">
+                  <b>DRAFT BAB 3 (REVISI)</b>
+                  <span class="status-chip-pill">Dalam Review</span>
+                </div>
+                <div class="tilted-logo-sq">DOCX</div>
+              </div>
+
+              <!-- Mustard Yellow Tilted Card (Xero style, rotated +2.5 deg) -->
+              <div class="tilted-card card-yellow-tilt">
+                <div class="tilted-card-info">
+                  <b>DATASET SURVEY 30 RESPONDEN</b>
+                  <span class="status-chip-pill">✔ Terverifikasi</span>
+                </div>
+                <div class="tilted-logo-sq">CSV</div>
+              </div>
+
+              <!-- Mint/Cyan Tilted Card (Homebase style, rotated -2 deg) -->
+              <div class="tilted-card card-mint-tilt">
+                <div class="tilted-card-info">
+                  <b>SLIDE SEMINAR PROPOSAL</b>
+                  <span class="status-chip-pill">✔ Siap Presentasi</span>
+                </div>
+                <div class="tilted-logo-sq">PPTX</div>
+              </div>
+            </div>
+
+            <!-- Bottom Add Action -->
+            <button class="full-pill-action-btn" data-action="open-context-sheet" data-sheet="task">
+              <span>＋ TAMBAH TUGAS SPRINT BARU</span>
+              <span>↗</span>
+            </button>
+          </section>
+
+
+          <!-- =================================================================
+               10 PERSONAL (PERSONAL SCREEN)
+               ================================================================= -->
+          <section class="screen" id="personal" data-screen="personal" aria-labelledby="personal-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="spaces" aria-label="Kembali">←</button>
+              <h1 id="personal-heading">PERSONAL</h1>
+              <button class="circle-btn" data-go="settings" aria-label="Pengaturan">⚙</button>
+            </div>
+
+            <div class="personal-ritme-card">
+              <span class="micro-title">RITME HARI INI</span>
+              <h2>Pelan boleh.<br>Berhenti sebentar.</h2>
+              <p>Jaga energi di luar beban kuliah dan tenggat skripsi.</p>
+            </div>
+
+            <!-- Journal Entry Area -->
+            <div class="personal-journal-box">
+              <span class="micro-title">JURNAL HARI INI</span>
+              <textarea id="personal-journal-input" rows="3" placeholder="Apa yang ingin kamu ingat dari hari ini?"></textarea>
+              <div class="journal-btns-row">
+                <button class="pill-save-btn" data-action="save-journal">SIMPAN DRAF</button>
+                <button class="pill-history-btn" data-action="toggle-journal-history">RIWAYAT ↗</button>
+              </div>
+            </div>
+
+            <div id="personal-journal-history" class="history-collapse-box" hidden>
+              <div class="history-item">
+                <b>14 OKT</b>
+                <p>Mulai merapikan bab metodologi riset dan instrumen kuesioner.</p>
+              </div>
+              <div class="history-item">
+                <b>13 OKT</b>
+                <p>Diskusi bimbingan dosen tentang uji validitas empiris.</p>
+              </div>
+            </div>
+          </section>
+
+
+          <!-- =================================================================
+               11 PERANGKAT (DEVICES) - INTEGRATIONS STYLE (Image 3)
+               ================================================================= -->
+          <section class="screen devices-integrations-screen" id="devices" data-screen="devices" aria-labelledby="devices-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="spaces" aria-label="Kembali">←</button>
+              <h1 id="devices-heading">INTEGRATIONS</h1>
+              <button class="circle-btn" data-go="sync" aria-label="Sinkronisasi">↗</button>
+            </div>
+
+            <!-- Joined Double Pill Filter (Exact match Image 3) -->
+            <div class="joined-pill-filter">
+              <button class="joined-half">
+                <span>all operations</span>
+                <small>⌄</small>
+              </button>
+              <span class="joined-sep"></span>
+              <button class="joined-half">
+                <span>all experience ⌄</span>
+              </button>
+            </div>
+
+            <!-- Tilted Device Integration Cards (Exact match Image 3) -->
+            <div class="tilted-deliverables-stack" style="margin-top: 14px;">
+              <!-- Coral Tilted Card (Quickbooks style, rotated -4 deg) -->
+              <div class="tilted-card card-coral-tilt">
+                <div class="tilted-card-info">
+                  <b>RIKO’S ANDROID</b>
+                  <span class="status-chip-pill">✔ Terhubung Lokal</span>
+                </div>
+                <div class="tilted-logo-sq">▯</div>
+              </div>
+
+              <!-- Mustard Yellow Tilted Card (Xero style, rotated +2.5 deg) -->
+              <div class="tilted-card card-yellow-tilt">
+                <div class="tilted-card-info">
+                  <b>THINKPAD LINUX</b>
+                  <span class="status-chip-pill">✔ Terhubung · Ping 14ms</span>
+                </div>
+                <div class="tilted-logo-sq">▱</div>
+              </div>
+
+              <!-- Mint/Cyan Tilted Card (Homebase style, rotated -2 deg) -->
+              <div class="tilted-card card-mint-tilt">
+                <div class="tilted-card-info">
+                  <b>IPAD PERPUSTAKAAN</b>
+                  <span class="status-chip-pill">Offline</span>
+                </div>
+                <div class="tilted-logo-sq">▭</div>
+              </div>
+            </div>
+
+            <div class="integrations-note-box">
+              <b>ENKRIPSI TLS</b>
+              <p>Pertukaran data peer-to-peer antar perangkat terenkripsi secara lokal tanpa server eksternal.</p>
+            </div>
+
+            <button class="full-pill-action-btn" data-go="sync">
+              <span>PREFERENSI SERAH-TERIMA & SINKRON</span>
+              <span>↗</span>
+            </button>
+          </section>
+
+
+          <!-- =================================================================
+               12 SINKRONISASI (SYNC)
+               ================================================================= -->
+          <section class="screen" id="sync" data-screen="sync" aria-labelledby="sync-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="devices" aria-label="Kembali">←</button>
+              <h1 id="sync-heading">SINKRONISASI</h1>
+              <span class="online-status-badge">ONLINE</span>
+            </div>
+
+            <div class="sync-graphic-box">
+              <div class="sync-circle-node">R</div>
+              <div class="sync-arrow-bridge">
+                <i></i><i></i><i></i>
+                <span>→</span>
+              </div>
+              <div class="sync-circle-node">▱</div>
+            </div>
+
+            <article class="featured-priority-card">
+              <span class="micro-title">SERAH-TERIMA CEPAT</span>
+              <h2>Kirim Draf ke ThinkPad</h2>
+              <p>Terhubung ke Wi-Fi Rumah. Siap mengirim catatan riset dan berkas tanpa koneksi internet.</p>
+              <button class="full-pill-action-btn" data-action="feedback">KIRIM DRAFT TERAKHIR ↗</button>
+            </article>
+          </section>
+
+
+          <!-- =================================================================
+               13 PENGATURAN (SETTINGS)
+               ================================================================= -->
+          <section class="screen" id="settings" data-screen="settings" aria-labelledby="settings-heading" hidden>
+            <div class="screen-header-bar">
+              <button class="back-circle-btn" data-go="home" aria-label="Kembali">←</button>
+              <h1 id="settings-heading">PENGATURAN</h1>
+              <span class="gear-icon">⚙</span>
+            </div>
+
+            <div class="settings-profile-card">
+              <img src="assets/riko-avatar.png" alt="" class="avatar-large">
+              <div class="profile-meta">
+                <b>Riko Fujimaru</b>
+                <small>Mahasiswa Semester 5 · Manajemen Riset</small>
+              </div>
+            </div>
+
+            <div class="settings-group-box">
+              <div class="setting-row">
+                <span>Tema Aplikasi (Arang Gelap / Gading Terang)</span>
+                <button class="theme-toggle-btn" data-action="theme" aria-label="Ganti tema">
+                  <i></i><i></i>
+                </button>
+              </div>
+              <div class="setting-row">
+                <span>Cadangan Data Lokal (JSON)</span>
+                <button class="round-arrow-btn" data-action="feedback" aria-label="Cadangkan">↗</button>
+              </div>
+            </div>
+          </section>
+
+        </main>
+
+        <!-- Floating Add FAB Button -->
+        <button class="floating-fab" data-action="open-context-sheet" data-sheet="task" aria-label="Tambah cepat">＋</button>
+
+        <!-- Bottom Navigation Dock (Exact match from reference Image 1 & 2) -->
+        <nav class="mchef-bottom-dock" aria-label="Navigasi utama">
+          <button class="dock-nav-item is-selected" data-go="home" aria-label="Hari ini">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v9h-6v-7H9v7H3z"/></svg>
+          </button>
+          <button class="dock-nav-item" data-go="plan" aria-label="Rencana">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </button>
+          <button class="dock-nav-item dock-capture-fab" data-go="capture" aria-label="Catat cepat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          </button>
+          <button class="dock-nav-item" data-go="vault" aria-label="Materi">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM9 9h6M9 13h6M9 17h4"/></svg>
+          </button>
+          <button class="dock-nav-item" data-go="spaces" aria-label="Ruang">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+        </nav>
+      </div>
+      <div class="stage-footnote"><span>ADAPTASI DESAIN TARGET M-CHEF</span><span>PROTOTIPE LOKAL</span></div>
+    </div>
+  </div>
+
+  <!-- CONTEXTUAL BOTTOM SHEET DRAWER (Rebuilt without generic dialog) -->
+  <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+  <aside id="context-bottom-sheet" class="context-bottom-sheet" aria-labelledby="sheet-title" aria-modal="true" role="dialog" hidden>
+    <div class="sheet-drag-handle"></div>
+
+    <div class="sheet-header-row">
+      <div>
+        <span class="micro-title" id="sheet-kicker">ENTRI BARU</span>
+        <h2 id="sheet-title">TAMBAH TUGAS</h2>
+      </div>
+      <button class="close-x-btn" data-action="close-sheet" aria-label="Tutup">×</button>
+    </div>
+
+    <!-- Segmented Context Tabs -->
+    <div class="sheet-segmented-tabs" role="tablist">
+      <button type="button" class="sheet-tab is-active" data-sheet-tab="task" role="tab" aria-selected="true">TUGAS</button>
+      <button type="button" class="sheet-tab" data-sheet-tab="event" role="tab" aria-selected="false">AGENDA</button>
+      <button type="button" class="sheet-tab" data-sheet-tab="course" role="tab" aria-selected="false">KULIAH</button>
+      <button type="button" class="sheet-tab" data-sheet-tab="note" role="tab" aria-selected="false">CATATAN</button>
+    </div>
+
+    <!-- 1. TASK FORM -->
+    <form id="form-task" class="sheet-inner-form" data-context="task">
+      <div class="input-field-block">
+        <label for="task-title-input">JUDUL TUGAS</label>
+        <input id="task-title-input" name="title" type="text" placeholder="Contoh: Kirim draf bab 3 ke dosen" required autofocus>
+      </div>
+
+      <div class="input-field-block">
+        <label>TINGKAT PRIORITAS</label>
+        <div class="priority-pill-buttons">
+          <label class="priority-btn priority-high">
+            <input type="radio" name="priority" value="tinggi">
+            <span><i class="dot-red-full"></i> Tinggi</span>
+          </label>
+          <label class="priority-btn priority-med is-selected">
+            <input type="radio" name="priority" value="sedang" checked>
+            <span><i class="dot-yellow-full"></i> Sedang</span>
+          </label>
+          <label class="priority-btn priority-low">
+            <input type="radio" name="priority" value="normal">
+            <span><i class="dot-green-full"></i> Normal</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="input-row-half">
+        <div class="input-field-block">
+          <label for="task-context-select">RUANG / KELOMPOK</label>
+          <select id="task-context-select" name="context">
+            <option value="Skripsi">Skripsi Bab 3</option>
+            <option value="Metodologi">Metodologi Riset</option>
+            <option value="Statistika">Statistika Inferensial</option>
+            <option value="Personal">Personal</option>
+          </select>
+        </div>
+        <div class="input-field-block">
+          <label for="task-time-input">DEADLINE (JAM)</label>
+          <input id="task-time-input" name="time" type="time" value="14:00">
+        </div>
+      </div>
+
+      <div class="sheet-submit-row">
+        <button type="button" class="btn-cancel" data-action="close-sheet">Batal</button>
+        <button type="submit" class="btn-save-lime">
+          <span>Simpan Tugas</span>
+          <span>↗</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- 2. AGENDA FORM -->
+    <form id="form-event" class="sheet-inner-form" data-context="event" hidden>
+      <div class="input-field-block">
+        <label for="event-title-input">NAMA AGENDA</label>
+        <input id="event-title-input" name="title" type="text" placeholder="Contoh: Bimbingan Skripsi Bab 3">
+      </div>
+      <div class="input-row-half">
+        <div class="input-field-block">
+          <label for="event-start-input">WAKTU MULAI</label>
+          <input id="event-start-input" name="startTime" type="time" value="09:00">
+        </div>
+        <div class="input-field-block">
+          <label for="event-end-input">WAKTU SELESAI</label>
+          <input id="event-end-input" name="endTime" type="time" value="10:30">
+        </div>
+      </div>
+      <div class="input-field-block">
+        <label for="event-room-input">RUANG / LOKASI</label>
+        <input id="event-room-input" name="room" type="text" placeholder="Ruang B-204">
+      </div>
+      <div class="sheet-submit-row">
+        <button type="button" class="btn-cancel" data-action="close-sheet">Batal</button>
+        <button type="submit" class="btn-save-lime">
+          <span>Jadwalkan Blok</span>
+          <span>↗</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- 3. COURSE FORM -->
+    <form id="form-course" class="sheet-inner-form" data-context="course" hidden>
+      <div class="input-field-block">
+        <label for="course-title-input">MATA KULIAH</label>
+        <input id="course-title-input" name="title" type="text" placeholder="Contoh: Psikologi Belajar">
+      </div>
+      <div class="input-row-half">
+        <div class="input-field-block">
+          <label for="course-mono-input">MONOGRAM</label>
+          <input id="course-mono-input" name="monogram" type="text" maxlength="3" placeholder="PB" style="text-transform:uppercase;">
+        </div>
+        <div class="input-field-block">
+          <label for="course-sks-input">BEBAN SKS</label>
+          <select id="course-sks-input" name="sks">
+            <option value="2">2 SKS</option>
+            <option value="3" selected>3 SKS</option>
+            <option value="4">4 SKS</option>
+          </select>
+        </div>
+      </div>
+      <div class="sheet-submit-row">
+        <button type="button" class="btn-cancel" data-action="close-sheet">Batal</button>
+        <button type="submit" class="btn-save-lime">
+          <span>Simpan Kuliah</span>
+          <span>↗</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- 4. NOTE FORM -->
+    <form id="form-note" class="sheet-inner-form" data-context="note" hidden>
+      <div class="input-field-block">
+        <label for="note-title-input">TOPIK / JUDUL</label>
+        <input id="note-title-input" name="title" type="text" placeholder="Ide atau catatan baru">
+      </div>
+      <div class="input-field-block">
+        <label for="note-body-input">ISI CATATAN</label>
+        <textarea id="note-body-input" name="body" rows="3" placeholder="Tuliskan gagasan di sini..."></textarea>
+      </div>
+      <div class="sheet-submit-row">
+        <button type="button" class="btn-cancel" data-action="close-sheet">Batal</button>
+        <button type="submit" class="btn-save-lime">
+          <span>Simpan Catatan</span>
+          <span>↗</span>
+        </button>
+      </div>
+    </form>
+  </aside>
+
+  <!-- Notification Toast -->
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

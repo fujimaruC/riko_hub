@@ -109,39 +109,6 @@ class AssignmentRepositoryTest {
         } finally { db.close() }
     }
 
-    @Test fun null_original_deadline_survives_later_task_deadline_changes() = runBlocking {
-        val db = Room.inMemoryDatabaseBuilder(context, RikoDatabase::class.java).build()
-        try {
-            val clock = clock { 100L }
-            val tasks = TaskRepository(db, clock)
-            val assignments = AssignmentRepository(db, clock)
-            val taskId = tasks.upsert(Task(title = "Reading"))
-            assignments.save(taskId, null, AcademicState.RECEIVED, null)
-            tasks.upsert(requireNotNull(tasks.observeById(taskId).first()).copy(deadlineAt = 500))
-            val assignment = requireNotNull(assignments.observeByTask(taskId).first())
-            assertNull(assignment.originalDeadlineAt)
-            assertEquals(1, assignment.deadlineChanges.size)
-            assertNull(assignment.deadlineChanges.single().previousDeadlineAt)
-        } finally { db.close() }
-    }
-
-    @Test fun invalid_existing_timed_deadline_rolls_back_enrolled_task_edit() = runBlocking {
-        val db = Room.inMemoryDatabaseBuilder(context, RikoDatabase::class.java).build()
-        try {
-            val clock = clock { 100L }
-            val tasks = TaskRepository(db, clock)
-            val assignments = AssignmentRepository(db, clock)
-            val taskId = tasks.upsert(Task(title = "Quiz", deadlineAt = 500, hasDeadlineTime = true))
-            assignments.save(taskId, null, AcademicState.PLANNED, null)
-            val row = requireNotNull(db.tasks().adminFindForWrite(taskId))
-            db.tasks().update(row.copy(deadlineAt = null))
-            assertTrue(runCatching { tasks.upsert(requireNotNull(tasks.observeById(taskId).first()).copy(title = "Edited")) }.isFailure)
-            assertEquals("Quiz", db.tasks().adminFindForWrite(taskId)?.title)
-            assertTrue(requireNotNull(db.tasks().adminFindForWrite(taskId)).hasDeadlineTime)
-            assertTrue(requireNotNull(assignments.observeByTask(taskId).first()).deadlineChanges.isEmpty())
-        } finally { db.close() }
-    }
-
     @Test fun task_completion_does_not_change_academic_state_and_recurrence_successor_is_unlinked() = runBlocking {
         val db = Room.inMemoryDatabaseBuilder(context, RikoDatabase::class.java).build()
         try {

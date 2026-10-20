@@ -104,6 +104,10 @@ class TaskCrudTest {
         rule.onNodeWithText("Belum ada tugas di sini.").assertExists()
         rule.onNodeWithTag("filter-ACADEMIC").performScrollTo().performClick()
         rule.onNodeWithTag("task-$id").performScrollTo().performClick()
+        rule.onNodeWithTag("task-workspace-title").assertTextContains("Tugas basis data")
+        rule.onNodeWithText("Baca bab tiga").assertExists()
+        rule.onNodeWithTag("task-completion-action").assertExists()
+        rule.onNodeWithTag("task-workspace-edit").performScrollTo().performClick()
         rule.onNodeWithTag("task-title").performTextReplacement("Tugas diperbarui")
         rule.onNodeWithText("Sedang dikerjakan").performScrollTo().performClick()
         save()
@@ -156,6 +160,7 @@ class TaskCrudTest {
         rule.onNodeWithText("0/0 selesai").assertDoesNotExist()
         val taskTag = "task-${tasks().single().id}"
         rule.onNodeWithTag(taskTag).performScrollTo().performClick()
+        rule.onNodeWithTag("task-workspace-edit").performScrollTo().performClick()
         rule.onNodeWithTag("checklist-new").performScrollTo().performTextInput("Susun materi")
         rule.onNodeWithText("Tambah item").performScrollTo().performClick()
         rule.onNodeWithTag("checklist-new").performTextInput("Latihan")
@@ -164,6 +169,7 @@ class TaskCrudTest {
         waitFor { tasks().single().toDomain().checklist.size == 2 && model.state.value.editor == null }
         rule.onNodeWithText("0/2 selesai").assertExists()
         rule.onNodeWithTag(taskTag).performScrollTo().performClick()
+        rule.onNodeWithTag("task-workspace-edit").performScrollTo().performClick()
         val checklistItems = rule.onAllNodes(
             isToggleable() and hasParent(hasAnyDescendant(hasTestTag("checklist-title-0"))),
             useUnmergedTree = true,
@@ -190,6 +196,7 @@ class TaskCrudTest {
         }
         // A stale editor record exercises the actual repository failure and ViewModel recovery path.
         rule.runOnIdle { model.change(model.state.value.editor!!.copy(id = 999)) }
+        rule.onNodeWithTag("task-workspace-edit").performScrollTo().performClick()
         save()
         waitFor { rule.onAllNodesWithText("Gagal menyimpan. Coba lagi.").fetchSemanticsNodes().isNotEmpty() }
         assertNotNull(model.state.value.editor)

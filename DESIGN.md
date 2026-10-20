@@ -1,34 +1,63 @@
-# Riko Hub — Graphite & Tangerine
+# Riko Hub — Design and product rules
 
-Approved by the Project Owner on 15 October 2026. Product truth lives in `PRODUCT.md`.
+## Authority
 
-## Direction
+`redesign-prototypes/reference-adaptation/full-app-v1.html` and its adjacent CSS/assets are the visual reference for the whole app. `today-v2.html` is a Today-only preview and does not override the full-app reference. The Renaissance direction is abandoned: do not bring back its black-cat art, old palette, or visual treatment.
 
-A warm student workbench: compact, tactile, expressive, and easy to scan. One real focus task leads Today; each Space has its own composition. The approved concept is `redesign-idea/approved-renaissance-preview.png`. Its sample tasks and time slots are illustrative and must never become app data. The raised dock bubble follows the active tab; the preview's fixed Capture bubble is not the navigation contract.
+The reference is a browser prototype. Its desktop frame, navigation sidebar, fake records, example names, venues, progress, toast behavior, and web-only interactions are not app requirements. Follow its mobile screen compositions, colors, fonts, typography hierarchy, spacing, illustrations, and component styling while keeping the real Android flows below.
 
-## Shared foundations
+## Shared visual language
 
-- Graphite canvas `#101213`, surface `#191C1D`, raised surface `#242829`.
-- Tangerine `#E8742A`, primary ink `#E8E6E1`, supporting ink `#B5AFA8`.
-- Jade `#2FA37A`, ultramarine `#4A5FD0`, muted magenta `#B8458F` for meaningful domain identity. Status also has a text or icon cue.
-- Fredoka 600 for short expressive headings; Nunito 500–800 for functional content. Text scales with Android settings.
-- Spacing follows 4, 8, 12, 16, 24, and 32dp, with 16dp screen gutters and 24dp section breaks. Existing 20dp local geometry may remain where it supports the approved composition. Touch targets remain at least 48dp.
-- The light theme is an intentional counterpart. Respect saved/system theme preferences. The four Spaces retain exact scoped values from their V2 HTML references.
+- Deep charcoal canvas `#1A1B18` / `#222320`, raised surfaces `#2A2B27` / `#33342E`, ivory text `#F8F6EC`, muted text `#A3A499`, and border line `#3D3E37`.
+- Accents (authentic M-CHEF palette):
+  - Periwinkle Blue `#5463FF` / `#5C6AF6`: screen canvas for Categories (`#spaces`) and background container for Venue Capacity (`#home`).
+  - Saturated Coral `#FF5A43` / `#FA6352`: Hero Revenue sprint card, Quickbooks card, high-volume badge, and wave chart.
+  - Mustard / Golden Butter `#F5CB58`: Small Eatery category hero card, Xero card, and floating yellow `＋` FAB.
+  - Pale Sage `#CBD7C9`: Operational Timing dial top stage, Reports screen top half, and Homebase card.
+  - High-voltage Lime `#D9F35B`: Primary action buttons and badges.
+  - Cyan / Mint `#9FE3DE`: Integration cards and secondary badges.
+- Use the bundled Noto Sans regular and semibold for functional text and Noto Sans Condensed Black for selected display headings. Keep a clear scale: heavy condensed display for screen titles and focal moments (`CATEGORIES`, `REVENUE`, `INTEGRATIONS`, `OPERATIONAL TIMING`, `REPORTS`, `VENUE CAPACITY`, `AI OPERATIONS LEAD`); regular/medium body, helper, and metadata text; semibold for controls and section headings.
+- Key reference screen compositions:
+  - **Categories / Spaces**: Full vibrant periwinkle canvas `#5463FF` with stepped stacked peeking tabs (`04 / PERANGKAT`, `03 / PERSONAL`, `02 / PROYEK`) and a front hero card with action arrow button `↗`, badge pills, and vehicle art.
+  - **Revenue / Projects**: Saturated coral card `#FF5A43` with diagonal hatched stripes chart, floating value pill, burndown bars, and tilted deliverable cards (-3.5deg, +2.5deg, -2deg) with black square monograms.
+  - **Operational Timing / Plan**: Pale sage canvas `#CBD7C9` top half with 24-hour circular radial dial (12, 3, 6, 9 marks, coral focus wedge) and dark sliding schedule panel below.
+  - **Reports / Vault**: Half sage canvas with whimsical art, dark sliding panel (`border-radius: 32px 32px 0 0`), waveform search, red square file tiles, and floating yellow `＋` FAB.
+  - **Home**: Top avatar and greeting, location drop pill, dark priority card, and vibrant periwinkle Venue Capacity workload card with 7-day circular bubbles and coral wave area chart.
+  - **Capture / AI Operations**: Avatar bubble with assistant prompt pills and bottom prompt bar with coral `＋` button and mic waveform.
+  - **Integrations / Devices**: Tilted cards with connection status pills and high-contrast monograms (`▯`, `▱`, `▭`).
+- Keep touch targets at least 48dp, preserve system font scaling, light/dark theme, Back/IME behavior, and reduce motion when the system requests it.
+- Write concise, specific Indonesian UI copy. Say what is shown, what failed, or what an action does. Avoid slogans, filler, generic encouragement, fake claims, and AI-sounding phrasing.
 
-## Composition and behavior
+## Reference-to-route map
 
-- Today: compact greeting, one orange focus surface, bounded desk illustration, real next-task rows, daily progress, and quick capture separated from scrolling content.
-- Plan: connected temporal river, readable day/time markers, domain color at real task/event stops, and compact empty days. No invented schedule entries.
-- Workspace: organic orange task header, real status/deadline, checklist and notes, explicit editing/save/completion actions. Preserve validation and academic/reminder workflows.
-- Spaces: four illustrated horizontal entrances on phones, two columns only when width and text size permit. Preserve Living Orrery, Maker's Bench, Moonlit Room, and Living Bridge page identities and real data.
-- Capture, Vault, Settings: consistent controls and hierarchy, compact decorative art, useful empty/loading/error states, and clear recovery actions.
+| Full App screen | Existing Riko Hub route | Product behavior |
+|---|---|---|
+| Hari ini | `Home` | Real task/event focus, search, completion, and navigation. |
+| Tugas | `Tasks` | Existing task filters, editing, status, reminders, and checklist. |
+| Rencana | `Timeline` | Existing event/task agenda and editor. |
+| Tangkap cepat | `Capture` | Existing quick task/note capture and file handoff. |
+| Gudang materi | `Vault` | Existing Drive connection, folders, and file operations. |
+| Ruang kerja | `Spaces` | Existing links to academic, project, personal, and device areas. |
+| Akademik | `AcademicsSpace` | Real course, assignment, exam, and vault state. |
+| Mata kuliah | `Courses` | Real courses, weekly slots, archive, and edit flows. |
+| Proyek | `ProjectsSpace` | Project-category tasks and separate saved idea notes. |
+| Personal | `PersonalSpace` | Existing routine and journal data. |
+| Perangkat | `DevicesSpace` | Real local pairing and handoff state. |
+| Sinkronisasi | `Sync` | Existing sync and backup behavior. |
+| Pengaturan | `Settings` | Existing theme, display-name, and app settings. |
 
-## Motion and illustration
+Every reference screen has an existing route. Retain the app’s route graph, dock labels, and navigation behavior; the reference’s browser route menu is not the Android dock specification.
 
-Press feedback about 120ms; state changes about 180–220ms; dock/expansion/navigation 260–320ms. The notch, bubble, and icon emphasis share one continuous selection position. Slow organic header movement pauses offscreen/backgrounded and becomes static under reduced motion. Transfer movement uses real state and bytes only.
+## Forms
 
-The locally bundled study-desk cutout and four-domain portal atlas are decorative generated assets, not screenshots, telemetry, or user content. Decode the portal atlas once and draw its four source regions. Keep imagery out of reading and touch areas; omit it where larger text needs the space.
+Adapt the reference editor and capture form to native Android. Preserve the current form-specific surfaces and behavior: task/project/note/routine editor; event editor; course editor; academic assignment editor; quick capture; personal journal; project idea editor; and Vault/backup dialogs where present. Keep all real fields, links, validation, deletion, reminders, recurrence, checklists, save/error recovery, and keyboard/focus/inset behavior. Do not replace a specialized workflow with a generic form or drop fields that the preview omits.
 
-## Evidence and acceptance
+## Projects behavior and data limit
 
-The starting audit is `audit/screenshots/renaissance/REPORT.md`. It describes an installed build whose compass and navigation differ from the current checkout. Fresh owner verification is required before calling the revised source visually accepted. No Gradle, tests, lint, ADB, emulator, installation, or runtime checks are performed by the agent under the owner's execution restriction.
+The app does not have a dedicated Project database entity. Its project cards are `Task` records with `Category.PROJECTS`; idea-board entries are separate `SpaceNote` records. The Projects screen must describe that honestly, use only stored data, preserve the existing filters and creation/edit workflows, and never seed preview projects or fake progress.
+
+Project-card swiping only browses the currently filtered set. Advancing moves the front card to the back cyclically without changing a task. Provide accessible previous/next controls and a position indicator; handle no projects and one project honestly, and respect reduced-motion settings.
+
+## Data and copy integrity
+
+Do not change the database schema or migrate data for visual work. Do not fabricate preview tasks, courses, events, rooms, authors, project progress, device activity, or sync state. Keep feature names consistent and error/empty states actionable. Stored user content must not be rewritten as part of copy cleanup.

@@ -25,7 +25,7 @@ class FoundationNavigationTest {
     }
 
     @Test fun dock_visits_all_five_destinations() {
-        listOf("Home", "Timeline", "Capture", "Vault", "Spaces").forEach { route ->
+        listOf("Home", "Tasks", "Timeline", "ProjectsSpace", "Spaces").forEach { route ->
             rule.onNodeWithTag("dock-$route").performClick()
             awaitScreen(route)
         }

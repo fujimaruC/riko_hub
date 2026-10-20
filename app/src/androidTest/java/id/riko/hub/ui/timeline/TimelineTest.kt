@@ -81,7 +81,7 @@ class TimelineTest {
 
         rule.onNodeWithTag("timeline-stop-deadline:$taskId").performScrollTo().performClick()
         waitFor { model.state.value.taskEditor?.id == taskId }
-        rule.onNodeWithTag("task-title").assertTextContains("Existing task")
+        rule.onNodeWithTag("task-workspace-title").assertTextContains("Existing task")
         rule.onNodeWithText("Tutup", substring = false).performScrollTo().performClick()
         waitFor { model.state.value.taskEditor == null }
 

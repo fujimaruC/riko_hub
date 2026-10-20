@@ -35,4 +35,13 @@ class ProjectsSelectionTest {
         assertNull(projectMilestoneFraction(noMilestones))
         assertEquals(.5f, projectMilestoneFraction(milestones)!!, 0f)
     }
+
+    @Test fun project_deck_cycles_and_handles_zero_or_one_card() {
+        assertEquals(0, projectDeckIndex(0, 0))
+        assertEquals(0, nextProjectDeckIndex(0, 1, 0))
+        assertEquals(0, nextProjectDeckIndex(0, -1, 1))
+        assertEquals(1, nextProjectDeckIndex(0, 1, 3))
+        assertEquals(2, nextProjectDeckIndex(0, -1, 3))
+        assertEquals(0, nextProjectDeckIndex(2, 1, 3))
+    }
 }

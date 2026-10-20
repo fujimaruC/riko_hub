@@ -134,7 +134,7 @@ class HomeTest {
             rule.runOnIdle { dark.value = night }
             rule.onNodeWithTag("bubble-${ids[0]}").performScrollTo().performClick()
             rule.onNodeWithTag("task-editor-organic-header").assertIsDisplayed()
-            rule.onNodeWithTag("task-title").assertTextContains("Tugas")
+            rule.onNodeWithTag("task-workspace-title").assertTextContains("Tugas")
             assertTextBounds()
             rule.onNodeWithTag("task-workspace-pin").performScrollTo().performClick()
             waitFor { model.state.value.snapshot?.validPin == ids[0] }
@@ -145,6 +145,46 @@ class HomeTest {
         rule.onNodeWithText("+5 lainnya").performScrollTo().performClick()
         assertEquals(Destination.Tasks, destination)
     }
+
+    @Test fun search_filters_by_context_and_completed_tasks_can_be_edited() {
+        val completedTask = runBlocking {
+            tasks.upsert(Task(
+                title = "Selesaikan skripsi bab 1",
+                notes = "Revisi metodologi kualitatif",
+                category = Category.ACADEMIC,
+                status = TaskStatus.DONE,
+                completedAt = now,
+            ))
+        }
+        val activeTask = runBlocking {
+            tasks.upsert(Task(
+                title = "Belanja mingguan",
+                category = Category.PERSONAL,
+                checklist = listOf(ChecklistItem(title = "Kopi arabika")),
+            ))
+        }
+        waitFor { model.state.value.snapshot?.doneToday?.size == 1 && model.state.value.snapshot?.ranked?.size == 1 }
+
+        // Open search from top bar
+        rule.onNodeWithTag("home-search-button").performClick()
+        rule.onNodeWithTag("home-task-search").assertIsDisplayed()
+
+        // Search by notes context
+        rule.onNodeWithTag("home-task-search").performTextInput("metodologi")
+        rule.onNodeWithText("Selesaikan skripsi bab 1").assertIsDisplayed()
+
+        // Edit completed task from search results
+        rule.onNodeWithContentDescription("Edit Selesaikan skripsi bab 1").performClick()
+        waitFor { model.state.value.editor?.id == completedTask }
+        rule.onNodeWithText("Tutup").performScrollTo().performClick()
+        waitFor { model.state.value.editor == null }
+
+        // Search by checklist item context
+        rule.onNodeWithContentDescription("Hapus teks pencarian").performClick()
+        rule.onNodeWithTag("home-task-search").performTextInput("arabika")
+        rule.onNodeWithText("Belanja mingguan").assertIsDisplayed()
+    }
+
     private fun assertTextBounds() {
         rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
             .fetchSemanticsNodes().forEach { node ->

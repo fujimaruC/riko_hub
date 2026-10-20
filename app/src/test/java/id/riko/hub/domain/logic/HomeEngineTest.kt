@@ -128,11 +128,13 @@ class HomeEngineTest {
             task(2).copy(status = TaskStatus.IN_PROGRESS), task(3, 0),
             task(4).copy(deadlineAt = now + 3_600_000, hasDeadlineTime = true),
             task(5, 0).copy(deletedAt = now))
-        val event = Event(id = 1, title = "Kelas", startAt = now + 1_800_000)
+        val event = Event(id = 1, title = "Kelas", startAt = now + 1_800_000, location = "Lab Komputer")
         val result = snapshot(tasks, events = listOf(event))
         assertEquals(4, result.total); assertEquals(1, result.done)
         assertEquals("Kelas", result.next?.title)
+        assertEquals("Lab Komputer", result.next?.location)
         assertEquals("Task 4", snapshot(tasks).next?.title)
+        assertNull(snapshot(tasks).next?.location)
         assertNull(snapshot(listOf(task(1, 0))).next)
         assertNull(snapshot(emptyList(), events = listOf(event.copy(startAt = now - 1))).next)
         assertNull(snapshot(emptyList(), events = listOf(event.copy(startAt = now + 86_400_001))).next)

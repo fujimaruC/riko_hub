@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -22,7 +22,7 @@ import org.junit.Test
 import java.io.File
 
 class FoundationRenderingTest {
-    @get:Rule val rule = createComposeRule()
+    @get:Rule val rule = createAndroidComposeRule<MainActivity>()
 
     @Test fun both_themes_keep_text_readable_at_all_font_scales() {
         val fontScale = mutableFloatStateOf(1f)
@@ -42,7 +42,7 @@ class FoundationRenderingTest {
                 rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
                 assertNoTextOverflow()
                 snapshot("$scale-$theme-Home")
-                listOf("Timeline", "Capture", "Vault", "Spaces").forEach { label ->
+                listOf("Tasks", "Timeline", "ProjectsSpace", "Spaces").forEach { label ->
                     rule.onNodeWithTag("dock-$label").assertHasClickAction()
                     rule.onNodeWithTag("dock-$label").performClick()
                     assertNoTextOverflow()
