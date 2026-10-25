@@ -9,6 +9,7 @@ local.properties
 keystore.properties
 
 # Local visual audits and temporary files
+/preview_perangkat.html
 /audit/
 /file.txt
 /dont-push/
