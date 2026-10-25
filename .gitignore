@@ -11,13 +11,37 @@ keystore.properties
 # Local visual audits and temporary files
 /audit/
 /file.txt
+/dont-push/
+/screenshots/
+/redesign-prototypes/
+/docs/audit/
+/docs/qa/
 
-# Locally installed agent tooling
-/.agents/skills/impeccable/
+# Local-only AI agent tooling, prompts, memory, and installed skills
+/.agents/
+/.claude/
+/.codex/
+/.cursor/
+/.windsurf/
+/.opencode/
+/.roo/
+/.continue/
+/.codebase-memory/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/.mcp.json
+/skills-lock.json
 
-# Local visual audits and temporary files
-/audit/
-/file.txt
+# Local development and test-only sources
+/app/src/test/
+/app/src/androidTest/
+/app/src/debug/
+/app/src/testFixtures/
 
-# Locally installed agent tooling
-/.agents/skills/impeccable/
+# Local secrets and environment files
+.env*
+!.env.example
+!.env.sample
+*.pem
+*.key
